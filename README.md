@@ -1,3 +1,7 @@
+> [!NOTE]
+> **cmux DevBox** — an unofficial personal edition of cmux for plain-SSH remote development with Claude Code: pasted images reach remote agents as absolute paths (`[Image #1]` works again), and Cloud, account sign-in and phone pairing are removed. Not affiliated with Manaflow.
+> 下载 / Download: [Releases](https://github.com/JayYuuuuu/cmux-devbox/releases/latest) · 说明 / Details: [docs/devbox-edition.md](docs/devbox-edition.md) · Upstream: [manaflow-ai/cmux](https://github.com/manaflow-ai/cmux)
+
 <h1 align="center">cmux</h1>
 <p align="center">A Ghostty-based macOS terminal with vertical tabs and notifications for AI coding agents</p>
 
