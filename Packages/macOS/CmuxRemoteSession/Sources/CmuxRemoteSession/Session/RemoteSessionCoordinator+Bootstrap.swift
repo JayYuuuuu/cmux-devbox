@@ -650,12 +650,14 @@ extension RemoteSessionCoordinator {
 
     func findRepoRoot() -> URL? {
         var candidates: [URL] = []
+        #if DEBUG
         // Compile-time path of this package source; the marker walk below
         // still lands on the checkout root (dev-only fallback path).
         let compileTimeRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent() // Session
             .deletingLastPathComponent() // CmuxRemoteSession
         candidates.append(compileTimeRoot)
+        #endif
         let environment = ProcessInfo.processInfo.environment
         if let envRoot = environment["CMUX_REMOTE_DAEMON_SOURCE_ROOT"],
            !envRoot.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
