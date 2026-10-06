@@ -162,13 +162,26 @@ if leaks="$(grep -rlaF "${PATH_MAP_FROM}/" "$APP_PATH")"; then
   exit 1
 fi
 
+# Nested bundles, deepest first. `codesign --deep` skips some locations
+# (Contents/Library/SystemExtensions), so sign each one explicitly.
+NESTED_BUNDLES=()
+while IFS= read -r -d '' bundle; do
+  NESTED_BUNDLES+=("$bundle")
+done < <(find "$APP_PATH" -mindepth 1 -type d \( -name '*.app' -o -name '*.appex' \
+  -o -name '*.plugin' -o -name '*.systemextension' -o -name '*.xpc' -o -name '*.framework' \) \
+  -print0 | sort -rz)
+for bundle in "${NESTED_BUNDLES[@]}"; do
+  /usr/bin/codesign --force --sign - --timestamp=none \
+    --preserve-metadata=identifier,entitlements,flags,runtime "$bundle"
+done
+
 # Ad-hoc signature over the whole bundle. CODE_SIGNING_ALLOWED=NO leaves
 # nested plug-ins and helpers unsigned, so sign them too (--deep). Fail loudly
 # instead of shipping an unsigned app.
 /usr/bin/codesign --force --deep --sign - --timestamp=none --generate-entitlement-der "$APP_PATH"
 /usr/bin/codesign --verify --deep --strict "$APP_PATH"
 # --deep verification does not cover loose executables in Resources/bin.
-for file in "${LOOSE_MACHO_FILES[@]}"; do
+for file in "${MACHO_FILES[@]}"; do
   /usr/bin/codesign --verify --strict "$file"
 done
 
