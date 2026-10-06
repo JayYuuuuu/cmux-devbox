@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds the self-use "cmux DevBox" edition: a Release app with its own name,
-# bundle id, sockets and state, no Sparkle feed, ad-hoc signed, plus a ZIP.
+# bundle id, sockets, state and Sparkle feed, plus a ZIP.
 #
 # It never launches, quits or replaces any running cmux (official or DevBox).
 # Install by copying the printed .app into /Applications while DevBox is quit.
@@ -8,25 +8,40 @@
 # Identity: com.cmuxterm.app.staging.devbox. The staging prefix is deliberate:
 # the app and the bundled CLI already give staging ids their own control socket
 # (/tmp/cmux-staging-devbox.sock), last-socket markers, session files and
-# Ghostty config dir, and UpdateController treats them as dev-like, so Sparkle
-# never checks or installs official updates. It is not the stable id
-# com.cmuxterm.app and never collides with it.
+# Ghostty config dir. UpdateController exempts this one id from the staging
+# "no updates" rule: it reads the edition's own feed (DevBoxEditionUpdates),
+# verified with the edition's EdDSA key, so official updates can never apply.
+# It is not the stable id com.cmuxterm.app and never collides with it.
+#
+# Signing: with the edition's signing keychain present (see
+# docs/devbox-edition.md) every Mach-O is signed with the stable
+# "cmux DevBox Code Signing" identity, so updates keep TCC grants and pass
+# Sparkle's code signature check; otherwise ad-hoc (local builds only).
 set -euo pipefail
 
 APP_NAME="cmux DevBox"
 BUNDLE_ID="com.cmuxterm.app.staging.devbox"
 STAGING_SLUG="devbox"
-UPSTREAM_BASE="v0.65.0 (dda24fbd2)"
+UPSTREAM_TAG="v0.65.0"
+SPARKLE_FEED_URL="https://github.com/JayYuuuuu/cmux-devbox/releases/latest/download/appcast.xml"
+SPARKLE_PUBLIC_ED_KEY="GGisbyyaEckq0hn9j95M8VRWzfVpddZFZTssLqfz4qU="
+SIGN_IDENTITY_NAME="cmux DevBox Code Signing"
+SIGN_KEYCHAIN="$HOME/Library/Keychains/cmux-devbox-signing.keychain-db"
+SIGN_KEYCHAIN_PASSWORD_FILE="$HOME/.config/cmux-devbox/signing-keychain-password"
+RELEASE_NUMBER=""
 WORK_ROOT="${CMUX_DEVBOX_WORK_ROOT:-$HOME/cmux-devbox-build}"
 DERIVED_DATA="${WORK_ROOT}/DerivedData"
 OUT_DIR="${WORK_ROOT}/out"
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/build-devbox.sh [--universal] [--derived-data <path>] [--out <dir>]
+Usage: ./scripts/build-devbox.sh [--universal] [--release <n>] [--derived-data <path>] [--out <dir>]
 
-Builds "cmux DevBox.app" (Release, ad-hoc signed) and a ZIP.
+Builds "cmux DevBox.app" (Release configuration) and a ZIP.
 Host CPU only by default; --universal builds arm64 + x86_64 for release assets.
+--release <n> stamps version <upstream>-devbox.<n> (build <upstream build>.<n>)
+and requires the stable signing identity; without it the build is a local
+"-devbox.dev" build that never looks newer than a published release.
 Defaults: DerivedData and output under ~/cmux-devbox-build.
 EOF
 }
@@ -35,6 +50,7 @@ ARCH="${CMUX_DEVBOX_ARCH:-$(uname -m)}"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --universal) ARCH="arm64 x86_64"; shift ;;
+    --release) RELEASE_NUMBER="${2:?--release requires a number}"; shift 2 ;;
     --derived-data) DERIVED_DATA="${2:?--derived-data requires a value}"; shift 2 ;;
     --out) OUT_DIR="${2:?--out requires a value}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
@@ -45,8 +61,22 @@ done
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 export PATH="${CARGO_HOME:-$HOME/.cargo}/bin:/opt/homebrew/bin:/usr/local/bin:${PATH}"
 
+if [[ -n "$RELEASE_NUMBER" && ! "$RELEASE_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+  echo "error: --release takes a positive integer" >&2
+  exit 1
+fi
 COMMIT="$(git rev-parse --short=9 HEAD)"
-EDITION_VERSION="devbox-$(git rev-list --count dda24fbd2250dfacf41bf5e8e3d20d488acf6182..HEAD 2>/dev/null || echo 0)-${COMMIT}"
+UPSTREAM_COMMIT="$(git rev-parse --short=9 "${UPSTREAM_TAG}^{commit}")"
+UPSTREAM_BASE="${UPSTREAM_TAG} (${UPSTREAM_COMMIT})"
+
+SIGN_ARGS=(--sign -)
+if [[ -f "$SIGN_KEYCHAIN" && -f "$SIGN_KEYCHAIN_PASSWORD_FILE" ]]; then
+  security unlock-keychain -p "$(cat "$SIGN_KEYCHAIN_PASSWORD_FILE")" "$SIGN_KEYCHAIN"
+  SIGN_ARGS=(--keychain "$SIGN_KEYCHAIN" --sign "$SIGN_IDENTITY_NAME")
+elif [[ -n "$RELEASE_NUMBER" ]]; then
+  echo "error: --release needs the signing keychain $SIGN_KEYCHAIN" >&2
+  exit 1
+fi
 
 # `-packageAuthorizationProvider netrc`: SwiftPM otherwise asks the login
 # keychain for download credentials, which blocks forever over SSH.
@@ -114,14 +144,30 @@ pb_set() { # key type value
 pb_set CFBundleName string "$APP_NAME"
 pb_set CFBundleDisplayName string "$APP_NAME"
 pb_set CFBundleIdentifier string "$BUNDLE_ID"
+# Versions: <upstream>-devbox.<n> / <upstream build>.<n>. Sparkle compares
+# CFBundleVersion, so 108.2 > 108.1 > 108 and the next upstream build (109.x)
+# sorts above every edition release of this one.
+UPSTREAM_SHORT_VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST")"
+UPSTREAM_BUILD="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$PLIST")"
+if [[ -n "$RELEASE_NUMBER" ]]; then
+  SHORT_VERSION="${UPSTREAM_SHORT_VERSION}-devbox.${RELEASE_NUMBER}"
+  BUNDLE_VERSION="${UPSTREAM_BUILD}.${RELEASE_NUMBER}"
+else
+  SHORT_VERSION="${UPSTREAM_SHORT_VERSION}-devbox.dev"
+  BUNDLE_VERSION="${UPSTREAM_BUILD}"
+fi
+EDITION_VERSION="${SHORT_VERSION} (${COMMIT})"
+pb_set CFBundleShortVersionString string "$SHORT_VERSION"
+pb_set CFBundleVersion string "$BUNDLE_VERSION"
 pb_set CMUXEditionName string "$APP_NAME"
 pb_set CMUXEditionVersion string "$EDITION_VERSION"
 pb_set CMUXUpstreamBase string "$UPSTREAM_BASE"
 
-# Belt and braces on top of the dev-like bundle id: no feed, no key, no checks.
-pb "Delete :SUFeedURL" 2>/dev/null || true
-pb "Delete :SUPublicEDKey" 2>/dev/null || true
-pb_set SUEnableAutomaticChecks bool false
+# The edition's own update feed and key; Sparkle rejects anything not signed
+# with the matching private key, including official cmux updates.
+pb_set SUFeedURL string "$SPARKLE_FEED_URL"
+pb_set SUPublicEDKey string "$SPARKLE_PUBLIC_ED_KEY"
+pb_set SUEnableAutomaticChecks bool true
 pb_set SUAutomaticallyUpdate bool false
 
 # No CMUXD_UNIX_PATH: the app no longer reads it, and a value baked from the
@@ -154,7 +200,7 @@ for file in "${MACHO_FILES[@]}"; do
   xcrun strip -S "$file" 2>/dev/null || true
 done
 for file in "${LOOSE_MACHO_FILES[@]}"; do
-  /usr/bin/codesign --force --sign - --timestamp=none \
+  /usr/bin/codesign --force "${SIGN_ARGS[@]}" --timestamp=none \
     --preserve-metadata=identifier,entitlements,flags,runtime "$file"
 done
 
@@ -173,24 +219,31 @@ done < <(find "$APP_PATH" -mindepth 1 -type d \( -name '*.app' -o -name '*.appex
   -o -name '*.plugin' -o -name '*.systemextension' -o -name '*.xpc' -o -name '*.framework' \) \
   -print0 | sort -rz)
 for bundle in "${NESTED_BUNDLES[@]}"; do
-  /usr/bin/codesign --force --sign - --timestamp=none \
+  /usr/bin/codesign --force "${SIGN_ARGS[@]}" --timestamp=none \
     --preserve-metadata=identifier,entitlements,flags,runtime "$bundle"
 done
 
-# Ad-hoc signature over the whole bundle. CODE_SIGNING_ALLOWED=NO leaves
-# nested plug-ins and helpers unsigned, so sign them too (--deep). Fail loudly
+# Signature over the whole bundle. CODE_SIGNING_ALLOWED=NO leaves nested
+# plug-ins and helpers unsigned, so sign them too (--deep). Fail loudly
 # instead of shipping an unsigned app.
-/usr/bin/codesign --force --deep --sign - --timestamp=none --generate-entitlement-der "$APP_PATH"
+/usr/bin/codesign --force --deep "${SIGN_ARGS[@]}" --timestamp=none --generate-entitlement-der "$APP_PATH"
 /usr/bin/codesign --verify --deep --strict "$APP_PATH"
 # --deep verification does not cover loose executables in Resources/bin.
 for file in "${MACHO_FILES[@]}"; do
   /usr/bin/codesign --verify --strict "$file"
 done
 
-ZIP_PATH="${OUT_DIR}/cmux-DevBox-${EDITION_VERSION}-${ARCH_LABEL}.zip"
+# Release ZIPs keep one stable name so releases/latest/download links never break.
+if [[ -n "$RELEASE_NUMBER" ]]; then
+  ZIP_PATH="${OUT_DIR}/cmux-DevBox.zip"
+else
+  ZIP_PATH="${OUT_DIR}/cmux-DevBox-dev-${ARCH_LABEL}.zip"
+fi
 rm -f "$ZIP_PATH"
 ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"
 
 echo "App path: $APP_PATH"
 echo "ZIP: $ZIP_PATH"
 echo "Edition: $EDITION_VERSION (upstream $UPSTREAM_BASE), arch $(lipo -archs "$APP_PATH/Contents/MacOS/cmux")"
+echo "Version: $SHORT_VERSION build $BUNDLE_VERSION"
+echo "Signed: $(/usr/bin/codesign -dv "$APP_PATH" 2>&1 | grep -m1 -E '^Authority=|^Signature=adhoc' || true)"

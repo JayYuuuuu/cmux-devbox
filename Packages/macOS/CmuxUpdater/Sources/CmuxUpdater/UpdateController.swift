@@ -397,7 +397,8 @@ extension UpdateController {
     /// duplicated here deliberately to avoid introducing a `CmuxUpdater → CmuxSettings` package
     /// dependency edge for a small string check.
     static func isDevLikeBundleIdentifier(_ bundleIdentifier: String?) -> Bool {
-        guard let bundleIdentifier else { return false }
+        // The DevBox edition uses a staging-prefixed id but has its own feed.
+        guard let bundleIdentifier, !DevBoxEditionUpdates.isEdition(bundleIdentifier) else { return false }
         return bundleIdentifier == "com.cmuxterm.app.debug"
             || bundleIdentifier.hasPrefix("com.cmuxterm.app.debug.")
             || bundleIdentifier == "com.cmuxterm.app.staging"
