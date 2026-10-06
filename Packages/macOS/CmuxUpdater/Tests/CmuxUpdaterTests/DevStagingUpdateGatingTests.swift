@@ -26,6 +26,16 @@ import Testing
         #expect(!model.showsPill)
     }
 
+    /// The DevBox edition shares the staging prefix for isolation but has its own feed, so it
+    /// must not be gated like a staging build; real staging and DEV ids still are.
+    @Test func devBoxEditionIsNotDevLike() {
+        #expect(!UpdateController.isDevLikeBundleIdentifier(DevBoxEditionUpdates.bundleIdentifier))
+        #expect(UpdateController.isDevLikeBundleIdentifier("com.cmuxterm.app.staging"))
+        #expect(UpdateController.isDevLikeBundleIdentifier("com.cmuxterm.app.staging.feature"))
+        #expect(UpdateController.isDevLikeBundleIdentifier("com.cmuxterm.app.debug.devbox"))
+        #expect(!UpdateController.isDevLikeBundleIdentifier("com.cmuxterm.app"))
+    }
+
     /// The public release train still records the detected update so the passive pill works.
     @Test func publicBundleRecordsDetectedUpdate() throws {
         let model = UpdateStateModel()

@@ -86,11 +86,14 @@ public struct UpdateFeedResolver: Sendable {
     ///
     /// - Parameters:
     ///   - fallbackFeedURL: The appcast URL to fall back to when the build-time feed URL is
-    ///     absent. Defaults to the project's latest-release appcast.
-    ///   - hostArchitecture: The architecture to select feeds for. Defaults to the machine's
-    ///     native architecture.
+    ///     absent. Defaults to the project's latest-release appcast (the edition's own feed in
+    ///     the DevBox edition, so it can never fall back to the official app's updates).
+    ///   - hostArchitecture: The architecture to select nightly and RC feeds for. Defaults to the
+    ///     machine's native architecture.
     public init(
-        fallbackFeedURL: String = "https://github.com/manaflow-ai/cmux/releases/latest/download/appcast.xml",
+        fallbackFeedURL: String = DevBoxEditionUpdates.isRunning
+            ? DevBoxEditionUpdates.feedURL
+            : "https://github.com/manaflow-ai/cmux/releases/latest/download/appcast.xml",
         hostArchitecture: UpdateHostArchitecture = .current
     ) {
         self.fallbackFeedURL = fallbackFeedURL
