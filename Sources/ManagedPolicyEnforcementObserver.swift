@@ -107,7 +107,9 @@ final class ManagedPolicyEnforcementObserver {
         remoteConnectionsPolicyActive = capabilityPolicy.isEnforced(.disableRemoteConnections)
         fileTransferPolicyActive = capabilityPolicy.isEnforced(.disableFileTransfer)
         if irohPolicyActive { enforceRemoteControlPolicy() }
-        if cloudPolicyActive {
+        // The DevBox edition never creates Cloud state, so there is nothing to
+        // tear down, and skipping it avoids touching VPN preferences each launch.
+        if cloudPolicyActive && !CmuxDevBoxEdition.isActive {
             // A profile may already be installed before launch. Enforce it at
             // startup so restored Cloud workspaces and providers are removed.
             enforceCloudPolicy()

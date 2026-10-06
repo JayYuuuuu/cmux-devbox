@@ -1,3 +1,4 @@
+import CmuxSettings
 import AppKit
 import CMUXAuthCore
 import CmuxAuthRuntime
@@ -105,11 +106,15 @@ final class HostAccountFlow: AccountFlow, AccountSignInFlow {
         }
     }
 
+    // The DevBox edition has no cmux account: every sign-in entry point ends
+    // here or in `signIn(timeout:)`, so refusing here keeps the browser closed.
     func startSignIn() {
+        guard !CmuxDevBoxEdition.isActive else { return }
         browserSignIn.beginSignIn()
     }
 
     func startSignInForPane() -> URL? {
+        guard !CmuxDevBoxEdition.isActive else { return nil }
         browserSignIn.beginSignIn()
         return browserSignIn.activeAttemptSignInURL
     }
@@ -121,7 +126,8 @@ final class HostAccountFlow: AccountFlow, AccountSignInFlow {
     /// Runs the same hosted Stack sign-in used by every UI entrypoint, while
     /// allowing socket callers to await a bounded result.
     func signIn(timeout: TimeInterval) async -> Bool {
-        await browserSignIn.signIn(timeout: timeout)
+        guard !CmuxDevBoxEdition.isActive else { return false }
+        return await browserSignIn.signIn(timeout: timeout)
     }
 
     /// Issues the manual hosted Stack sign-in URL through the same callback

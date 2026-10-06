@@ -45,6 +45,7 @@ public struct ManagedDevicePolicy: Sendable {
     nonisolated(unsafe) private let defaults: UserDefaults
     nonisolated(unsafe) private let releaseDomainDefaults: UserDefaults?
     private let forcedObject: ForcedObjectProbe
+    private let editionEnforcesKeys: Bool
 
     /// Creates a resolver.
     ///
@@ -58,16 +59,21 @@ public struct ManagedDevicePolicy: Sendable {
     ///     the fallback.
     ///   - forcedObject: Probe answering whether a profile forces a key in a
     ///     given domain. Tests inject a deterministic probe.
+    ///   - editionEnforcesKeys: Whether ``CmuxDevBoxEdition/forcedPolicyKeys``
+    ///     count as enforced. Defaults to whether this process is the DevBox
+    ///     edition.
     public init(
         defaults: UserDefaults = .standard,
         releaseDomainDefaults: UserDefaults? = ManagedDevicePolicy.defaultReleaseDomainDefaults(),
         forcedObject: @escaping ForcedObjectProbe = { defaults, key in
             defaults.objectIsForced(forKey: key) ? defaults.object(forKey: key) : nil
-        }
+        },
+        editionEnforcesKeys: Bool = CmuxDevBoxEdition.isActive
     ) {
         self.defaults = defaults
         self.releaseDomainDefaults = releaseDomainDefaults
         self.forcedObject = forcedObject
+        self.editionEnforcesKeys = editionEnforcesKeys
     }
 
     /// The release-domain fallback suite for the running process, or `nil`
@@ -95,7 +101,10 @@ public struct ManagedDevicePolicy: Sendable {
     /// The profile-forced Boolean for `key`, or `nil` when no profile forces
     /// it (or forces a non-Boolean value).
     public func forcedBool(for key: ManagedDevicePolicyKey) -> Bool? {
-        forcedBool(forUserDefaultsKey: key.rawValue)
+        if editionEnforcesKeys, CmuxDevBoxEdition.forcedPolicyKeys.contains(key) {
+            return true
+        }
+        return forcedBool(forUserDefaultsKey: key.rawValue)
     }
 
     /// The profile-forced Boolean stored under `userDefaultsKey`, checking

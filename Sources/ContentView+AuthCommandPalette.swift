@@ -1,3 +1,4 @@
+import CmuxSettings
 import CmuxCommandPalette
 import AppKit
 import Foundation
@@ -7,6 +8,8 @@ extension ContentView {
     static let commandPaletteAuthSignOutCommandId = "palette.auth.signOut"
 
     static func commandPaletteAuthCommandContributions() -> [CommandPaletteCommandContribution] {
+        // No cmux account in the DevBox edition: no Sign In/Out or team commands.
+        guard !CmuxDevBoxEdition.isActive else { return [] }
         func constant(_ value: String) -> (CommandPaletteContextSnapshot) -> String {
             { _ in value }
         }

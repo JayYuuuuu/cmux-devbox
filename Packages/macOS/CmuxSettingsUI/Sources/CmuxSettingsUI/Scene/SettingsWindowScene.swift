@@ -39,6 +39,9 @@ public struct SettingsWindowRoot: View {
         initialSection: SettingsSectionID? = nil,
         mountModel: SettingsSectionMountModel? = nil
     ) {
+        let initialSection = initialSection.map {
+            Self.editionHiddenSections.contains($0) ? Self.defaultSection : $0
+        }
         self.runtime = runtime
         self.searchIndex = runtime.searchIndex
         self.initialSection = initialSection
@@ -47,7 +50,8 @@ public struct SettingsWindowRoot: View {
         // that pass runs inside `NSWindow(contentViewController:)`.
         let defaults = UserDefaults.standard
         let restoredSection = defaults.string(forKey: Self.selectedSectionDefaultsKey)
-            .flatMap(SettingsSectionID.init(rawValue:)) ?? .account
+            .flatMap(SettingsSectionID.init(rawValue:))
+            .flatMap { Self.editionHiddenSections.contains($0) ? nil : $0 } ?? Self.defaultSection
         let betaEnabled = defaults.object(forKey: Self.cloudMachinesBetaDefaultsKey) as? Bool
             ?? BetaFeaturesCatalogSection().cloudMachines.defaultValue
         let cloudAvailable = !ManagedDevicePolicy().isEnforced(.disableCloud)
@@ -71,8 +75,8 @@ public struct SettingsWindowRoot: View {
     // sibling hits inside one section must each be selectable.
     // @AppStorage (not @SceneStorage): the window is AppKit-hosted, so
     // there is no SwiftUI scene to store into (cmux issue #7777).
-    @AppStorage(SettingsWindowRoot.selectedSectionDefaultsKey) private var selectedSectionRaw: String = SettingsSectionID.account.rawValue
-    @AppStorage("selectedSettingsSidebarEntry") private var selectedSidebarEntryID: String = "section:\(SettingsSectionID.account.rawValue)"
+    @AppStorage(SettingsWindowRoot.selectedSectionDefaultsKey) private var selectedSectionRaw: String = SettingsWindowRoot.defaultSection.rawValue
+    @AppStorage("selectedSettingsSidebarEntry") private var selectedSidebarEntryID: String = "section:\(SettingsWindowRoot.defaultSection.rawValue)"
     // Mirrors BetaFeaturesCatalogSection.cloudMachines so flipping the Beta
     // Features toggle shows/hides the Cloud sidebar row without reopening
     // Settings; the host folds in the remote rollout flag.
@@ -123,7 +127,8 @@ public struct SettingsWindowRoot: View {
     /// defaulting to ``SettingsSectionID/account`` when the stored value
     /// is unrecognized (e.g., after dropping a case).
     private var selectedSection: SettingsSectionID {
-        SettingsSectionID(rawValue: selectedSectionRaw) ?? .account
+        SettingsSectionID(rawValue: selectedSectionRaw)
+            .flatMap { Self.editionHiddenSections.contains($0) ? nil : $0 } ?? Self.defaultSection
     }
     /// Whether the user currently has a non-empty search query. When
     /// false the sidebar should track section selection only; when true
@@ -216,6 +221,10 @@ public struct SettingsWindowRoot: View {
         // anyone (re)posted a navigation request to that section.
         let selectedEntry = searchIndex.entries.first { $0.id == selectedSidebarEntryID }
         let selectedEntryTarget = parentSection(for: selectedSidebarEntryID)
+        guard !Self.editionHiddenSections.contains(target) else {
+            navigate(to: Self.defaultSection)
+            return
+        }
         let shouldPreserveSearchSelection = isSearching
             && selectedEntry != nil
             && selectedEntryTarget == target
@@ -232,11 +241,17 @@ public struct SettingsWindowRoot: View {
             _ = mountModel.skip(.cloudMachines)
         }
         if !isCloudSectionAvailable && selectedSection == .cloudMachines {
-            navigate(to: .account)
+            navigate(to: Self.defaultSection)
         }
     }
 
     private func isEntryVisible(_ entry: SettingsSearchIndex.Entry) -> Bool {
+        switch entry.kind {
+        case .section:
+            if Self.editionHiddenSections.contains(where: { entry.id == "section:\($0.rawValue)" }) { return false }
+        case .setting(let parent):
+            if Self.editionHiddenSections.contains(parent) { return false }
+        }
         guard !isCloudSectionAvailable else { return true }
         switch entry.kind {
         case .section:
@@ -379,12 +394,12 @@ public struct SettingsWindowRoot: View {
     private func parentSection(for entryID: String) -> SettingsSectionID {
         if entryID.hasPrefix("section:") {
             let raw = String(entryID.dropFirst("section:".count))
-            return SettingsSectionID(rawValue: raw) ?? .account
+            return SettingsSectionID(rawValue: raw) ?? Self.defaultSection
         }
         if let entry = searchIndex.entries.first(where: { $0.id == entryID }) {
             if case .setting(let parent) = entry.kind { return parent }
         }
-        return .account
+        return Self.defaultSection
     }
 
     @ViewBuilder

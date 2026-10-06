@@ -174,55 +174,70 @@ final class CmuxFeatureFlags {
     )
 
     // FLAG(key: cloud-machines-enabled-release, owner: austinwang,
+    // FLAG(key: pro-upgrade-ui-enabled-release, owner: lawrencecchen,
+    //      reviewBy: 2027-01-19, defaultWhenUnavailable: false)
+    // Shows the Pro upgrade entrypoints (sidebar badge, Settings Account
+    // card, palette command, Help menu item). Release builds hide them until
+    // the PostHog flag is enabled; DEBUG keeps them visible for dogfood.
+    nonisolated static let proUpgradeUIFlag = CmuxFeatureFlagDefinition(
+        key: "pro-upgrade-ui-enabled-release",
+        title: String(localized: "featureFlags.proUpgrade.title", defaultValue: "Pro upgrade UI"),
+        flagDescription: String(
+            localized: "featureFlags.proUpgrade.description",
+            defaultValue: "Shows Pro upgrade entrypoints in the sidebar, Settings, command palette, and Help menu."
+        ),
+        defaultWhenUnavailable: CmuxFeatureFlags.proUpgradeUIDefault
+    )
+
+    // FLAG(key: mobile-connect-button-enabled-release, owner: lawrencecchen,
+    //      reviewBy: 2026-12-15, defaultWhenUnavailable: false)
+    // Shows the bottom-left sidebar iPhone button that opens the Tailscale
+    // Pairing workspace. It stays hidden until the remote flag or a
+    // local debug override enables it.
+    nonisolated static let mobileConnectButtonFlag = CmuxFeatureFlagDefinition(
+        key: "mobile-connect-button-enabled-release",
+        title: String(localized: "featureFlags.mobileConnect.title", defaultValue: "Mobile Pairing button"),
+        flagDescription: String(
+            localized: "featureFlags.mobileConnect.description",
+            defaultValue: "Shows the Mobile Pairing button in the sidebar footer."
+        ),
+        defaultWhenUnavailable: CmuxFeatureFlags.mobileConnectButtonDefault
+    )
+
+    // FLAG(key: sidebar-account-button-enabled-release, owner: lawrencecchen,
+    //      reviewBy: 2027-02-16, defaultWhenUnavailable: true)
+    // Shows the account control in the bottom-left sidebar footer. The
+    // Settings account section remains available when this shortcut is off.
+    nonisolated static let sidebarAccountButtonFlag = CmuxFeatureFlagDefinition(
+        key: "sidebar-account-button-enabled-release",
+        title: String(localized: "featureFlags.sidebarAccount.title", defaultValue: "Sidebar account button"),
+        flagDescription: String(
+            localized: "featureFlags.sidebarAccount.description",
+            defaultValue: "Shows the profile and sign-in control in the sidebar footer."
+        ),
+        defaultWhenUnavailable: CmuxFeatureFlags.sidebarAccountButtonDefault
+    )
+
+    /// Flags the DevBox edition pins off (see `CmuxDevBoxEdition`): Cloud,
+    /// the sidebar account button, the phone pairing button and Pro upsell.
+    nonisolated static let devBoxEditionPinnedOffKeys: Set<String> = [
+        cloudMachinesFlag.key,
+        sidebarAccountButtonFlag.key,
+        mobileConnectButtonFlag.key,
+        proUpgradeUIFlag.key,
+    ]
+
     //      reviewBy: 2026-10-01, defaultWhenUnavailable: false)
     // Order is load-bearing for the positional typed accessors below. Flags
     // that need a stable public definition are declared independently and
     // included here without repeating their key literal.
     static let allFlags: [CmuxFeatureFlagDefinition] = {
         [
-            // FLAG(key: pro-upgrade-ui-enabled-release, owner: lawrencecchen,
-            //      reviewBy: 2026-10-01, defaultWhenUnavailable: false)
-            // Shows the Pro upgrade entrypoints (sidebar badge, Settings Account
-            // card, palette command, Help menu item). Release builds hide them until
-            // the PostHog flag is enabled; DEBUG keeps them visible for dogfood.
-            CmuxFeatureFlagDefinition(
-                key: "pro-upgrade-ui-enabled-release",
-                title: String(localized: "featureFlags.proUpgrade.title", defaultValue: "Pro upgrade UI"),
-                flagDescription: String(
-                    localized: "featureFlags.proUpgrade.description",
-                    defaultValue: "Shows Pro upgrade entrypoints in the sidebar, Settings, command palette, and Help menu."
-                ),
-                defaultWhenUnavailable: CmuxFeatureFlags.proUpgradeUIDefault
-            ),
+            proUpgradeUIFlag,
 
-            // FLAG(key: mobile-connect-button-enabled-release, owner: lawrencecchen,
-            //      reviewBy: 2026-10-01, defaultWhenUnavailable: false)
-            // Shows the bottom-left sidebar iPhone button that opens the Tailscale
-            // Pairing workspace. It stays hidden until the remote flag or a
-            // local debug override enables it.
-            CmuxFeatureFlagDefinition(
-                key: "mobile-connect-button-enabled-release",
-                title: String(localized: "featureFlags.mobileConnect.title", defaultValue: "Mobile Pairing button"),
-                flagDescription: String(
-                    localized: "featureFlags.mobileConnect.description",
-                    defaultValue: "Shows the Mobile Pairing button in the sidebar footer."
-                ),
-                defaultWhenUnavailable: CmuxFeatureFlags.mobileConnectButtonDefault
-            ),
+            mobileConnectButtonFlag,
 
-            // FLAG(key: sidebar-account-button-enabled-release, owner: lawrencecchen,
-            //      reviewBy: 2026-10-01, defaultWhenUnavailable: true)
-            // Shows the account control in the bottom-left sidebar footer. The
-            // Settings account section remains available when this shortcut is off.
-            CmuxFeatureFlagDefinition(
-                key: "sidebar-account-button-enabled-release",
-                title: String(localized: "featureFlags.sidebarAccount.title", defaultValue: "Sidebar account button"),
-                flagDescription: String(
-                    localized: "featureFlags.sidebarAccount.description",
-                    defaultValue: "Shows the profile and sign-in control in the sidebar footer."
-                ),
-                defaultWhenUnavailable: CmuxFeatureFlags.sidebarAccountButtonDefault
-            ),
+            sidebarAccountButtonFlag,
 
             // FLAG(key: agent-chat-ui-enabled-release, owner: lawrencecchen,
             //      reviewBy: 2026-10-01, defaultWhenUnavailable: false)
@@ -363,8 +378,27 @@ final class CmuxFeatureFlags {
     nonisolated static func offMainEffectiveValue(
         for definition: CmuxFeatureFlagDefinition
     ) -> Bool {
-        offMainEffectiveValues.withLock { $0[definition.key] }
+        if isPinnedOffByEdition(definition) { return false }
+        return offMainEffectiveValues.withLock { $0[definition.key] }
             ?? definition.defaultWhenUnavailable
+    }
+
+    /// Whether the DevBox edition pins `definition` off, ignoring remote
+    /// values, cached values and local overrides.
+    nonisolated static func isPinnedOffByEdition(_ definition: CmuxFeatureFlagDefinition) -> Bool {
+        CmuxDevBoxEdition.isActive && devBoxEditionPinnedOffKeys.contains(definition.key)
+    }
+
+    private func editionAwareResolution(
+        for definition: CmuxFeatureFlagDefinition
+    ) -> CmuxFeatureFlagResolution {
+        let pinnedOff = Self.isPinnedOffByEdition(definition)
+        return CmuxFeatureFlagResolution(
+            remoteValue: pinnedOff ? false : remoteValuesByKey[definition.key],
+            overrideValue: pinnedOff ? nil : localOverridesByKey[definition.key],
+            defaultValue: pinnedOff ? false : definition.defaultWhenUnavailable,
+            overridePolicy: overrideCapability.policy(for: definition)
+        )
     }
 
     @ObservationIgnored
@@ -632,12 +666,7 @@ final class CmuxFeatureFlags {
     }
 
     func resolution(for definition: CmuxFeatureFlagDefinition) -> CmuxFeatureFlagResolution {
-        resolutionsByKey[definition.key] ?? CmuxFeatureFlagResolution(
-            remoteValue: remoteValuesByKey[definition.key],
-            overrideValue: localOverridesByKey[definition.key],
-            defaultValue: definition.defaultWhenUnavailable,
-            overridePolicy: overrideCapability.policy(for: definition)
-        )
+        resolutionsByKey[definition.key] ?? editionAwareResolution(for: definition)
     }
 
     func overrideValue(for definition: CmuxFeatureFlagDefinition) -> Bool? {
@@ -694,12 +723,7 @@ final class CmuxFeatureFlags {
 
     private func recomputeEffectiveValues() {
         resolutionsByKey = Self.allFlags.reduce(into: [:]) { values, definition in
-            values[definition.key] = CmuxFeatureFlagResolution(
-                remoteValue: remoteValuesByKey[definition.key],
-                overrideValue: localOverridesByKey[definition.key],
-                defaultValue: definition.defaultWhenUnavailable,
-                overridePolicy: overrideCapability.policy(for: definition)
-            )
+            values[definition.key] = editionAwareResolution(for: definition)
         }
         if publishesOffMainSnapshot {
             let effectiveValues = resolutionsByKey.mapValues(\.effectiveValue)
