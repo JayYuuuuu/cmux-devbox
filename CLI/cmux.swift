@@ -40433,6 +40433,9 @@ export default {
             }
         }
 
+        // Dev-only fallback; #filePath embeds the build machine's absolute
+        // path, which -file-prefix-map does not rewrite, so keep it out of Release.
+        #if DEBUG
         let devURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -40443,6 +40446,7 @@ export default {
            let contents = try? String(contentsOf: devURL, encoding: .utf8) {
             return contents
         }
+        #endif
 
         throw CLIError(message: "bundled OpenTUI Feed source not found")
     }
@@ -41354,11 +41358,15 @@ export default {
             }
         }
 
+        // Dev-only fallback; #filePath embeds the build machine's absolute
+        // path, which -file-prefix-map does not rewrite, so keep it out of Release.
+        #if DEBUG
         let devRelative = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appendingPathComponent("Resources/opencode-plugin.js")
         appendIfExisting(devRelative)
+        #endif
         return candidates
     }
 

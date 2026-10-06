@@ -120,6 +120,9 @@ final class CommandPaletteNucleoSearchLibrary: @unchecked Sendable {
             )
         }
 
+        // Dev-only fallback; #filePath embeds the build machine's absolute
+        // path, which -file-prefix-map does not rewrite, so keep it out of Release.
+        #if DEBUG
         // Repo source root: this file lives at
         // Packages/macOS/CmuxCommandPalette/Sources/CmuxCommandPalette/Search/Nucleo/.
         let sourceRoot = URL(fileURLWithPath: #filePath)
@@ -154,6 +157,7 @@ final class CommandPaletteNucleoSearchLibrary: @unchecked Sendable {
                 .appendingPathComponent(Self.libraryFileName)
                 .path
         )
+        #endif
 
         return paths
     }
