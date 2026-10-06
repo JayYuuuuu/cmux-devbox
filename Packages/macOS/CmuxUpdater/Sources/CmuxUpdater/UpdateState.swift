@@ -216,6 +216,15 @@ public enum UpdateState: Equatable {
         public init?(displayVersionString: String) {
             let version = displayVersionString
 
+            // DevBox edition versions (e.g. "0.65.0-devbox.4") are tags of the edition's fork.
+            if DevBoxEditionUpdates.isRunning,
+               let url = URL(string: version.contains("devbox")
+                   ? "\(DevBoxEditionUpdates.releasesURL)/tag/v\(version)"
+                   : "\(DevBoxEditionUpdates.releasesURL)/latest") {
+                self = .tagged(url)
+                return
+            }
+
             if let semver = Self.extractSemanticVersion(from: version) {
                 let tag = semver.hasPrefix("v") ? semver : "v\(semver)"
                 if let url = URL(string: "https://github.com/manaflow-ai/cmux/releases/tag/\(tag)") {
