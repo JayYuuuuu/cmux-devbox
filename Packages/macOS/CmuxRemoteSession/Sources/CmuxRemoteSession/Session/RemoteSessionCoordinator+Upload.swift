@@ -99,7 +99,8 @@ extension RemoteSessionCoordinator {
                         "scp exited \(scpResult.status)"
                     throw RemoteDropUploadError.uploadFailed(detail)
                 }
-                try finalizeRemotePasteFileLocked(remotePath)
+                let resolvedPath = try finalizeRemotePasteFileLocked(remotePath)
+                uploadedRemotePaths[uploadedRemotePaths.count - 1] = resolvedPath
             }
             return uploadedRemotePaths
         } catch {
@@ -141,7 +142,8 @@ extension RemoteSessionCoordinator {
         }
     }
 
-    private func finalizeRemotePasteFileLocked(_ remotePath: String) throws {
+    /// Returns the absolute remote path the agent can open as written.
+    private func finalizeRemotePasteFileLocked(_ remotePath: String) throws -> String {
         let command = "sh -c \(remotePastePolicy.finalizeScript(for: remotePath).shellSingleQuoted)"
         let result = try sshExec(
             arguments: sshCommonArguments(batchMode: true) + ["--", configuration.destination, command],
@@ -152,6 +154,7 @@ extension RemoteSessionCoordinator {
                 ?? "ssh exited \(result.status)"
             throw RemoteDropUploadError.uploadFailed(detail)
         }
+        return remotePastePolicy.resolvedRemotePath(finalizeStdout: result.stdout, remotePath: remotePath)
     }
 
     func cleanupRemotePasteDirectoryLocked() {

@@ -84,13 +84,69 @@ struct RemotePasteFileTransferPolicyTests {
         #expect(FileManager.default.fileExists(atPath: otherFile.path))
     }
 
-    private func runShell(_ script: String, home: URL) throws {
+    @Test("finalize reports the absolute remote path so agents need no ~ expansion")
+    func finalizeReportsAbsolutePath() throws {
+        let policy = RemotePasteFileTransferPolicy(
+            sessionID: UUID(uuidString: "77777777-8888-9999-aaaa-bbbbbbbbbbbb")!
+        )
+        let home = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cmux-remote-paste-finalize-\(UUID().uuidString)", isDirectory: true)
+        let directory = home.appendingPathComponent(
+            ".cache/cmux/paste/77777777-8888-9999-aaaa-bbbbbbbbbbbb",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: home) }
+
+        let remotePath = policy.remotePath(
+            for: URL(fileURLWithPath: "/tmp/shot.png"),
+            uuid: UUID(uuidString: "01234567-89AB-CDEF-0123-456789ABCDEF")!
+        )
+        let file = directory.appendingPathComponent("cmux-paste-01234567-89ab-cdef-0123-456789abcdef.png")
+        try Data("png".utf8).write(to: file)
+
+        let stdout = try runShell(policy.finalizeScript(for: remotePath), home: home)
+        let resolved = policy.resolvedRemotePath(finalizeStdout: stdout, remotePath: remotePath)
+
+        #expect(resolved == file.path)
+        #expect(!resolved.contains("~"))
+        #expect(try FileManager.default.attributesOfItem(atPath: file.path)[.posixPermissions] as? NSNumber == 0o600)
+        // The resolved path still belongs to this session, so cleanup removes it.
+        try runShell(policy.cleanupScript(for: [resolved]), home: home)
+        #expect(!FileManager.default.fileExists(atPath: file.path))
+    }
+
+    @Test("resolved path ignores rc-file noise and falls back when the output is foreign")
+    func resolvedPathParsing() {
+        let policy = RemotePasteFileTransferPolicy(
+            sessionID: UUID(uuidString: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")!
+        )
+        let remotePath = "~/.cache/cmux/paste/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/cmux-paste-1.png"
+        let absolute = "/home/dev user/.cache/cmux/paste/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/cmux-paste-1.png"
+
+        #expect(policy.resolvedRemotePath(finalizeStdout: "welcome!\r\n" + absolute + "\n", remotePath: remotePath) == absolute)
+        #expect(policy.resolvedRemotePath(finalizeStdout: "", remotePath: remotePath) == remotePath)
+        #expect(policy.resolvedRemotePath(finalizeStdout: "/etc/passwd\n", remotePath: remotePath) == remotePath)
+        #expect(policy.resolvedRemotePath(
+            finalizeStdout: "/home/u/.cache/cmux/paste/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/cmux-paste-2.png",
+            remotePath: remotePath
+        ) == remotePath)
+        #expect(policy.cleanupScript(for: [absolute]).hasPrefix("rm -f -- "))
+        #expect(policy.cleanupScript(for: ["/etc/passwd"]) == "true")
+    }
+
+    @discardableResult
+    private func runShell(_ script: String, home: URL) throws -> String {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
         process.arguments = ["-c", script]
         process.environment = ["HOME": home.path]
+        let stdout = Pipe()
+        process.standardOutput = stdout
         try process.run()
+        let data = stdout.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
         #expect(process.terminationStatus == 0)
+        return String(decoding: data, as: UTF8.self)
     }
 }

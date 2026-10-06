@@ -192,7 +192,8 @@ struct DetectedSSHSession: Equatable, Sendable {
                     ])
                 }
 
-                try finalizeRemotePasteFile(remotePath)
+                let resolvedPath = try finalizeRemotePasteFile(remotePath)
+                uploadedRemotePaths[uploadedRemotePaths.count - 1] = resolvedPath
             }
 
             return uploadedRemotePaths
@@ -228,7 +229,8 @@ struct DetectedSSHSession: Equatable, Sendable {
         }
     }
 
-    private func finalizeRemotePasteFile(_ remotePath: String) throws {
+    /// Returns the absolute remote path the agent can open as written.
+    private func finalizeRemotePasteFile(_ remotePath: String) throws -> String {
         let result = try Self.runProcess(
             executable: "/usr/bin/ssh",
             arguments: sshArguments(command: "sh -c \(Self.shellSingleQuoted(remotePastePolicy.finalizeScript(for: remotePath)))"),
@@ -252,6 +254,7 @@ struct DetectedSSHSession: Equatable, Sendable {
                 NSLocalizedDescriptionKey: message,
             ])
         }
+        return remotePastePolicy.resolvedRemotePath(finalizeStdout: result.stdout, remotePath: remotePath)
     }
 
     private func scpArguments(localPath: String, remotePath: String) -> [String] {
