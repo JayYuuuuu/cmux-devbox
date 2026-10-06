@@ -1,5 +1,10 @@
 {
-  "fill" : "automatic",
+  "fill" : {
+    "linear-gradient" : [
+      "extended-srgb:0.19216,0.19216,0.19216,1.00000",
+      "extended-srgb:0.07843,0.07843,0.07843,1.00000"
+    ]
+  },
   "groups" : [
     {
       "layers" : [
