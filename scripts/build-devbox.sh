@@ -128,12 +128,24 @@ pb "Add :LSEnvironment dict" 2>/dev/null || true
 pb_set LSEnvironment:CMUX_BUNDLE_ID string "$BUNDLE_ID"
 pb_set LSEnvironment:CMUX_SOCKET_PATH string "/tmp/cmux-staging-${STAGING_SLUG}.sock"
 
-# Debug symbols only (the binaries keep working); they hold object paths.
+# Every Mach-O in the bundle, deepest first so nested bundles re-seal after
+# their contents.
+MACHO_FILES=()
 while IFS= read -r -d '' file; do
   if lipo -archs "$file" >/dev/null 2>&1; then
-    xcrun strip -S "$file" 2>/dev/null || true
+    MACHO_FILES+=("$file")
   fi
-done < <(find "$APP_PATH" -type f -perm -111 -print0)
+done < <(find "$APP_PATH" -type f -perm -111 -print0 | sort -rz)
+
+# Debug symbols only (the binaries keep working); they hold object paths.
+# Stripping invalidates each file's own signature, and executables under
+# Contents/Resources/bin are not re-signed by `codesign --deep` (macOS kills
+# them with "Code Signature Invalid"), so each one is re-signed right away.
+for file in "${MACHO_FILES[@]}"; do
+  xcrun strip -S "$file" 2>/dev/null || true
+  /usr/bin/codesign --force --sign - --timestamp=none \
+    --preserve-metadata=identifier,entitlements,flags,runtime "$file"
+done
 
 if leaks="$(grep -rlaF "${PATH_MAP_FROM}/" "$APP_PATH")"; then
   echo "error: build machine paths (${PATH_MAP_FROM}/) remain in:" >&2
@@ -146,6 +158,10 @@ fi
 # instead of shipping an unsigned app.
 /usr/bin/codesign --force --deep --sign - --timestamp=none --generate-entitlement-der "$APP_PATH"
 /usr/bin/codesign --verify --deep --strict "$APP_PATH"
+# --deep verification does not cover loose executables in Resources/bin.
+for file in "${MACHO_FILES[@]}"; do
+  /usr/bin/codesign --verify --strict "$file"
+done
 
 ZIP_PATH="${OUT_DIR}/cmux-DevBox-${EDITION_VERSION}-${ARCH_LABEL}.zip"
 rm -f "$ZIP_PATH"
