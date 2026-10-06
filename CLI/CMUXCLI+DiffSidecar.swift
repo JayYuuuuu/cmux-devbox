@@ -221,6 +221,9 @@ extension CMUXCLI {
                 .appendingPathComponent("diff-viewer", isDirectory: true)
         )
 
+        // Dev-only fallback; #filePath embeds the build machine's absolute
+        // path, which -file-prefix-map does not rewrite, so keep it out of Release.
+        #if DEBUG
         let devRelative = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -228,6 +231,7 @@ extension CMUXCLI {
             .appendingPathComponent("markdown-viewer", isDirectory: true)
             .appendingPathComponent("diff-viewer", isDirectory: true)
         appendIfExisting(devRelative)
+        #endif
         return candidates
     }
 }
