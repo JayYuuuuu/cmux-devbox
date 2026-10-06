@@ -61,6 +61,14 @@ else
   ARCH_LABEL="$ARCH"
 fi
 
+# Published bundles must not carry the build machine's paths (they name its
+# user account). Compilers embed source paths for #file, assertions, panics
+# and debug info; map the home directory to /build everywhere, keep object
+# file paths out of the linked binaries, and strip debug symbols below.
+PATH_MAP_FROM="$HOME"
+PATH_MAP_TO="/build"
+export RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }--remap-path-prefix=${PATH_MAP_FROM}=${PATH_MAP_TO}"
+
 # The WireGuard bridge only serves the Cloud tunnel extension, which this
 # edition never enables; a stub keeps the Release build free of a Go toolchain.
 export CMUX_WIREGUARD_GO_REQUIRE=0
@@ -79,6 +87,9 @@ xcodebuild \
   CMUX_AUTH_CALLBACK_SCHEME="cmux-devbox" \
   CODE_SIGNING_ALLOWED=NO \
   ASSETCATALOG_COMPILER_APPICON_NAME=AppIcon-Nightly \
+  OTHER_SWIFT_FLAGS="\$(inherited) -file-prefix-map ${PATH_MAP_FROM}=${PATH_MAP_TO}" \
+  OTHER_CFLAGS="\$(inherited) -ffile-prefix-map=${PATH_MAP_FROM}=${PATH_MAP_TO}" \
+  OTHER_LDFLAGS="\$(inherited) -Wl,-oso_prefix,${PATH_MAP_FROM}/" \
   build
 
 BUILT_APP="${DERIVED_DATA}/Build/Products/Release/cmux.app"
@@ -116,6 +127,19 @@ pb_set SUAutomaticallyUpdate bool false
 pb "Add :LSEnvironment dict" 2>/dev/null || true
 pb_set LSEnvironment:CMUX_BUNDLE_ID string "$BUNDLE_ID"
 pb_set LSEnvironment:CMUX_SOCKET_PATH string "/tmp/cmux-staging-${STAGING_SLUG}.sock"
+
+# Debug symbols only (the binaries keep working); they hold object paths.
+while IFS= read -r -d '' file; do
+  if lipo -archs "$file" >/dev/null 2>&1; then
+    xcrun strip -S "$file" 2>/dev/null || true
+  fi
+done < <(find "$APP_PATH" -type f -perm -111 -print0)
+
+if leaks="$(grep -rlaF "${PATH_MAP_FROM}/" "$APP_PATH")"; then
+  echo "error: build machine paths (${PATH_MAP_FROM}/) remain in:" >&2
+  echo "$leaks" >&2
+  exit 1
+fi
 
 # Ad-hoc signature over the whole bundle. CODE_SIGNING_ALLOWED=NO leaves
 # nested plug-ins and helpers unsigned, so sign them too (--deep). Fail loudly
