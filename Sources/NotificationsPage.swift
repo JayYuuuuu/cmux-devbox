@@ -1,3 +1,4 @@
+import CmuxSettings
 import CmuxFoundation
 import Bonsplit
 import SwiftUI
@@ -22,8 +23,10 @@ struct NotificationsPage: View {
         VStack(spacing: 0) {
             header
             Divider()
-            phoneForwardingRow
-            Divider()
+            if !CmuxDevBoxEdition.isActive {
+                phoneForwardingRow
+                Divider()
+            }
 
             if !notificationStore.notificationMenuSnapshot.hasNotifications {
                 emptyState

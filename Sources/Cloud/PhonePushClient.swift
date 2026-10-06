@@ -1,3 +1,4 @@
+import CmuxSettings
 import CmuxCloud
 import CmuxAuthRuntime
 import CmuxPhonePush
@@ -30,6 +31,8 @@ struct PhonePushConfiguration: Equatable, Sendable {
     }
 
     static func forwardingEnabled(in defaults: UserDefaults) -> Bool {
+        // The DevBox edition has no phone pairing, so nothing is forwarded.
+        guard !CmuxDevBoxEdition.isActive else { return false }
         guard defaults.object(forKey: PhonePushSettings.forwardEnabledKey) != nil else {
             return true
         }

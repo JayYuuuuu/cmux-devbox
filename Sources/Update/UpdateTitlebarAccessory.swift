@@ -2374,8 +2374,10 @@ private struct NotificationsPopoverView: View {
         VStack(spacing: 0) {
             header
             Divider()
-            phoneForwardingEntry
-            Divider()
+            if !CmuxDevBoxEdition.isActive {
+                phoneForwardingEntry
+                Divider()
+            }
             content
         }
         .frame(width: clampedWidth, height: clampedHeight)
