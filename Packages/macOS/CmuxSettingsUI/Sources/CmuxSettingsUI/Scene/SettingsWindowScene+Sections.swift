@@ -1,3 +1,4 @@
+import CmuxSettings
 import SwiftUI
 
 /// The settings detail stack, split out of `SettingsWindowScene.swift`.
@@ -9,8 +10,19 @@ extension SettingsWindowRoot {
     /// eager while unavailable: it renders nothing, so a placeholder would
     /// only advertise a section the sidebar hides.
     static func mountOrder(cloudAvailable: Bool) -> [SettingsSectionID] {
-        SettingsSectionMountModel.displayOrder.filter { $0 != .cloudMachines || cloudAvailable }
+        SettingsSectionMountModel.displayOrder.filter {
+            ($0 != .cloudMachines || cloudAvailable) && !editionHiddenSections.contains($0)
+        }
     }
+
+    /// Sections the DevBox edition never shows or mounts: cmux account,
+    /// phone pairing, Cloud Machines, other Macs, and Iroh networking.
+    static let editionHiddenSections: Set<SettingsSectionID> = CmuxDevBoxEdition.isActive
+        ? [.account, .mobile, .cloudMachines, .computers, .networking]
+        : []
+
+    /// The section a window falls back to when nothing valid is selected.
+    static let defaultSection: SettingsSectionID = CmuxDevBoxEdition.isActive ? .app : .account
 
     func anchorID(for section: SettingsSectionID) -> String {
         "section:\(section.rawValue)"
@@ -23,12 +35,14 @@ extension SettingsWindowRoot {
         // Cloud, Devices, Networking, the sidebar sections, Beta Features,
         // Automation, Computer Use, Browser (with embedded Import), Global
         // Hotkey, Keyboard Shortcuts, Workspace Colors, cmux.json, Reset.
-        slot(.account, proxy: proxy) {
-            AccountSection(
-                defaultsStore: defaultsStore,
-                catalog: catalog,
-                accountFlow: accountFlow
-            )
+        if !Self.editionHiddenSections.contains(.account) {
+            slot(.account, proxy: proxy) {
+                AccountSection(
+                    defaultsStore: defaultsStore,
+                    catalog: catalog,
+                    accountFlow: accountFlow
+                )
+            }
         }
 
         slot(.app, proxy: proxy) {
@@ -67,8 +81,10 @@ extension SettingsWindowRoot {
             SleepyModeSection(hostActions: hostActions, store: hostActions.sleepyModeStore())
         }
 
-        slot(.mobile, proxy: proxy) {
-            MobileSection(defaultsStore: defaultsStore, catalog: catalog, hostActions: hostActions)
+        if !Self.editionHiddenSections.contains(.mobile) {
+            slot(.mobile, proxy: proxy) {
+                MobileSection(defaultsStore: defaultsStore, catalog: catalog, hostActions: hostActions)
+            }
         }
 
         slot(.cloudMachines, proxy: proxy) {
@@ -80,12 +96,16 @@ extension SettingsWindowRoot {
             }
         }
 
-        slot(.computers, proxy: proxy) {
-            ComputersSection(hostActions: hostActions, defaultsStore: defaultsStore, catalog: catalog)
+        if !Self.editionHiddenSections.contains(.computers) {
+            slot(.computers, proxy: proxy) {
+                ComputersSection(hostActions: hostActions, defaultsStore: defaultsStore, catalog: catalog)
+            }
         }
 
-        slot(.networking, proxy: proxy) {
-            IrohNetworkingSection(hostActions: hostActions)
+        if !Self.editionHiddenSections.contains(.networking) {
+            slot(.networking, proxy: proxy) {
+                IrohNetworkingSection(hostActions: hostActions)
+            }
         }
 
         slot(.sidebarAppearance, proxy: proxy) {

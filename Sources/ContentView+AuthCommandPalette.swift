@@ -1,3 +1,4 @@
+import CmuxSettings
 import CmuxCloud
 import CmuxCommandPalette
 import AppKit
@@ -10,6 +11,8 @@ extension ContentView {
     static let commandPaletteAuthTeamMembersCommandId = "palette.auth.teamMembers"
 
     static func commandPaletteAuthCommandContributions() -> [CommandPaletteCommandContribution] {
+        // No cmux account in the DevBox edition: no Sign In/Out or team commands.
+        guard !CmuxDevBoxEdition.isActive else { return [] }
         func constant(_ value: String) -> (CommandPaletteContextSnapshot) -> String {
             { _ in value }
         }

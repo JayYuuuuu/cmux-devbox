@@ -264,6 +264,20 @@ final class CmuxFeatureFlags {
         defaultWhenUnavailable: CmuxFeatureFlags.sidebarAccountButtonDefault
     )
 
+    /// Flags the DevBox edition pins off (see `CmuxDevBoxEdition`): Cloud and
+    /// the account and phone pairing entry points. Remote values, cached
+    /// values and local overrides are all ignored for these.
+    nonisolated static let devBoxEditionPinnedOffKeys: Set<String> = [
+        cloudMachinesFlag.key,
+        sidebarAccountButtonFlag.key,
+        mobileConnectButtonFlag.key,
+    ]
+
+    /// Whether the DevBox edition pins `definition` off.
+    nonisolated static func isPinnedOffByEdition(_ definition: CmuxFeatureFlagDefinition) -> Bool {
+        CmuxDevBoxEdition.isActive && devBoxEditionPinnedOffKeys.contains(definition.key)
+    }
+
     // FLAG(key: agent-chat-ui-enabled-release, owner: lawrencecchen,
     //      reviewBy: 2026-11-16, defaultWhenUnavailable: false)
     // Shows the Agent Chat entrypoints: the new-workspace dropdown item,
@@ -420,7 +434,8 @@ final class CmuxFeatureFlags {
     nonisolated static func offMainEffectiveValue(
         for definition: CmuxFeatureFlagDefinition
     ) -> Bool {
-        offMainEffectiveValues.withLock { $0[definition.key] }
+        if isPinnedOffByEdition(definition) { return false }
+        return offMainEffectiveValues.withLock { $0[definition.key] }
             ?? definition.defaultWhenUnavailable
     }
 
@@ -721,7 +736,15 @@ final class CmuxFeatureFlags {
     }
 
     func resolution(for definition: CmuxFeatureFlagDefinition) -> CmuxFeatureFlagResolution {
-        resolutionsByKey[definition.key] ?? CmuxFeatureFlagResolution(
+        if Self.isPinnedOffByEdition(definition) {
+            return CmuxFeatureFlagResolution(
+                remoteValue: false,
+                overrideValue: nil,
+                defaultValue: false,
+                overridePolicy: overrideCapability.policy(for: definition)
+            )
+        }
+        return resolutionsByKey[definition.key] ?? CmuxFeatureFlagResolution(
             remoteValue: remoteValuesByKey[definition.key],
             overrideValue: localOverridesByKey[definition.key],
             defaultValue: definition.defaultWhenUnavailable,

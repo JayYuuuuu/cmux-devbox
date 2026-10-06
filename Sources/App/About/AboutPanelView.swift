@@ -19,6 +19,10 @@ struct AboutPanelView: View {
         let env = ProcessInfo.processInfo.environment["CMUX_COMMIT"] ?? ""
         return env.isEmpty ? nil : env
     }
+    /// Set by `scripts/build-devbox.sh` for the DevBox edition only.
+    private var editionName: String? { Bundle.main.infoDictionary?["CMUXEditionName"] as? String }
+    private var editionVersion: String? { Bundle.main.infoDictionary?["CMUXEditionVersion"] as? String }
+    private var upstreamBase: String? { Bundle.main.infoDictionary?["CMUXUpstreamBase"] as? String }
     private var copyright: String? { Bundle.main.infoDictionary?["NSHumanReadableCopyright"] as? String }
 
     var body: some View {
@@ -31,7 +35,7 @@ struct AboutPanelView: View {
 
             VStack(alignment: .center, spacing: 32) {
                 VStack(alignment: .center, spacing: 8) {
-                    Text(String(localized: "about.appName", defaultValue: "cmux"))
+                    Text(editionName ?? String(localized: "about.appName", defaultValue: "cmux"))
                         .cmuxFont(.title)
                         .bold()
                     Text(String(localized: "about.description", defaultValue: "A Ghostty-based terminal with vertical tabs\nand a notification panel for macOS."))
@@ -55,6 +59,12 @@ struct AboutPanelView: View {
                         URL(string: "https://github.com/manaflow-ai/cmux/commit/\(hash)")
                     }
                     AboutPropertyRow(label: String(localized: "about.commit", defaultValue: "Commit"), text: commitText, url: commitURL)
+                    if let editionVersion {
+                        AboutPropertyRow(label: String(localized: "about.edition", defaultValue: "Edition"), text: editionVersion)
+                    }
+                    if let upstreamBase {
+                        AboutPropertyRow(label: String(localized: "about.basedOn", defaultValue: "Based on"), text: "cmux " + upstreamBase)
+                    }
                 }
                 .frame(maxWidth: .infinity)
 

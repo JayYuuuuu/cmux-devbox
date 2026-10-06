@@ -38,6 +38,36 @@ struct ManagedDevicePolicyTests {
         #expect(!policy.isKeyForcedInAppDomain(ManagedDevicePolicyKey.disableEmbeddedBrowser.rawValue))
     }
 
+    @Test func devBoxEditionEnforcesCloudAndPhoneKeysButKeepsSSH() throws {
+        let (defaults, cleanup) = try makeSuite("devBoxEdition")
+        defer { cleanup() }
+
+        let edition = ManagedDevicePolicy(
+            defaults: defaults,
+            releaseDomainDefaults: nil,
+            forcedObject: Self.probe,
+            editionEnforcesKeys: true
+        )
+        for key in CmuxDevBoxEdition.forcedPolicyKeys {
+            #expect(edition.isEnforced(key))
+        }
+        #expect(edition.isDeviceDiscoveryDisabled)
+        #expect(edition.isIncomingDeviceAccessDisabled)
+        // Plain SSH and its file uploads are the point of the edition.
+        #expect(!edition.isEnforced(.disableRemoteConnections))
+        #expect(!edition.isEnforced(.disableFileTransfer))
+
+        let regular = ManagedDevicePolicy(
+            defaults: defaults,
+            releaseDomainDefaults: nil,
+            forcedObject: Self.probe,
+            editionEnforcesKeys: false
+        )
+        #expect(!regular.isEnforced(.disableCloud))
+        #expect(!CmuxDevBoxEdition.isEdition(bundleIdentifier: "com.cmuxterm.app"))
+        #expect(CmuxDevBoxEdition.isEdition(bundleIdentifier: "com.cmuxterm.app.staging.devbox"))
+    }
+
     @Test func forcedTrueEnforcesThePolicyRegardlessOfUserValue() throws {
         let (defaults, cleanup) = try makeSuite("forcedTrue")
         defer { cleanup() }

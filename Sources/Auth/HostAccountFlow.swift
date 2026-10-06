@@ -155,12 +155,16 @@ final class HostAccountFlow: AccountFlow, AccountSignInFlow {
         browserSignIn.isRetryingAfterRateLimit
     }
 
+    // The DevBox edition has no cmux account: every sign-in entry point ends
+    // here or in `signIn(timeout:)`, so refusing here keeps the browser closed.
     func startSignIn() {
+        guard !CmuxDevBoxEdition.isActive else { return }
         noteSignInStarted()
         browserSignIn.beginSignIn()
     }
 
     func startSignInForPane() -> URL? {
+        guard !CmuxDevBoxEdition.isActive else { return nil }
         noteSignInStarted()
         browserSignIn.beginSignIn()
         return browserSignIn.activeAttemptSignInURL
@@ -173,6 +177,7 @@ final class HostAccountFlow: AccountFlow, AccountSignInFlow {
     /// Runs the same hosted Stack sign-in used by every UI entrypoint, while
     /// allowing socket callers to await a bounded result.
     func signIn(timeout: TimeInterval) async -> Bool {
+        guard !CmuxDevBoxEdition.isActive else { return false }
         noteSignInStarted()
         return await browserSignIn.signIn(timeout: timeout)
     }

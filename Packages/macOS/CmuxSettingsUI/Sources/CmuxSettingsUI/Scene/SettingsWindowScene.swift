@@ -38,6 +38,9 @@ public struct SettingsWindowRoot: View {
         initialSection: SettingsSectionID? = nil,
         mountModel: SettingsSectionMountModel? = nil
     ) {
+        let initialSection = initialSection.map {
+            Self.editionHiddenSections.contains($0) ? Self.defaultSection : $0
+        }
         self.runtime = runtime
         self.searchIndex = runtime.searchIndex
         self.initialSection = initialSection
@@ -48,7 +51,8 @@ public struct SettingsWindowRoot: View {
         // that pass runs inside `NSWindow(contentViewController:)`.
         let defaults = UserDefaults.standard
         let restoredSection = defaults.string(forKey: Self.selectedSectionDefaultsKey)
-            .flatMap(SettingsSectionID.init(rawValue:)) ?? .account
+            .flatMap(SettingsSectionID.init(rawValue:))
+            .flatMap { Self.editionHiddenSections.contains($0) ? nil : $0 } ?? Self.defaultSection
         let cloudAvailable = !ManagedDevicePolicy().isEnforced(.disableCloud)
             && runtime.hostActions.isCloudMachinesAvailable
         _mountModel = State(initialValue: mountModel ?? SettingsSectionMountModel(
@@ -86,8 +90,8 @@ public struct SettingsWindowRoot: View {
     // sibling hits inside one section must each be selectable.
     // @AppStorage (not @SceneStorage): the window is AppKit-hosted, so
     // there is no SwiftUI scene to store into (cmux issue #7777).
-    @AppStorage(SettingsWindowRoot.selectedSectionDefaultsKey) private var selectedSectionRaw: String = SettingsSectionID.account.rawValue
-    @AppStorage("selectedSettingsSidebarEntry") private var selectedSidebarEntryID: String = "section:\(SettingsSectionID.account.rawValue)"
+    @AppStorage(SettingsWindowRoot.selectedSectionDefaultsKey) private var selectedSectionRaw: String = SettingsWindowRoot.defaultSection.rawValue
+    @AppStorage("selectedSettingsSidebarEntry") private var selectedSidebarEntryID: String = "section:\(SettingsWindowRoot.defaultSection.rawValue)"
     // Legacy `SettingsRootView` binds `NavigationSplitView`'s
     // `columnVisibility` so the user can collapse the sidebar via the
     // toolbar button (or the SidebarCommands menu) and have that state
@@ -133,7 +137,8 @@ public struct SettingsWindowRoot: View {
     /// defaulting to ``SettingsSectionID/account`` when the stored value
     /// is unrecognized (e.g., after dropping a case).
     var selectedSection: SettingsSectionID {
-        SettingsSectionID(rawValue: selectedSectionRaw) ?? .account
+        SettingsSectionID(rawValue: selectedSectionRaw)
+            .flatMap { Self.editionHiddenSections.contains($0) ? nil : $0 } ?? Self.defaultSection
     }
     /// The section whose pane the detail shows.
     var activeSection: SettingsSectionID {
@@ -233,6 +238,10 @@ public struct SettingsWindowRoot: View {
         // a search query and clicking a setting hit would have the
         // sidebar selection collapsed back to the section row whenever
         // anyone (re)posted a navigation request to that section.
+        guard !Self.editionHiddenSections.contains(target) else {
+            navigate(to: Self.defaultSection)
+            return
+        }
         let selectedEntry = searchIndex.entries.first { $0.id == selectedSidebarEntryID }
         let selectedEntryTarget = parentSection(for: selectedSidebarEntryID)
         let shouldPreserveSearchSelection = isSearching
@@ -251,11 +260,22 @@ public struct SettingsWindowRoot: View {
             _ = mountModel.skip(.cloudMachines)
         }
         if !isCloudSectionAvailable && selectedSection == .cloudMachines {
-            navigate(to: .account)
+            navigate(to: Self.defaultSection)
         }
     }
 
-    func sidebarEntries(matching query: String) -> [SettingsSearchIndex.Entry] { searchIndex.match(query) }
+    func sidebarEntries(matching query: String) -> [SettingsSearchIndex.Entry] {
+        searchIndex.match(query).filter { entry in
+            switch entry.kind {
+            case .section:
+                return !Self.editionHiddenSections.contains {
+                    entry.id == "section:\($0.rawValue)"
+                }
+            case .setting(let parent):
+                return !Self.editionHiddenSections.contains(parent)
+            }
+        }
+    }
 
     /// Updates both the sidebar entry selection and the underlying
     /// section pane based on the clicked sidebar row. Setting-hit
@@ -350,12 +370,12 @@ public struct SettingsWindowRoot: View {
     private func parentSection(for entryID: String) -> SettingsSectionID {
         if entryID.hasPrefix("section:") {
             let raw = String(entryID.dropFirst("section:".count))
-            return SettingsSectionID(rawValue: raw) ?? .account
+            return SettingsSectionID(rawValue: raw) ?? Self.defaultSection
         }
         if let entry = searchIndex.entries.first(where: { $0.id == entryID }) {
             if case .setting(let parent) = entry.kind { return parent }
         }
-        return .account
+        return Self.defaultSection
     }
 
     @ViewBuilder
