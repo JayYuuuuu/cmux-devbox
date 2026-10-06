@@ -1,4 +1,4 @@
-import Foundation
+public import Foundation
 
 /// Update channel of the self-use "cmux DevBox" edition.
 ///
@@ -25,4 +25,19 @@ public enum DevBoxEditionUpdates {
 
     /// Whether the running process is the DevBox edition.
     public static let isRunning = isEdition(Bundle.main.bundleIdentifier)
+
+    /// Marker that ``repairAutomaticChecks(in:)`` already ran.
+    public static let automaticChecksRepairKey = "cmux.devbox.automaticChecksRepair.v1"
+
+    /// Turns automatic update checks back on once.
+    ///
+    /// Edition builds up to 0.65.0-devbox.3 were classified as staging, and the staging gate
+    /// persisted `SUEnableAutomaticChecks = false`. Without this repair those installs would
+    /// never probe the edition's feed after updating. Runs once, so a user who later turns
+    /// automatic checks off in Settings keeps that choice.
+    public static func repairAutomaticChecks(in defaults: UserDefaults) {
+        guard !defaults.bool(forKey: automaticChecksRepairKey) else { return }
+        defaults.set(true, forKey: UpdateSettings.automaticChecksKey)
+        defaults.set(true, forKey: automaticChecksRepairKey)
+    }
 }

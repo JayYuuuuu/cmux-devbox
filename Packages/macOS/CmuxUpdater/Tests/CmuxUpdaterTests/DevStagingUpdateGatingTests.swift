@@ -36,6 +36,22 @@ import Testing
         #expect(!UpdateController.isDevLikeBundleIdentifier("com.cmuxterm.app"))
     }
 
+    /// Installs that ran as staging (devbox.1-3) persisted automatic checks off; the edition
+    /// turns them back on exactly once and then respects the user's choice.
+    @Test func devBoxEditionRepairsAutomaticChecksOnce() throws {
+        let suiteName = "DevBoxEditionRepair.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        defaults.set(false, forKey: UpdateSettings.automaticChecksKey)
+        DevBoxEditionUpdates.repairAutomaticChecks(in: defaults)
+        #expect(defaults.bool(forKey: UpdateSettings.automaticChecksKey))
+
+        defaults.set(false, forKey: UpdateSettings.automaticChecksKey)
+        DevBoxEditionUpdates.repairAutomaticChecks(in: defaults)
+        #expect(!defaults.bool(forKey: UpdateSettings.automaticChecksKey))
+    }
+
     /// The public release train still records the detected update so the passive pill works.
     @Test func publicBundleRecordsDetectedUpdate() throws {
         let model = UpdateStateModel()

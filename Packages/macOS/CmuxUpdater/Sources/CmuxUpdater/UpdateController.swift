@@ -132,6 +132,9 @@ public final class UpdateController {
         let isDevLikeBundle = isDevLikeBundle ?? Self.isDevLikeBundleIdentifier(hostBundle.bundleIdentifier)
         self.isDevLikeBundle = isDevLikeBundle
         settings.apply(to: defaults)
+        if DevBoxEditionUpdates.isEdition(hostBundle.bundleIdentifier) {
+            DevBoxEditionUpdates.repairAutomaticChecks(in: defaults)
+        }
         if isDevLikeBundle {
             // DEV (`com.cmuxterm.app.debug[.<tag>]`) and staging (`com.cmuxterm.app.staging[.<tag>]`)
             // builds are produced from local source and are not on the public release train, so
