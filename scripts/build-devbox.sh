@@ -86,7 +86,6 @@ xcodebuild \
   CMUX_SIDEBAR_EXTENSION_POINT_ID="${BUNDLE_ID}.cmux.sidebar" \
   CMUX_AUTH_CALLBACK_SCHEME="cmux-devbox" \
   CODE_SIGNING_ALLOWED=NO \
-  ASSETCATALOG_COMPILER_APPICON_NAME=AppIcon-Nightly \
   OTHER_SWIFT_FLAGS="\$(inherited) -file-prefix-map ${PATH_MAP_FROM}=${PATH_MAP_TO}" \
   OTHER_CFLAGS="\$(inherited) -ffile-prefix-map=${PATH_MAP_FROM}=${PATH_MAP_TO}" \
   OTHER_LDFLAGS="\$(inherited) -Wl,-oso_prefix,${PATH_MAP_FROM}/" \
