@@ -1,3 +1,40 @@
+# cmux DevBox fork: read first
+
+This checkout is **cmux DevBox**, a personal fork of manaflow-ai/cmux (branch
+`devbox-custom`, upstream base in `scripts/build-devbox.sh` `UPSTREAM_TAG`).
+These rules override the upstream notes below where they conflict.
+User-facing details: [docs/devbox-edition.md](docs/devbox-edition.md).
+
+- **Edition switch.** Every edition-only behavior keys off the bundle id
+  `com.cmuxterm.app.staging.devbox`: `CmuxDevBoxEdition` (CmuxSettings: forced
+  MDM keys, Settings sections, sign-in), `CmuxFeatureFlags.devBoxEditionPinnedOffKeys`
+  (flags pinned off) and `DevBoxEditionUpdates` (CmuxUpdater: own Sparkle feed).
+  Add new Cloud / account / phone entry points to these switches; never scatter
+  ad-hoc `if` checks, and never let edition code change behavior for other ids.
+- **Keep the patch set small** so upstream upgrades stay cheap: one change per
+  commit, prefer gating over deleting upstream code. Upgrades cherry-pick
+  `devbox-custom` onto a new stable tag; never track upstream `main`.
+- **Image paste is the core feature.** Uploads must insert the remote
+  *absolute* path (Claude Code does not expand `~`). Any change near
+  `RemotePasteFileTransferPolicy`, `TerminalSSHSessionDetector` or the
+  clipboard paste path needs the package tests plus a real Cmd+V into remote
+  Claude Code showing `[Image #N]`.
+- **Verify** with `python3 scripts/verify-local.py --affected <upstream tag>` and
+  the touched packages' `swift test` (at least CmuxRemoteSession, CmuxSettings,
+  CmuxSettingsUI, CmuxUpdater). A build is not a test run.
+- **Build and release** only with `scripts/build-devbox.sh` / `scripts/release-devbox.sh`
+  (never upstream reload scripts for releases, never the stable id). Releases
+  are `v<upstream>-devbox.<n>`, `<n>` strictly increasing; installed copies
+  update from the newest release's `appcast.xml`. Before publishing, launch the
+  built app once and check that the paste worker runs and no crash report appears.
+- **Public repo hygiene.** Commits use the GitHub noreply author; nothing in the
+  repo may name private machines, accounts, hosts, LAN addresses or home paths
+  (the build also fails if `$HOME/` leaks into the bundle). Signing keys and the
+  signing keychain never enter the repo. No force pushes to `devbox-custom`.
+- Machine-specific build and release notes live in an untracked `CLAUDE.local.md`.
+
+---
+
 # cmux agent notes
 
 Keep repo-wide decisions here; procedures belong in [CONTRIBUTING.md](CONTRIBUTING.md),
