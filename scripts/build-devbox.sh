@@ -128,14 +128,21 @@ pb "Add :LSEnvironment dict" 2>/dev/null || true
 pb_set LSEnvironment:CMUX_BUNDLE_ID string "$BUNDLE_ID"
 pb_set LSEnvironment:CMUX_SOCKET_PATH string "/tmp/cmux-staging-${STAGING_SLUG}.sock"
 
-# Every Mach-O in the bundle, deepest first so nested bundles re-seal after
-# their contents.
+# Every Mach-O in the bundle (executables and dylibs). Bundle main
+# executables (*/Contents/MacOS/*) are re-signed with their bundle by the
+# --deep signature below; signing one directly would require its whole bundle
+# to be signed already. Every other Mach-O is signed on its own here.
 MACHO_FILES=()
+LOOSE_MACHO_FILES=()
 while IFS= read -r -d '' file; do
   if lipo -archs "$file" >/dev/null 2>&1; then
     MACHO_FILES+=("$file")
+    case "$file" in
+      */Contents/MacOS/*) ;;
+      *) LOOSE_MACHO_FILES+=("$file") ;;
+    esac
   fi
-done < <(find "$APP_PATH" -type f -perm -111 -print0 | sort -rz)
+done < <(find "$APP_PATH" -type f \( -perm -111 -o -name '*.dylib' -o -name '*.so' \) -print0 | sort -rz)
 
 # Debug symbols only (the binaries keep working); they hold object paths.
 # Stripping invalidates each file's own signature, and executables under
@@ -143,6 +150,8 @@ done < <(find "$APP_PATH" -type f -perm -111 -print0 | sort -rz)
 # them with "Code Signature Invalid"), so each one is re-signed right away.
 for file in "${MACHO_FILES[@]}"; do
   xcrun strip -S "$file" 2>/dev/null || true
+done
+for file in "${LOOSE_MACHO_FILES[@]}"; do
   /usr/bin/codesign --force --sign - --timestamp=none \
     --preserve-metadata=identifier,entitlements,flags,runtime "$file"
 done
@@ -159,7 +168,7 @@ fi
 /usr/bin/codesign --force --deep --sign - --timestamp=none --generate-entitlement-der "$APP_PATH"
 /usr/bin/codesign --verify --deep --strict "$APP_PATH"
 # --deep verification does not cover loose executables in Resources/bin.
-for file in "${MACHO_FILES[@]}"; do
+for file in "${LOOSE_MACHO_FILES[@]}"; do
   /usr/bin/codesign --verify --strict "$file"
 done
 
