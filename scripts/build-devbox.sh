@@ -102,6 +102,9 @@ APP_PATH="${OUT_DIR}/${APP_NAME}.app"
 rm -rf "$APP_PATH"
 ditto "$BUILT_APP" "$APP_PATH"
 
+# Incremental builds keep icons from earlier icon settings; ship only AppIcon.
+rm -f "$APP_PATH"/Contents/Resources/AppIcon-{Nightly,Debug,RC}.icns
+
 PLIST="$APP_PATH/Contents/Info.plist"
 pb() { /usr/libexec/PlistBuddy -c "$1" "$PLIST"; }
 pb_set() { # key type value
