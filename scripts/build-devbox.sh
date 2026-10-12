@@ -60,6 +60,12 @@ done
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 export PATH="${CARGO_HOME:-$HOME/.cargo}/bin:/opt/homebrew/bin:/usr/local/bin:${PATH}"
+# A build Mac may keep the Command Line Tools selected for other projects;
+# this build needs the full Xcode, so use it when one is installed.
+if [[ -z "${DEVELOPER_DIR:-}" && "$(xcode-select -p 2>/dev/null)" == /Library/Developer/CommandLineTools* \
+      && -d /Applications/Xcode.app/Contents/Developer ]]; then
+  export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+fi
 
 if [[ -n "$RELEASE_NUMBER" && ! "$RELEASE_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
   echo "error: --release takes a positive integer" >&2
