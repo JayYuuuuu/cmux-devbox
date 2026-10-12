@@ -38,7 +38,7 @@ usage() {
 Usage: ./scripts/build-devbox.sh [--universal] [--release <n>] [--derived-data <path>] [--out <dir>]
 
 Builds "cmux DevBox.app" (Release configuration) and a ZIP.
-Host CPU only by default; --universal builds arm64 + x86_64 for release assets.
+Host CPU only by default (releases are arm64); --universal builds arm64 + x86_64.
 --release <n> stamps version <upstream>-devbox.<n> (build <upstream build>.<n>)
 and requires the stable signing identity; without it the build is a local
 "-devbox.dev" build that never looks newer than a published release.
@@ -87,8 +87,8 @@ fi
 # `-packageAuthorizationProvider netrc`: SwiftPM otherwise asks the login
 # keychain for download credentials, which blocks forever over SSH.
 #
-# Release is universal (arm64 + x86_64) by default, which compiles every
-# Swift file twice; a local build only needs the host CPU (see --universal).
+# --universal (arm64 + x86_64) compiles every Swift file twice; releases and
+# local builds only need arm64.
 if [[ "$ARCH" == *" "* ]]; then
   ONLY_ACTIVE_ARCH=NO
   ARCH_LABEL="universal"

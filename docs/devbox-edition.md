@@ -4,7 +4,7 @@
 
 ## 下载安装
 
-1. 下载 [cmux-DevBox.zip](https://github.com/JayYuuuuu/cmux-devbox/releases/latest/download/cmux-DevBox.zip)（永远是最新版；Apple 芯片和 Intel 通用，需要 macOS 14+）。
+1. 下载 [cmux-DevBox.zip](https://github.com/JayYuuuuu/cmux-devbox/releases/latest/download/cmux-DevBox.zip)（永远是最新版；只支持 Apple 芯片，需要 macOS 14+；devbox.7 及以前是通用版）。
 2. 解压，把 `cmux DevBox.app` 拖进「应用程序」。
 3. 应用用自签名证书签名、未经 Apple 公证，浏览器下载的会被拦（提示「已损坏」或「无法验证开发者」）。首次安装在终端执行一次：
 
