@@ -109,6 +109,10 @@ export RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }--remap-path-prefix=${PATH_MAP_FROM}=
 # edition never enables; a stub keeps the Release build free of a Go toolchain.
 export CMUX_WIREGUARD_GO_REQUIRE=0
 
+# GhosttyKit is a local binary target keyed to the ghostty submodule; a fresh
+# build Mac (or a new upstream base) has no xcframework yet.
+./scripts/ensure-ghosttykit.sh
+
 xcodebuild \
   -project cmux.xcodeproj \
   -scheme cmux \
