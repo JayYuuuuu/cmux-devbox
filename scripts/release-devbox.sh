@@ -4,7 +4,7 @@
 #
 #   ./scripts/release-devbox.sh <n> <notes.md>
 #
-# Builds a universal, stably signed app as <upstream>-devbox.<n>, EdDSA-signs
+# Builds an Apple silicon (arm64), stably signed app as <upstream>-devbox.<n>, EdDSA-signs
 # the ZIP, writes appcast.xml, creates release tag v<upstream>-devbox.<n> on
 # the pushed HEAD of devbox-custom, uploads ZIP + appcast + SHA256SUMS, then
 # reads the published appcast back and checks it.
@@ -43,7 +43,9 @@ fi
 
 OUT_DIR="${WORK_ROOT}/release-${RELEASE_NUMBER}"
 rm -rf "$OUT_DIR"
-./scripts/build-devbox.sh --universal --release "$RELEASE_NUMBER" --out "$OUT_DIR"
+# arm64 only: every Mac running this edition is Apple silicon, and a
+# universal build compiles every Swift file twice.
+CMUX_DEVBOX_ARCH=arm64 ./scripts/build-devbox.sh --release "$RELEASE_NUMBER" --out "$OUT_DIR"
 
 APP_PATH="${OUT_DIR}/cmux DevBox.app"
 ZIP_PATH="${OUT_DIR}/cmux-DevBox.zip"
@@ -78,6 +80,7 @@ cat > "${OUT_DIR}/appcast.xml" <<EOF
       <sparkle:version>${BUNDLE_VERSION}</sparkle:version>
       <sparkle:shortVersionString>${SHORT_VERSION}</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>${MIN_SYSTEM_VERSION}</sparkle:minimumSystemVersion>
+      <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
       <sparkle:releaseNotesLink>${NOTES_URL}</sparkle:releaseNotesLink>
       <enclosure url="${ZIP_URL}" type="application/octet-stream" ${ED_ATTRIBUTES} />
     </item>
