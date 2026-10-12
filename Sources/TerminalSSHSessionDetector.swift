@@ -143,7 +143,6 @@ struct DetectedSSHSession: Equatable, Sendable {
         var uploadedRemotePaths: [String] = []
         do {
             try operation.throwIfCancelled()
-            try prepareRemotePasteDirectory()
             for localURL in fileURLs {
                 try operation.throwIfCancelled()
                 let normalizedLocalURL = localURL.standardizedFileURL
@@ -191,9 +190,6 @@ struct DetectedSSHSession: Equatable, Sendable {
                         NSLocalizedDescriptionKey: message,
                     ])
                 }
-
-                let resolvedPath = try finalizeRemotePasteFile(remotePath)
-                uploadedRemotePaths[uploadedRemotePaths.count - 1] = resolvedPath
             }
 
             return uploadedRemotePaths
@@ -201,60 +197,6 @@ struct DetectedSSHSession: Equatable, Sendable {
             cleanupUploadedRemotePaths(uploadedRemotePaths)
             throw error
         }
-    }
-
-    private func prepareRemotePasteDirectory() throws {
-        let result = try Self.runProcess(
-            executable: "/usr/bin/ssh",
-            arguments: sshArguments(command: "sh -c \(Self.shellSingleQuoted(remotePastePolicy.maintenanceScript()))"),
-            timeout: 12
-        )
-        guard result.status == 0 else {
-            let detail = result.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
-            let message = detail.isEmpty
-                ? String(
-                    localized: "detectedSSH.fileDrop.error.uploadFailed",
-                    defaultValue: "Couldn't upload the file to the remote session. Check that the remote host is reachable, then try again."
-                )
-                : String.localizedStringWithFormat(
-                    String(
-                        localized: "detectedSSH.fileDrop.error.uploadFailedWithDetail",
-                        defaultValue: "Couldn't upload the file to the remote session: %@"
-                    ),
-                    detail
-                )
-            throw NSError(domain: "cmux.detected-ssh.drop", code: 3, userInfo: [
-                NSLocalizedDescriptionKey: message,
-            ])
-        }
-    }
-
-    /// Returns the absolute remote path the agent can open as written.
-    private func finalizeRemotePasteFile(_ remotePath: String) throws -> String {
-        let result = try Self.runProcess(
-            executable: "/usr/bin/ssh",
-            arguments: sshArguments(command: "sh -c \(Self.shellSingleQuoted(remotePastePolicy.finalizeScript(for: remotePath)))"),
-            timeout: 8
-        )
-        guard result.status == 0 else {
-            let detail = result.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
-            let message = detail.isEmpty
-                ? String(
-                    localized: "detectedSSH.fileDrop.error.uploadFailed",
-                    defaultValue: "Couldn't upload the file to the remote session. Check that the remote host is reachable, then try again."
-                )
-                : String.localizedStringWithFormat(
-                    String(
-                        localized: "detectedSSH.fileDrop.error.uploadFailedWithDetail",
-                        defaultValue: "Couldn't upload the file to the remote session: %@"
-                    ),
-                    detail
-                )
-            throw NSError(domain: "cmux.detected-ssh.drop", code: 4, userInfo: [
-                NSLocalizedDescriptionKey: message,
-            ])
-        }
-        return remotePastePolicy.resolvedRemotePath(finalizeStdout: result.stdout, remotePath: remotePath)
     }
 
     private func scpArguments(localPath: String, remotePath: String) -> [String] {

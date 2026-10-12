@@ -20,7 +20,7 @@
 
 | 改动 | 说明 |
 | --- | --- |
-| 远程图片粘贴 | 普通 SSH 和 `cmux ssh` 上传后，插入远端**绝对路径**（如 `/home/<用户>/.cache/cmux/paste/<会话>/cmux-paste-<uuid>.png`），而不是 `\~/.cache/...`。Claude Code 不展开 `~`，只有绝对路径才会变成 `[Image #1]`。远端是 macOS 时上传最后一步的 `chmod --` 报错也一并修了。 |
+| 远程图片粘贴 | 普通 SSH 和 `cmux ssh` 每张图只用**一次 scp** 传到远端 `/tmp/cmux-paste-<会话>-<uuid>.png`，插入这个绝对路径（Claude Code 不展开 `~`，只有绝对路径才会变成 `[Image #1]`）。上游 0.65 改成先 ssh 建私有目录、再 scp、再 ssh 改权限取路径，三次握手让局域网粘贴也要转圈，这里回到 0.64 的单次传输，舍弃私有目录与权限收紧。 |
 | 无 Cloud / 账号 / 手机 | 单一开关 `CmuxDevBoxEdition`（按 bundle id 生效）：复用 MDM 策略关掉 Cloud、远控配对、Iroh、设备发现；钉死相关远程 feature flag；登录入口、账号命令、手机通知转发、设置里的 账户/手机/Cloud/电脑/网络 页全部隐藏。 |
 | 独立身份 | bundle id `com.cmuxterm.app.staging.devbox`，名字 `cmux DevBox`，socket `/tmp/cmux-staging-devbox.sock`，会话/历史/配置按 bundle id 隔离；与官方 `cmux.app` 同时运行互不影响。 |
 | 自己的更新通道 | Sparkle 只读本仓库最新 Release 里的 `appcast.xml`，安装包必须带本版的 EdDSA 签名，官方 cmux 的更新包会被拒绝；应用用固定的自签名证书签名，更新后系统权限不丢。 |
@@ -31,7 +31,7 @@
 ## 使用
 
 1. 打开后照常 `ssh <你的主机别名>`（读 `~/.ssh/config`，别名、密钥、端口、ProxyJump 都沿用，不需要 `cmux ssh`）。
-2. 在远端 Claude Code 里按 Command+V 粘贴截图/图片：cmux 先上传到远端 `~/.cache/cmux/paste/`，再把绝对路径粘进去，Claude Code 显示 `[Image #1]`。
+2. 在远端 Claude Code 里按 Command+V 粘贴截图/图片：cmux 用一次 scp 上传到远端 `/tmp/`，再把绝对路径粘进去，Claude Code 显示 `[Image #1]`。
 3. 失败时 cmux 会提示上传失败的原因（scp 的报错原文）。常见原因：SSH 需要交互输入密码/2FA（后台上传用 BatchMode，答不了，请用密钥登录）、远端磁盘满、连接已断。
 4. 恢复 Claude Code 会话：远端 `claude --resume` 或 `claude --continue`，与终端无关。
 

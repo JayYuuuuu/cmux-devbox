@@ -2124,8 +2124,8 @@ final class WorkspaceRemoteConnectionTests: XCTestCase {
 
         XCTAssertEqual(
             remotePath,
-            "~/.cache/cmux/paste/00000000-0000-0000-0000-000000000000/" +
-                "cmux-paste-12345678-1234-1234-1234-1234567890ab.png"
+            "/tmp/cmux-paste-00000000-0000-0000-0000-000000000000-" +
+                "12345678-1234-1234-1234-1234567890ab.png"
         )
     }
 
@@ -2715,8 +2715,7 @@ final class WorkspaceRemoteConnectionTests: XCTestCase {
         )
         let uploadedRemotePath = try XCTUnwrap(firstSCPDestination.split(separator: ":", maxSplits: 1).last)
         let uploadedFileName = try XCTUnwrap(uploadedRemotePath.split(separator: "/").last)
-        // The first ssh call prepares the private paste directory; cleanup runs
-        // after the failed copy and addresses the file through "$HOME/...".
+        // Cleanup runs after the failed copy and removes the first upload.
         let cleanupInvocation = try XCTUnwrap(
             invocations.last(where: { $0.executable == "/usr/bin/ssh" })
         )

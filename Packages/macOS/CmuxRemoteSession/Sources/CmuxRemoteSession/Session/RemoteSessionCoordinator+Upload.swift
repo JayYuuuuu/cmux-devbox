@@ -2,11 +2,10 @@ internal import CmuxCore
 public import Foundation
 
 // File upload onto the remote host over scp, with rollback of already-uploaded
-// files on failure or cancellation. The transfer still uses the existing SCP
-// path; the remote destination is now a private, per-session directory with
-// bounded age and size cleanup.
+// files on failure or cancellation. DevBox: one scp per file straight to the
+// absolute /tmp path from RemotePasteFileTransferPolicy, no extra ssh hops.
 extension RemoteSessionCoordinator {
-    /// Uploads local files to private per-session paths on the remote host,
+    /// Uploads local files to per-session /tmp paths on the remote host,
     /// completing on the main queue with the remote paths.
     public func uploadDroppedFiles(
         _ fileURLs: [URL],
@@ -59,9 +58,8 @@ extension RemoteSessionCoordinator {
         var uploadedRemotePaths: [String] = []
         do {
             try operation.throwIfCancelled()
-            // Mark before preparing: a failed prepare may still leave the directory.
+            // Mark before copying: a failed scp may still leave a partial file.
             hasTouchedRemotePasteDirectory = true
-            try prepareRemotePasteDirectoryLocked()
             for localURL in fileURLs {
                 try operation.throwIfCancelled()
                 let normalizedLocalURL = localURL.standardizedFileURL
@@ -99,8 +97,6 @@ extension RemoteSessionCoordinator {
                         "scp exited \(scpResult.status)"
                     throw RemoteDropUploadError.uploadFailed(detail)
                 }
-                let resolvedPath = try finalizeRemotePasteFileLocked(remotePath)
-                uploadedRemotePaths[uploadedRemotePaths.count - 1] = resolvedPath
             }
             return uploadedRemotePaths
         } catch {
@@ -127,34 +123,6 @@ extension RemoteSessionCoordinator {
             arguments: sshCommonArguments(batchMode: true) + ["--", configuration.destination, cleanupCommand],
             timeout: 8
         )
-    }
-
-    private func prepareRemotePasteDirectoryLocked() throws {
-        let command = "sh -c \(remotePastePolicy.maintenanceScript().shellSingleQuoted)"
-        let result = try sshExec(
-            arguments: sshCommonArguments(batchMode: true) + ["--", configuration.destination, command],
-            timeout: 12
-        )
-        guard result.status == 0 else {
-            let detail = Self.bestErrorLine(stderr: result.stderr, stdout: result.stdout)
-                ?? "ssh exited \(result.status)"
-            throw RemoteDropUploadError.uploadFailed(detail)
-        }
-    }
-
-    /// Returns the absolute remote path the agent can open as written.
-    private func finalizeRemotePasteFileLocked(_ remotePath: String) throws -> String {
-        let command = "sh -c \(remotePastePolicy.finalizeScript(for: remotePath).shellSingleQuoted)"
-        let result = try sshExec(
-            arguments: sshCommonArguments(batchMode: true) + ["--", configuration.destination, command],
-            timeout: 8
-        )
-        guard result.status == 0 else {
-            let detail = Self.bestErrorLine(stderr: result.stderr, stdout: result.stdout)
-                ?? "ssh exited \(result.status)"
-            throw RemoteDropUploadError.uploadFailed(detail)
-        }
-        return remotePastePolicy.resolvedRemotePath(finalizeStdout: result.stdout, remotePath: remotePath)
     }
 
     func cleanupRemotePasteDirectoryLocked() {
