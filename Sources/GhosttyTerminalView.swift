@@ -1220,6 +1220,18 @@ class GhosttyApp {
         conditionalThemeColorScheme: GhosttyConfig.ColorSchemePreference? = nil
     ) -> Bool {
         hasUserGhosttyCommand = false
+        // DevBox: Shift+Enter sends ESC CR, the same bytes as Option+Enter, so
+        // agents such as Claude Code insert a newline even through SSH and a
+        // tmux without extended keys (which would deliver a plain Enter).
+        // Loaded before user files, so a user keybind still wins.
+        if CmuxDevBoxEdition.isActive {
+            loadInlineGhosttyConfig(
+                "keybind = shift+enter=text:\\x1b\\r",
+                into: config,
+                prefix: "cmux-devbox-shift-enter",
+                logLabel: "DevBox Shift+Enter"
+            )
+        }
         // Surface-only reloads may use a terminal-derived scheme for background
         // handling, while Ghostty split-theme pairs follow app appearance.
         let themeColorScheme = conditionalThemeColorScheme ?? preferredColorScheme
