@@ -161,12 +161,28 @@ struct DetectedSSHSession: Equatable, Sendable {
                     homeDirectory: remoteHomeDirectory
                 )
                 uploadedRemotePaths.append(remotePath)
-                let result = try runProcess(
-                    executable: "/usr/bin/scp",
-                    arguments: scpArguments(localPath: normalizedLocalURL.path, remotePath: remotePath),
-                    timeout: 45,
-                    operation: operation
-                )
+                // DevBox: scale the timeout with the file and retry a timed-out
+                // copy once, so a stuck transfer costs seconds, not a failed paste.
+                let fileSize = (try? normalizedLocalURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                let uploadTimeout = Self.uploadTimeout(forFileSize: fileSize)
+                let arguments = scpArguments(localPath: normalizedLocalURL.path, remotePath: remotePath)
+                let result: CommandResult
+                do {
+                    result = try runProcess(
+                        executable: "/usr/bin/scp",
+                        arguments: arguments,
+                        timeout: uploadTimeout,
+                        operation: operation
+                    )
+                } catch let error as NSError where Self.isTimeout(error) {
+                    try operation?.throwIfCancelled()
+                    result = try runProcess(
+                        executable: "/usr/bin/scp",
+                        arguments: arguments,
+                        timeout: uploadTimeout,
+                        operation: operation
+                    )
+                }
                 guard result.status == 0 else {
                     // scp's own stderr is the only thing that says WHY, and it is
                     // often the whole answer — "Permission denied
@@ -486,6 +502,16 @@ struct DetectedSSHSession: Equatable, Sendable {
             throw TerminalImageTransferExecutionError.cancelled
         }
         return CommandResult(status: process.terminationStatus, stdout: stdout, stderr: stderr)
+    }
+
+    /// 10 s plus 1 s per 100 KB, capped at the former fixed 45 s.
+    static func uploadTimeout(forFileSize bytes: Int) -> TimeInterval {
+        min(45, 10 + TimeInterval(max(0, bytes)) / 100_000)
+    }
+
+    /// Whether `error` is the "file transfer timed out" refusal thrown above.
+    static func isTimeout(_ error: NSError) -> Bool {
+        error.domain == "cmux.detected-ssh.drop" && error.code == 3
     }
 
     private static func hasSSHOptionKey(_ options: [String], key: String) -> Bool {
