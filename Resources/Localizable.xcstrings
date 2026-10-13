@@ -12153,6 +12153,12 @@
             "state": "translated",
             "value": "Computer Use"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Computer Use"
+          }
         }
       }
     },
@@ -29594,6 +29600,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kimi Code"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Kimi Code"
@@ -49143,6 +49155,12 @@
             "state": "translated",
             "value": "⌘↩"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌘↩"
+          }
         }
       }
     },
@@ -58106,6 +58124,12 @@
           }
         },
         "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ -> %@"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "%@ -> %@"
@@ -69191,6 +69215,12 @@
             "state": "translated",
             "value": "browser design-mode enable|disable|toggle|status [--surface <id>]"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "browser design-mode enable|disable|toggle|status [--surface <id>]"
+          }
         }
       }
     },
@@ -70742,6 +70772,12 @@
             "state": "translated",
             "value": "viewport <width> <height> | reset"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "viewport <width> <height> | reset"
+          }
         }
       }
     },
@@ -70876,6 +70912,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "[--profile <名前|UUID>]"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "[--profile <name|uuid>]"
           }
         }
       }
@@ -71197,6 +71239,12 @@
           }
         },
         "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Claude Code"
@@ -77799,6 +77847,12 @@
             "state": "translated",
             "value": "ios <subcommand> [args] [--surface <id|ref|index>]"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ios <subcommand> [args] [--surface <id|ref|index>]"
+          }
         }
       }
     },
@@ -78792,6 +78846,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "simulator <subcommand> [args] [--surface <id|ref|index>]"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "simulator <subcommand> [args] [--surface <id|ref|index>]"
@@ -129598,6 +129658,12 @@
             "state": "translated",
             "value": "+%d"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%d"
+          }
         }
       }
     },
@@ -137361,6 +137427,12 @@
             "state": "translated",
             "value": "snapshot-id"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "snapshot-id"
+          }
         }
       }
     },
@@ -138323,6 +138395,12 @@
             "state": "translated",
             "value": "Claude Code"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code"
+          }
         }
       }
     },
@@ -138690,6 +138768,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "%@"
@@ -150737,6 +150821,12 @@
           }
         },
         "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ • %@"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "%@ • %@"
@@ -164896,6 +164986,12 @@
             "state": "translated",
             "value": "%@ px"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ px"
+          }
         }
       }
     },
@@ -171729,6 +171825,12 @@
             "state": "translated",
             "value": "lawrence in ~/cmux"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lawrence in ~/cmux"
+          }
         }
       }
     },
@@ -171801,6 +171903,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "workspace@lab:~"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "workspace@lab:~"
@@ -217634,6 +217742,12 @@
             "state": "translated",
             "value": "ウルトラプラン"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ultraplan"
+          }
         }
       }
     },
@@ -217768,6 +217882,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "ウルトラプラン"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ultraplan"
           }
         }
       }
@@ -219451,6 +219571,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "ウルトラプラン"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ultraplan"
           }
         }
       }
@@ -222592,6 +222718,12 @@
             "state": "translated",
             "value": "AppKit"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AppKit"
+          }
         }
       }
     },
@@ -222605,6 +222737,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SwiftUI"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "SwiftUI"
@@ -237876,6 +238014,12 @@
             "state": "translated",
             "value": "pt"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pt"
+          }
         }
       }
     },
@@ -237948,6 +238092,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "px"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "px"
@@ -244150,6 +244300,12 @@
             "state": "translated",
             "value": "Claude Code Teams"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code Teams"
+          }
         }
       }
     },
@@ -244639,6 +244795,12 @@
             "state": "translated",
             "value": "oh-my-claudecode"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "oh-my-claudecode"
+          }
         }
       }
     },
@@ -244656,6 +244818,12 @@
             "state": "translated",
             "value": "oh-my-codex"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "oh-my-codex"
+          }
         }
       }
     },
@@ -244669,6 +244837,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "oh-my-opencode"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "oh-my-opencode"
@@ -244863,6 +245037,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SSH"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "SSH"
@@ -265838,6 +266018,12 @@
             "state": "translated",
             "value": "%1$@ — %2$@"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ — %2$@"
+          }
         }
       }
     },
@@ -268281,6 +268467,12 @@
             "state": "translated",
             "value": "SOC 2"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SOC 2"
+          }
         }
       }
     },
@@ -269474,6 +269666,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "1"
@@ -270934,6 +271132,12 @@
             "state": "translated",
             "value": "cmux Pro"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cmux Pro"
+          }
         }
       }
     },
@@ -271246,6 +271450,12 @@
             "state": "translated",
             "value": "$0"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "$0"
+          }
         }
       }
     },
@@ -271554,6 +271764,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 vCPU / 16 GB"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "4 vCPU / 16 GB"
@@ -272365,6 +272581,12 @@
             "state": "translated",
             "value": "$0.80"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "$0.80"
+          }
         }
       }
     },
@@ -272441,6 +272663,12 @@
             "state": "translated",
             "value": "$0.40"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "$0.40"
+          }
         }
       }
     },
@@ -272513,6 +272741,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "$0.20"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "$0.20"
@@ -274282,6 +274516,12 @@
             "state": "translated",
             "value": "cmux Pro"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cmux Pro"
+          }
         }
       }
     },
@@ -274354,6 +274594,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cmux Pro"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "cmux Pro"
@@ -274843,6 +275089,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cmux Pro"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "cmux Pro"
@@ -286784,6 +287036,12 @@
             "state": "translated",
             "value": "Claude Code"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code"
+          }
         }
       }
     },
@@ -286856,6 +287114,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grok"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Grok"
@@ -287061,6 +287325,12 @@
             "state": "translated",
             "value": "Pi"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pi"
+          }
         }
       }
     },
@@ -287080,6 +287350,12 @@
           }
         },
         "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rovo Dev"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Rovo Dev"
@@ -290619,6 +290895,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cmux Pro"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "cmux Pro"
@@ -327875,6 +328157,12 @@
             "state": "translated",
             "value": "%@ pt"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ pt"
+          }
         }
       }
     },
@@ -332094,6 +332382,12 @@
             "state": "translated",
             "value": "Tailscale"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tailscale"
+          }
         }
       }
     },
@@ -335128,6 +335422,12 @@
           }
         },
         "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · %2$@"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ · %2$@"
@@ -341040,6 +341340,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "say \"done\""
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "say \"done\""
@@ -365067,6 +365373,12 @@
             "state": "translated",
             "value": "cmux.json"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cmux.json"
+          }
         }
       }
     },
@@ -367781,6 +368093,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ pt"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "%@ pt"
@@ -373267,6 +373585,12 @@
             "state": "translated",
             "value": "%.2f×"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%.2f×"
+          }
         }
       }
     },
@@ -373815,6 +374139,12 @@
             "state": "translated",
             "value": "pt"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pt"
+          }
         }
       }
     },
@@ -373887,6 +374217,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ pt"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "%@ pt"
@@ -375637,6 +375973,12 @@
             "state": "translated",
             "value": "Codex --yolo"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex --yolo"
+          }
         }
       }
     },
@@ -375709,6 +376051,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pi"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Pi"
@@ -388112,6 +388460,12 @@
           }
         },
         "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ …"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "%@ …"
@@ -402078,6 +402432,12 @@
             "state": "translated",
             "value": "Discord"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discord"
+          }
         }
       }
     },
@@ -402623,6 +402983,12 @@
           }
         },
         "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "you@example.com"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "you@example.com"
@@ -405404,6 +405770,12 @@
             "state": "translated",
             "value": ":%lld"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ":%lld"
+          }
         }
       }
     },
@@ -406456,6 +406828,12 @@
           }
         },
         "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SSH"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "SSH"
@@ -408678,6 +409056,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SSH"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "SSH"
@@ -415905,6 +416289,12 @@
             "state": "translated",
             "value": "VoiceOver"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
         }
       }
     },
@@ -416272,6 +416662,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "React Native"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "React Native"
@@ -419656,6 +420052,12 @@
             "state": "translated",
             "value": "5G"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5G"
+          }
         }
       }
     },
@@ -419669,6 +420071,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5G+"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "5G+"
@@ -419690,6 +420098,12 @@
             "state": "translated",
             "value": "5G UC"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5G UC"
+          }
         }
       }
     },
@@ -419707,6 +420121,12 @@
             "state": "translated",
             "value": "5G UWB"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5G UWB"
+          }
         }
       }
     },
@@ -419720,6 +420140,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4G"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "4G"
@@ -419800,6 +420226,12 @@
             "state": "translated",
             "value": "LTE"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LTE"
+          }
         }
       }
     },
@@ -419813,6 +420245,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LTE-A"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "LTE-A"
@@ -419834,6 +420272,12 @@
             "state": "translated",
             "value": "LTE+"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LTE+"
+          }
         }
       }
     },
@@ -419851,6 +420295,12 @@
             "state": "translated",
             "value": "3G"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3G"
+          }
         }
       }
     },
@@ -419864,6 +420314,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Wi-Fi"
@@ -420176,6 +420632,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UDID"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "UDID"
@@ -426453,6 +426915,12 @@
             "state": "translated",
             "value": "URL"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "URL"
+          }
         }
       }
     },
@@ -428123,6 +428591,12 @@
             "state": "translated",
             "value": "Face ID"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Face ID"
+          }
         }
       }
     },
@@ -428195,6 +428669,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HomeKit"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "HomeKit"
@@ -430101,6 +430581,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Wi-Fi"
@@ -445340,6 +445826,12 @@
             "state": "translated",
             "value": "you@example.com"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "you@example.com"
+          }
         }
       }
     },
@@ -450327,6 +450819,12 @@
             "state": "translated",
             "value": "Amp"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Amp"
+          }
         }
       }
     },
@@ -450344,6 +450842,12 @@
             "state": "translated",
             "value": "Claude Code"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code"
+          }
         }
       }
     },
@@ -450357,6 +450861,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CodeBuddy"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "CodeBuddy"
@@ -450437,6 +450947,12 @@
             "state": "translated",
             "value": "Copilot"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copilot"
+          }
         }
       }
     },
@@ -450450,6 +450966,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cursor"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Cursor"
@@ -450471,6 +450993,12 @@
             "state": "translated",
             "value": "Factory"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Factory"
+          }
         }
       }
     },
@@ -450484,6 +451012,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gemini"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Gemini"
@@ -450505,6 +451039,12 @@
             "state": "translated",
             "value": "Grok"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grok"
+          }
         }
       }
     },
@@ -450518,6 +451058,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hermes Agent"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Hermes Agent"
@@ -450598,6 +451144,12 @@
             "state": "translated",
             "value": "Pi"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pi"
+          }
         }
       }
     },
@@ -450615,6 +451167,12 @@
             "state": "translated",
             "value": "Qoder"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qoder"
+          }
         }
       }
     },
@@ -450628,6 +451186,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rovo Dev"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Rovo Dev"
@@ -450883,6 +451447,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CPU"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "CPU"
@@ -451906,6 +452476,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PID %lld"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "PID %lld"
@@ -453112,6 +453688,12 @@
             "state": "translated",
             "value": "PID %lld"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PID %lld"
+          }
         }
       }
     },
@@ -453656,6 +454238,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WebView"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "WebView"
@@ -454325,6 +454913,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CPU"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "CPU"
@@ -458723,6 +459317,12 @@
             "state": "translated",
             "value": "Codex --yolo"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex --yolo"
+          }
         }
       }
     },
@@ -458854,6 +459454,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pi"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Pi"
@@ -519076,15 +519682,60 @@
     "cloud.operation.failure.placement": {
       "extractionState": "manual",
       "localizations": {
-        "en": {"stringUnit": {"state": "translated", "value": "The Cloud terminal placement is unavailable. Refresh the machine, then retry."}},
-        "de": {"stringUnit": {"state": "translated", "value": "Die Cloud-Terminalplatzierung ist nicht verfügbar. Aktualisieren Sie die Maschine und versuchen Sie es erneut."}},
-        "fr": {"stringUnit": {"state": "translated", "value": "L’emplacement du terminal Cloud n’est pas disponible. Actualisez la machine, puis réessayez."}},
-        "ar": {"stringUnit": {"state": "translated", "value": "موضع طرفية Cloud غير متاح. حدّث الجهاز ثم أعد المحاولة."}},
-        "es": {"stringUnit": {"state": "translated", "value": "La ubicación del terminal de Cloud no está disponible. Actualiza la máquina y vuelve a intentarlo."}},
-        "zh-Hant": {"stringUnit": {"state": "translated", "value": "Cloud 終端機位置無法使用。請重新整理機器後再試一次。"}},
-        "zh-Hans": {"stringUnit": {"state": "translated", "value": "Cloud 终端位置不可用。请刷新机器后重试。"}},
-        "ko": {"stringUnit": {"state": "translated", "value": "Cloud 터미널 배치를 사용할 수 없습니다. 머신을 새로 고친 후 다시 시도하세요."}},
-        "ja": {"stringUnit": {"state": "translated", "value": "Cloud ターミナルの配置を利用できません。マシンを更新して、もう一度お試しください。"}}
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Cloud terminal placement is unavailable. Refresh the machine, then retry."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Cloud-Terminalplatzierung ist nicht verfügbar. Aktualisieren Sie die Maschine und versuchen Sie es erneut."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’emplacement du terminal Cloud n’est pas disponible. Actualisez la machine, puis réessayez."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "موضع طرفية Cloud غير متاح. حدّث الجهاز ثم أعد المحاولة."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La ubicación del terminal de Cloud no está disponible. Actualiza la máquina y vuelve a intentarlo."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloud 終端機位置無法使用。請重新整理機器後再試一次。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloud 终端位置不可用。请刷新机器后重试。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloud 터미널 배치를 사용할 수 없습니다. 머신을 새로 고친 후 다시 시도하세요."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloud ターミナルの配置を利用できません。マシンを更新して、もう一度お試しください。"
+          }
+        }
       }
     },
     "cloud.operation.failure.unsupported": {
