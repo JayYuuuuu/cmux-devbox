@@ -49995,6 +49995,12 @@
             "state": "translated",
             "value": "⌘↩"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌘↩"
+          }
         }
       }
     },
@@ -58958,6 +58964,12 @@
           }
         },
         "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ -> %@"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "%@ -> %@"
@@ -70043,6 +70055,12 @@
             "state": "translated",
             "value": "browser design-mode enable|disable|toggle|status [--surface <id>]"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "browser design-mode enable|disable|toggle|status [--surface <id>]"
+          }
         }
       }
     },
@@ -71594,6 +71612,12 @@
             "state": "translated",
             "value": "viewport <width> <height> | reset"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "viewport <width> <height> | reset"
+          }
         }
       }
     },
@@ -71728,6 +71752,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "[--profile <名前|UUID>]"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "[--profile <name|uuid>]"
           }
         }
       }
@@ -78747,6 +78777,12 @@
             "state": "translated",
             "value": "ios <subcommand> [args] [--surface <id|ref|index>]"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ios <subcommand> [args] [--surface <id|ref|index>]"
+          }
         }
       }
     },
@@ -79740,6 +79776,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "simulator <subcommand> [args] [--surface <id|ref|index>]"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "simulator <subcommand> [args] [--surface <id|ref|index>]"
@@ -130383,6 +130425,12 @@
             "state": "translated",
             "value": "+%d"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%d"
+          }
         }
       }
     },
@@ -138146,6 +138194,12 @@
             "state": "translated",
             "value": "snapshot-id"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "snapshot-id"
+          }
         }
       }
     },
@@ -139715,6 +139769,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "%@"
@@ -151762,6 +151822,12 @@
           }
         },
         "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ • %@"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "%@ • %@"
@@ -165935,6 +166001,12 @@
             "state": "translated",
             "value": "%@ px"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ px"
+          }
         }
       }
     },
@@ -172768,6 +172840,12 @@
             "state": "translated",
             "value": "lawrence in ~/cmux"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lawrence in ~/cmux"
+          }
         }
       }
     },
@@ -172840,6 +172918,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "workspace@lab:~"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "workspace@lab:~"
@@ -218440,6 +218524,12 @@
             "state": "translated",
             "value": "ウルトラプラン"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ultraplan"
+          }
         }
       }
     },
@@ -218574,6 +218664,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "ウルトラプラン"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ultraplan"
           }
         }
       }
@@ -220257,6 +220353,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "ウルトラプラン"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ultraplan"
           }
         }
       }
@@ -223398,6 +223500,12 @@
             "state": "translated",
             "value": "AppKit"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AppKit"
+          }
         }
       }
     },
@@ -223411,6 +223519,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SwiftUI"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "SwiftUI"
@@ -240777,6 +240891,12 @@
             "state": "translated",
             "value": "pt"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pt"
+          }
         }
       }
     },
@@ -240849,6 +240969,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "px"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "px"
@@ -247051,6 +247177,12 @@
             "state": "translated",
             "value": "Claude Code Teams"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code Teams"
+          }
         }
       }
     },
@@ -247599,6 +247731,12 @@
             "state": "translated",
             "value": "oh-my-claudecode"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "oh-my-claudecode"
+          }
         }
       }
     },
@@ -247616,6 +247754,12 @@
             "state": "translated",
             "value": "oh-my-codex"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "oh-my-codex"
+          }
         }
       }
     },
@@ -247629,6 +247773,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "oh-my-opencode"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "oh-my-opencode"
@@ -247823,6 +247973,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SSH"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "SSH"
@@ -269114,6 +269270,12 @@
             "state": "translated",
             "value": "%1$@ — %2$@"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ — %2$@"
+          }
         }
       }
     },
@@ -271553,6 +271715,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SOC 2"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "SOC 2"
@@ -274354,6 +274522,12 @@
             "state": "translated",
             "value": "cmux Pro"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cmux Pro"
+          }
         }
       }
     },
@@ -274666,6 +274840,12 @@
             "state": "translated",
             "value": "$0"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "$0"
+          }
         }
       }
     },
@@ -274974,6 +275154,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 vCPU / 16 GB"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "4 vCPU / 16 GB"
@@ -275851,6 +276037,12 @@
             "state": "translated",
             "value": "$0.80"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "$0.80"
+          }
         }
       }
     },
@@ -275927,6 +276119,12 @@
             "state": "translated",
             "value": "$0.40"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "$0.40"
+          }
         }
       }
     },
@@ -275999,6 +276197,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "$0.20"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "$0.20"
@@ -277834,6 +278038,12 @@
             "state": "translated",
             "value": "cmux Pro"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cmux Pro"
+          }
         }
       }
     },
@@ -277906,6 +278116,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cmux Pro"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "cmux Pro"
@@ -278395,6 +278611,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cmux Pro"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "cmux Pro"
@@ -294500,6 +294722,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cmux Pro"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "cmux Pro"
@@ -325790,6 +326018,12 @@
             "state": "translated",
             "value": "%@ pt"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ pt"
+          }
         }
       }
     },
@@ -329537,6 +329771,12 @@
             "state": "translated",
             "value": "Tailscale"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tailscale"
+          }
         }
       }
     },
@@ -332571,6 +332811,12 @@
           }
         },
         "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · %2$@"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ · %2$@"
@@ -338483,6 +338729,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "say \"done\""
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "say \"done\""
@@ -362812,6 +363064,12 @@
             "state": "translated",
             "value": "cmux.json"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cmux.json"
+          }
         }
       }
     },
@@ -365158,6 +365416,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ pt"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "%@ pt"
@@ -369995,6 +370259,12 @@
             "state": "translated",
             "value": "%.2f×"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%.2f×"
+          }
         }
       }
     },
@@ -370425,6 +370695,12 @@
             "state": "translated",
             "value": "pt"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pt"
+          }
         }
       }
     },
@@ -370497,6 +370773,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ pt"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "%@ pt"
@@ -371677,6 +371959,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex --yolo"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Codex --yolo"
@@ -384330,6 +384618,12 @@
           }
         },
         "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ …"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "%@ …"
@@ -398296,6 +398590,12 @@
             "state": "translated",
             "value": "Discord"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discord"
+          }
         }
       }
     },
@@ -398841,6 +399141,12 @@
           }
         },
         "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "you@example.com"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "you@example.com"
@@ -401622,6 +401928,12 @@
             "state": "translated",
             "value": ":%lld"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ":%lld"
+          }
         }
       }
     },
@@ -402674,6 +402986,12 @@
           }
         },
         "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SSH"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "SSH"
@@ -404896,6 +405214,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SSH"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "SSH"
@@ -412123,6 +412447,12 @@
             "state": "translated",
             "value": "VoiceOver"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VoiceOver"
+          }
         }
       }
     },
@@ -412490,6 +412820,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "React Native"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "React Native"
@@ -415874,6 +416210,12 @@
             "state": "translated",
             "value": "5G"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5G"
+          }
         }
       }
     },
@@ -415887,6 +416229,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5G+"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "5G+"
@@ -415908,6 +416256,12 @@
             "state": "translated",
             "value": "5G UC"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5G UC"
+          }
         }
       }
     },
@@ -415925,6 +416279,12 @@
             "state": "translated",
             "value": "5G UWB"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5G UWB"
+          }
         }
       }
     },
@@ -415938,6 +416298,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4G"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "4G"
@@ -416018,6 +416384,12 @@
             "state": "translated",
             "value": "LTE"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LTE"
+          }
         }
       }
     },
@@ -416031,6 +416403,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LTE-A"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "LTE-A"
@@ -416052,6 +416430,12 @@
             "state": "translated",
             "value": "LTE+"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LTE+"
+          }
         }
       }
     },
@@ -416069,6 +416453,12 @@
             "state": "translated",
             "value": "3G"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3G"
+          }
         }
       }
     },
@@ -416082,6 +416472,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Wi-Fi"
@@ -416394,6 +416790,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UDID"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "UDID"
@@ -422671,6 +423073,12 @@
             "state": "translated",
             "value": "URL"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "URL"
+          }
         }
       }
     },
@@ -424341,6 +424749,12 @@
             "state": "translated",
             "value": "Face ID"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Face ID"
+          }
         }
       }
     },
@@ -424413,6 +424827,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HomeKit"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "HomeKit"
@@ -426319,6 +426739,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Wi-Fi"
@@ -442499,6 +442925,12 @@
             "state": "translated",
             "value": "you@example.com"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "you@example.com"
+          }
         }
       }
     },
@@ -449474,6 +449906,12 @@
             "state": "translated",
             "value": "CPU"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CPU"
+          }
         }
       }
     },
@@ -450493,6 +450931,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PID %lld"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "PID %lld"
@@ -451699,6 +452143,12 @@
             "state": "translated",
             "value": "PID %lld"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PID %lld"
+          }
         }
       }
     },
@@ -452243,6 +452693,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WebView"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "WebView"
@@ -452912,6 +453368,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CPU"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "CPU"
@@ -457306,6 +457768,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex --yolo"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Codex --yolo"
@@ -568901,6 +569369,12 @@
             "state": "translated",
             "value": "MB"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MB"
+          }
         }
       }
     },
@@ -576442,6 +576916,12 @@
             "state": "translated",
             "value": "%1$@ · %2$@"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · %2$@"
+          }
         }
       }
     },
@@ -576518,6 +576998,12 @@
             "state": "translated",
             "value": "iPad"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iPad"
+          }
         }
       }
     },
@@ -576535,6 +577021,12 @@
             "state": "translated",
             "value": "iPhone"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iPhone"
+          }
         }
       }
     },
@@ -576548,6 +577040,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Mac"
@@ -595692,6 +596190,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "shot [--format png|jpg] [--jpg] [--scale <n>] [--max-width <n>] [--quality <n>] [--region <x,y,w,h>] [--out <path>] [--label <text>] [--caption <text>] [--window <id|ref|index>]"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "shot [--format png|jpg] [--jpg] [--scale <n>] [--max-width <n>] [--quality <n>] [--region <x,y,w,h>] [--out <path>] [--label <text>] [--caption <text>] [--window <id|ref|index>]"
@@ -618667,6 +619171,12 @@
             "state": "translated",
             "value": " id=%@"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " id=%@"
+          }
         }
       }
     },
@@ -618743,6 +619253,12 @@
             "state": "translated",
             "value": "OK session=%@ id=%@ state=%@ socket=%@"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK session=%@ id=%@ state=%@ socket=%@"
+          }
         }
       }
     },
@@ -618760,6 +619276,12 @@
             "state": "translated",
             "value": "%@ [%@]"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ [%@]"
+          }
         }
       }
     },
@@ -618773,6 +619295,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ [%@] socket=%@"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "%@ [%@] socket=%@"
@@ -619380,6 +619908,12 @@
           }
         },
         "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK session=%@ surface=%@ mode=local-zellij"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "OK session=%@ surface=%@ mode=local-zellij"
