@@ -44,7 +44,11 @@ public struct GhosttyConfigDiagnostic: Equatable, Hashable, Sendable {
     /// (``GhosttyConfig/cmuxOwnedKeys``). Ghostty rejects those as unknown
     /// fields, which is expected.
     public var isForCmuxOwnedKey: Bool {
-        key.map(GhosttyConfig.cmuxOwnedKeys.contains) ?? false
+        if let key { return GhosttyConfig.cmuxOwnedKeys.contains(key) }
+        // Ghostty replays the config without file locations when the
+        // light/dark conditional state changes, so those read "<key>: <message>".
+        guard filePath == nil, let colon = message.firstIndex(of: ":") else { return false }
+        return GhosttyConfig.cmuxOwnedKeys.contains(String(message[..<colon]))
     }
 
     private static func parseFileLocation(_ message: String) -> (path: String?, line: Int?, key: String?) {
