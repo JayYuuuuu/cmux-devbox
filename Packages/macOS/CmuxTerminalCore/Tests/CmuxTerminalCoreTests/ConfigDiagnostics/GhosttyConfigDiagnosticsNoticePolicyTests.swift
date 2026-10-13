@@ -47,6 +47,15 @@ import Testing
 
         #expect(diagnostic.isFromCmuxInlineConfig)
     }
+
+    // Ghostty replays the config without file locations when the light/dark
+    // conditional state changes, so a cmux-owned key then reads
+    // "<key>: unknown field" and must still be recognized.
+    @Test func recognizesCmuxOwnedKeyInReplayedDiagnostic() {
+        #expect(GhosttyConfigDiagnostic(message: "surface-tab-bar-font-size: unknown field").isForCmuxOwnedKey)
+        #expect(!GhosttyConfigDiagnostic(message: "font-sise: unknown field").isForCmuxOwnedKey)
+        #expect(!GhosttyConfigDiagnostic(message: "/u/config:4: surface-tab-bar-font-size: x").isForCmuxOwnedKey)
+    }
 }
 
 @Suite struct GhosttyConfigDiagnosticsNoticePolicyTests {
