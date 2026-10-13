@@ -10,7 +10,7 @@ import Foundation
 ///
 /// - ``forcedPolicyKeys`` are reported as enforced by ``ManagedDevicePolicy``,
 ///   which already hides and stops Cloud, remote control, Iroh networking and
-///   device discovery everywhere the app consults MDM policy.
+///   everywhere the app consults MDM policy.
 /// - `CmuxFeatureFlags.devBoxEditionPinnedOffKeys` (app target) are pinned off
 ///   regardless of the remote flag service, for UI the policy does not cover
 ///   (account button, phone connect button, Pro upsell).
@@ -36,8 +36,6 @@ public enum CmuxDevBoxEdition {
         .disableCloud,
         .disableRemoteControl,
         .disableIrohNetworking,
-        .disableDeviceDiscovery,
-        .disableIncomingDeviceAccess,
         .disableAICredentialUpload,
     ]
 
