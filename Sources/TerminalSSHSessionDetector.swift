@@ -168,7 +168,7 @@ struct DetectedSSHSession: Equatable, Sendable {
                         executable: "/usr/bin/scp", arguments: arguments, timeout: timeout, operation: operation
                     )
                 } catch let error as NSError where Self.isTimeout(error) {
-                    try operation?.throwIfCancelled()
+                    try operation.throwIfCancelled()
                     result = try Self.runProcess(
                         executable: "/usr/bin/scp", arguments: arguments, timeout: timeout, operation: operation
                     )
