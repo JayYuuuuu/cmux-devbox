@@ -157,12 +157,22 @@ struct DetectedSSHSession: Equatable, Sendable {
 
                 let remotePath = remotePastePolicy.remotePath(for: normalizedLocalURL)
                 uploadedRemotePaths.append(remotePath)
-                let result = try Self.runProcess(
-                    executable: "/usr/bin/scp",
-                    arguments: scpArguments(localPath: normalizedLocalURL.path, remotePath: remotePath),
-                    timeout: 45,
-                    operation: operation
-                )
+                // DevBox: scale the timeout with the file and retry a timed-out
+                // copy once, so a stuck transfer costs seconds, not a failed paste.
+                let fileSize = (try? normalizedLocalURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                let timeout = Self.uploadTimeout(forFileSize: fileSize)
+                let arguments = scpArguments(localPath: normalizedLocalURL.path, remotePath: remotePath)
+                let result: CommandResult
+                do {
+                    result = try Self.runProcess(
+                        executable: "/usr/bin/scp", arguments: arguments, timeout: timeout, operation: operation
+                    )
+                } catch let error as NSError where Self.isTimeout(error) {
+                    try operation?.throwIfCancelled()
+                    result = try Self.runProcess(
+                        executable: "/usr/bin/scp", arguments: arguments, timeout: timeout, operation: operation
+                    )
+                }
                 guard result.status == 0 else {
                     // scp's own stderr is the only thing that says WHY, and it is
                     // often the whole answer — "Permission denied
@@ -340,45 +350,25 @@ struct DetectedSSHSession: Equatable, Sendable {
         }
 #endif
 
-        let process = Process()
-        let stdoutPipe = Pipe()
-        let stderrPipe = Pipe()
-        process.executableURL = URL(fileURLWithPath: executable)
-        process.arguments = arguments
-        process.standardInput = FileHandle.nullDevice
-        process.standardOutput = stdoutPipe
-        process.standardError = stderrPipe
-
-        try operation?.throwIfCancelled()
-        try process.run()
-        operation?.installCancellationHandler {
-            if process.isRunning {
-                process.terminate()
-            }
-        }
-        defer { operation?.clearCancellationHandler() }
-
-        let exitSignal = DispatchSemaphore(value: 0)
-        DispatchQueue.global(qos: .userInitiated).async {
-            process.waitUntilExit()
-            exitSignal.signal()
-        }
-
-        func terminateProcessAndWait() {
-            process.terminate()
-            _ = exitSignal.wait(timeout: .now() + 1)
-            if process.isRunning {
-                _ = Darwin.kill(process.processIdentifier, SIGKILL)
-                process.waitUntilExit()
-            }
-        }
-
-        if exitSignal.wait(timeout: .now() + timeout) == .timedOut {
-            if operation?.isCancelled == true {
-                terminateProcessAndWait()
-                throw TerminalImageTransferExecutionError.cancelled
-            }
-            terminateProcessAndWait()
+        // DevBox: Foundation `Process` launched from these libdispatch workers
+        // intermittently missed scp's exit (the server saw the copy finish in
+        // 0.2 s; the paste still waited out the whole timeout and was rolled
+        // back). Spawn through the POSIX runner instead: it clears the
+        // inherited signal mask and observes the exit itself.
+        let command = "exec " + ([executable] + arguments).map(Self.shellSingleQuoted).joined(separator: " ")
+        let start = Date()
+        let output: (status: Int32, stdout: String, stderr: String)
+        do {
+            output = try TerminalCustomUploadRunner.spawnCommand(
+                command: command,
+                environment: [:],
+                timeout: timeout,
+                operation: operation ?? TerminalImageTransferOperation()
+            )
+        } catch TerminalImageTransferExecutionError.cancelled {
+            throw TerminalImageTransferExecutionError.cancelled
+        } catch {
+            guard Date().timeIntervalSince(start) >= timeout else { throw error }
             throw NSError(domain: "cmux.detected-ssh.drop", code: 3, userInfo: [
                 NSLocalizedDescriptionKey: String(
                     localized: "detectedSSH.fileDrop.error.scpTimedOut",
@@ -386,19 +376,16 @@ struct DetectedSSHSession: Equatable, Sendable {
                 ),
             ])
         }
+        return CommandResult(status: output.status, stdout: output.stdout, stderr: output.stderr)
+    }
 
-        let stdout = String(
-            data: stdoutPipe.fileHandleForReading.readDataToEndOfFileOrEmpty(),
-            encoding: .utf8
-        ) ?? ""
-        let stderr = String(
-            data: stderrPipe.fileHandleForReading.readDataToEndOfFileOrEmpty(),
-            encoding: .utf8
-        ) ?? ""
-        if operation?.isCancelled == true {
-            throw TerminalImageTransferExecutionError.cancelled
-        }
-        return CommandResult(status: process.terminationStatus, stdout: stdout, stderr: stderr)
+    /// 10 s plus 1 s per 100 KB, capped at the former fixed 45 s.
+    static func uploadTimeout(forFileSize bytes: Int) -> TimeInterval {
+        min(45, 10 + TimeInterval(max(0, bytes)) / 100_000)
+    }
+
+    private static func isTimeout(_ error: NSError) -> Bool {
+        error.domain == "cmux.detected-ssh.drop" && error.code == 3
     }
 
     private static func hasSSHOptionKey(_ options: [String], key: String) -> Bool {
