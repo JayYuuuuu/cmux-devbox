@@ -16,7 +16,7 @@
 set -euo pipefail
 
 REPO="JayYuuuuu/cmux-devbox"
-BRANCH="devbox-custom"
+BRANCH="devbox-064"
 ED_KEY_FILE="$HOME/.config/cmux-devbox/sparkle-ed25519-private.key"
 WORK_ROOT="${CMUX_DEVBOX_WORK_ROOT:-$HOME/cmux-devbox-build}"
 MIN_SYSTEM_VERSION="14.0"
