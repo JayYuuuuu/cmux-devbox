@@ -48,6 +48,7 @@ struct cmuxApp: App {
     }
 
     init() {
+        CmuxDevBoxEdition.applyDefaults()
         // Gather settings package dependencies once. The runtime itself
         // is assigned after the saved language override below, because
         // it owns localized search-index text for the process lifetime.
