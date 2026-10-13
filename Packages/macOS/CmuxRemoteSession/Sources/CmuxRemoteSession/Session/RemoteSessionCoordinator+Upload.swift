@@ -96,7 +96,18 @@ extension RemoteSessionCoordinator {
                 }
                 scpArgs += ["--", normalizedLocalURL.path, "\(configuration.destination):\(remotePath)"]
 
-                let scpResult = try scpExec(arguments: scpArgs, timeout: 45, operation: operation)
+                // DevBox: a paste once finished on the server in 0.2 s while
+                // the local scp lingered until a fixed 45 s timeout. Scale the
+                // timeout with the file and retry a timed-out copy once.
+                let fileSize = (try? normalizedLocalURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                let timeout = Self.uploadTimeout(forFileSize: fileSize)
+                let scpResult: RemoteCommandResult
+                do {
+                    scpResult = try scpExec(arguments: scpArgs, timeout: timeout, operation: operation)
+                } catch let error as NSError where Self.isProcessTimeout(error) {
+                    try operation.throwIfCancelled()
+                    scpResult = try scpExec(arguments: scpArgs, timeout: timeout, operation: operation)
+                }
                 guard scpResult.status == 0 else {
                     let detail = Self.bestErrorLine(stderr: scpResult.stderr, stdout: scpResult.stdout) ??
                         "scp exited \(scpResult.status)"
@@ -109,6 +120,16 @@ extension RemoteSessionCoordinator {
             cleanupUploadedRemotePaths(uploadedRemotePaths)
             throw error
         }
+    }
+
+    /// 10 s plus 1 s per 100 KB, capped at the former fixed 45 s.
+    static func uploadTimeout(forFileSize bytes: Int) -> TimeInterval {
+        min(45, 10 + TimeInterval(max(0, bytes)) / 100_000)
+    }
+
+    /// Whether `error` is the process runner's timeout.
+    static func isProcessTimeout(_ error: NSError) -> Bool {
+        error.domain == "cmux.remote.process" && error.code == 2
     }
 
     /// The private remote path a dropped or pasted local file uploads to.
