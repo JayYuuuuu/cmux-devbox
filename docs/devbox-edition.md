@@ -1,6 +1,6 @@
 # cmux DevBox 定制版
 
-基于 [cmux](https://github.com/manaflow-ai/cmux) `v0.64.25` 的个人定制版：专门用来从 Mac 通过普通 SSH 连远程开发机、在远端跑 Claude Code。补丁集中在分支 `devbox-064` 上，每个提交只做一件事。`devbox.1`~`devbox.10` 曾基于 `v0.65.0`（分支 `devbox-custom`）；0.65 起普通 SSH 粘图频繁「传完了却等满 45 秒报超时」，`devbox.11` 起回到 0.64 线，只把 0.65 的中文字体显示改进（Ghostty 按终端格子宽度给 CJK 回退字体定尺寸）搬过来。非官方版本，与 Manaflow 无关；许可证沿用上游（macOS 客户端 GPL-3.0-or-later）。
+基于 [cmux](https://github.com/manaflow-ai/cmux) `v0.64.25` 的个人定制版：专门用来从 Mac 通过普通 SSH 连远程开发机、在远端跑 Claude Code。补丁集中在分支 `devbox-064` 上，每个提交只做一件事。`devbox.1`~`devbox.10` 曾基于 `v0.65.0`（分支 `devbox-custom`）；0.65 底的版本普通 SSH 粘图常常「新截图第一次粘贴卡住到超时、再粘就成功」（失败那次远端会话 0.2 秒就结束且没有文件，根因未查明，官方 0.64 不出现），`devbox.11` 起回到 0.64 线，只把 0.65 的中文字体显示改进（Ghostty 按终端格子宽度给 CJK 回退字体定尺寸）搬过来。非官方版本，与 Manaflow 无关；许可证沿用上游（macOS 客户端 GPL-3.0-or-later）。
 
 ## 下载安装
 
