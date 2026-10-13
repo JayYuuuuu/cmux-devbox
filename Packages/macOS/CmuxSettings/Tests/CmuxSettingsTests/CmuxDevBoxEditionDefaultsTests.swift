@@ -2,36 +2,18 @@ import CmuxSettings
 import Foundation
 import Testing
 
-/// The DevBox edition's out-of-box settings: registered as defaults (so user
-/// choices still win), read back through the real catalog keys, and a starting
-/// Ghostty config seeded only when the edition has none.
+/// The DevBox edition's out-of-box settings decode through the real catalog
+/// keys, and its starting Ghostty config is seeded only when missing.
+/// `applyDefaults` itself registers into the process-wide registration domain,
+/// so it is not called here.
 struct CmuxDevBoxEditionDefaultsTests {
-    private func makeSuite() throws -> (UserDefaults, URL, () -> Void) {
+    @Test func catalogReadsTheEditionDefaults() throws {
         let suiteName = "CmuxDevBoxEditionDefaultsTests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
-        let appSupport = FileManager.default.temporaryDirectory
-            .appendingPathComponent("devbox-defaults-\(UUID().uuidString)", isDirectory: true)
-        return (defaults, appSupport, {
-            defaults.removePersistentDomain(forName: suiteName)
-            try? FileManager.default.removeItem(at: appSupport)
-        })
-    }
-
-    private func seededConfig(in appSupport: URL) -> URL {
-        appSupport
-            .appendingPathComponent(CmuxDevBoxEdition.bundleIdentifier, isDirectory: true)
-            .appendingPathComponent("config.ghostty", isDirectory: false)
-    }
-
-    @Test func catalogReadsTheEditionDefaults() throws {
-        let (defaults, appSupport, cleanup) = try makeSuite()
-        defer { cleanup() }
-
-        CmuxDevBoxEdition.applyDefaults(
-            bundleIdentifier: CmuxDevBoxEdition.bundleIdentifier,
-            defaults: defaults,
-            appSupportDirectory: appSupport
-        )
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        for (key, value) in CmuxDevBoxEdition.defaultSettings {
+            defaults.set(value, forKey: key)
+        }
 
         let app = AppCatalogSection()
         let terminal = TerminalCatalogSection()
@@ -43,44 +25,29 @@ struct CmuxDevBoxEditionDefaultsTests {
         #expect(terminal.showCopyConfirmation.value(in: defaults) == true)
     }
 
-    @Test func userChoicesWinOverEditionDefaults() throws {
-        let (defaults, appSupport, cleanup) = try makeSuite()
-        defer { cleanup() }
-        defaults.set("light", forKey: "appearanceMode")
-
-        CmuxDevBoxEdition.applyDefaults(
-            bundleIdentifier: CmuxDevBoxEdition.bundleIdentifier,
-            defaults: defaults,
-            appSupportDirectory: appSupport
-        )
-
-        #expect(AppCatalogSection().appearance.value(in: defaults) == .light)
-    }
-
     @Test func seedsGhosttyConfigOnlyWhenMissing() throws {
-        let (defaults, appSupport, cleanup) = try makeSuite()
-        defer { cleanup() }
-        let config = seededConfig(in: appSupport)
+        let appSupport = FileManager.default.temporaryDirectory
+            .appendingPathComponent("devbox-defaults-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: appSupport) }
+        let config = appSupport
+            .appendingPathComponent(CmuxDevBoxEdition.bundleIdentifier, isDirectory: true)
+            .appendingPathComponent("config.ghostty", isDirectory: false)
 
-        CmuxDevBoxEdition.applyDefaults(
-            bundleIdentifier: CmuxDevBoxEdition.bundleIdentifier,
-            defaults: defaults,
-            appSupportDirectory: appSupport
-        )
+        CmuxDevBoxEdition.seedGhosttyConfigIfMissing(appSupportDirectory: appSupport)
         #expect(try String(contentsOf: config, encoding: .utf8) == CmuxDevBoxEdition.defaultGhosttyConfig)
 
         try Data("theme = Nord\n".utf8).write(to: config)
-        CmuxDevBoxEdition.applyDefaults(
-            bundleIdentifier: CmuxDevBoxEdition.bundleIdentifier,
-            defaults: defaults,
-            appSupportDirectory: appSupport
-        )
+        CmuxDevBoxEdition.seedGhosttyConfigIfMissing(appSupportDirectory: appSupport)
         #expect(try String(contentsOf: config, encoding: .utf8) == "theme = Nord\n")
     }
 
     @Test func otherBundlesAreUntouched() throws {
-        let (defaults, appSupport, cleanup) = try makeSuite()
-        defer { cleanup() }
+        let appSupport = FileManager.default.temporaryDirectory
+            .appendingPathComponent("devbox-defaults-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: appSupport) }
+        let suiteName = "CmuxDevBoxEditionDefaultsTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
 
         CmuxDevBoxEdition.applyDefaults(
             bundleIdentifier: "com.cmuxterm.app",
@@ -89,6 +56,6 @@ struct CmuxDevBoxEditionDefaultsTests {
         )
 
         #expect(defaults.object(forKey: "appearanceMode") == nil)
-        #expect(!FileManager.default.fileExists(atPath: seededConfig(in: appSupport).path))
+        #expect(!FileManager.default.fileExists(atPath: appSupport.path))
     }
 }
