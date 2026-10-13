@@ -20,11 +20,13 @@
 
 | 改动 | 说明 |
 | --- | --- |
-| 远程图片粘贴 | 普通 SSH 和 `cmux ssh` 每张图只用**一次 scp** 传到远端 `/tmp/cmux-paste-<会话>-<uuid>.png`，插入这个绝对路径（Claude Code 不展开 `~`，只有绝对路径才会变成 `[Image #1]`）。上游 0.65 改成先 ssh 建私有目录、再 scp、再 ssh 改权限取路径，三次握手让局域网粘贴也要转圈，这里回到 0.64 的单次传输，舍弃私有目录与权限收紧。 |
+| 远程图片粘贴 | 普通 SSH 和 `cmux ssh` 每张图只用**一次 scp** 传到远端 `/tmp/cmux-paste-<会话>-<uuid>.png`，插入这个绝对路径（Claude Code 不展开 `~`，只有绝对路径才会变成 `[Image #1]`）。上游 0.65 改成先 ssh 建私有目录、再 scp、再 ssh 改权限取路径，三次握手让局域网粘贴也要转圈，这里回到 0.64 的单次传输，舍弃私有目录与权限收紧。超时按大小算（10 秒 + 每 100KB 1 秒，最多 45 秒），超时自动重试一次（实测有一次服务器 0.2 秒已收完、本机 scp 却挂满 45 秒）。 |
 | 无 Cloud / 账号 / 手机 | 单一开关 `CmuxDevBoxEdition`（按 bundle id 生效）：复用 MDM 策略关掉 Cloud、远控配对、Iroh、设备发现；钉死相关远程 feature flag；登录入口、账号命令、手机通知转发、设置里的 账户/手机/Cloud/电脑/网络 页全部隐藏。 |
 | 独立身份 | bundle id `com.cmuxterm.app.staging.devbox`，名字 `cmux DevBox`，socket `/tmp/cmux-staging-devbox.sock`，会话/历史/配置按 bundle id 隔离；与官方 `cmux.app` 同时运行互不影响。 |
 | 自己的更新通道 | Sparkle 只读本仓库最新 Release 里的 `appcast.xml`，安装包必须带本版的 EdDSA 签名，官方 cmux 的更新包会被拒绝；应用用固定的自签名证书签名，更新后系统权限不丢。 |
 | 出厂设置 | `CmuxDevBoxEdition.defaultSettings` 注册为默认值（深色外观、选中即复制并提示、复制时合并硬换行、退出和关闭工作区不确认），用户改过的值和 `cmux.json` 仍优先；本版自己的 `config.ghostty` 不存在时写入一份起始终端配置（Everforest Dark Hard、方块不闪光标、标签栏字号 11、不透明背景）。 |
+| Shift+回车换行 | 终端里 Shift+回车发送 ESC CR（与 Option+回车相同），经 SSH 和未开 extended-keys 的 tmux 到远端 Claude Code 仍是换行而不是提交；用户自己的 keybind 优先。 |
+| 中文界面数值标签 | 89 条中英文相同的文案（单位、数值格式、品牌名）补上简体中文条目，设置里滑块旁不再显示内部键名。 |
 | 配置报错过滤 | 切换浅/深色时 Ghostty 重放配置产生的不带文件位置的报错，若针对 cmux 自己的设置项（如 `surface-tab-bar-font-size`）也不再弹「配置错误」。 |
 | 关于窗口 | 显示 `cmux DevBox`、定制版版本号和上游基线。 |
 
