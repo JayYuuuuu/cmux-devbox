@@ -22,7 +22,7 @@ set -euo pipefail
 APP_NAME="cmux DevBox"
 BUNDLE_ID="com.cmuxterm.app.staging.devbox"
 STAGING_SLUG="devbox"
-UPSTREAM_TAG="v0.65.0"
+UPSTREAM_TAG="v0.64.25"
 SPARKLE_FEED_URL="https://github.com/JayYuuuuu/cmux-devbox/releases/latest/download/appcast.xml"
 SPARKLE_PUBLIC_ED_KEY="GGisbyyaEckq0hn9j95M8VRWzfVpddZFZTssLqfz4qU="
 SIGN_IDENTITY_NAME="cmux DevBox Code Signing"
@@ -159,6 +159,13 @@ pb_set CFBundleIdentifier string "$BUNDLE_ID"
 # sorts above every edition release of this one.
 UPSTREAM_SHORT_VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST")"
 UPSTREAM_BUILD="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$PLIST")"
+# Releases 1-10 were built on v0.65.0 (build 108); the edition now follows
+# v0.64 (build 106). Keep the build number from going backwards so installed
+# copies still see newer releases.
+DEVBOX_MIN_UPSTREAM_BUILD=108
+if (( UPSTREAM_BUILD < DEVBOX_MIN_UPSTREAM_BUILD )); then
+  UPSTREAM_BUILD=$DEVBOX_MIN_UPSTREAM_BUILD
+fi
 if [[ -n "$RELEASE_NUMBER" ]]; then
   SHORT_VERSION="${UPSTREAM_SHORT_VERSION}-devbox.${RELEASE_NUMBER}"
   BUNDLE_VERSION="${UPSTREAM_BUILD}.${RELEASE_NUMBER}"
