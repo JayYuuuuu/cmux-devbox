@@ -88,6 +88,44 @@ struct RemoteSessionSSHDestinationArgumentTests {
         #expect(arguments.last?.contains(":/home/test user/.cache/cmux/paste/") == true)
     }
 
+    // DevBox: a paste once finished on the server in 0.2 s while the local
+    // scp lingered until the fixed 45 s timeout. A small file gets a short,
+    // size-scaled timeout and one automatic retry.
+    @Test("Dropped-file upload retries once after a timeout")
+    func droppedFileUploadRetriesOnceAfterTimeout() async throws {
+        let localFile = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cmux-drop-retry-" + UUID().uuidString + ".png")
+        try Data(count: 500_000).write(to: localFile)
+        defer { try? FileManager.default.removeItem(at: localFile) }
+
+        let scpAttempts = Counter()
+        let runner = RecordingProcessRunner { request in
+            if request.executable == "/usr/bin/scp", scpAttempts.increment() == 1 {
+                throw NSError(domain: "cmux.remote.process", code: 2, userInfo: [
+                    NSLocalizedDescriptionKey: "scp timed out after \(Int(request.timeout))s",
+                ])
+            }
+            return RemoteCommandResult(status: 0, stdout: "", stderr: "")
+        }
+        let coordinator = Self.makeCoordinator(runner: runner)
+        defer { coordinator.stop() }
+
+        let paths = await withCheckedContinuation { continuation in
+            coordinator.uploadDroppedFiles(
+                [localFile],
+                operation: RemoteProcessCancellationOperation()
+            ) { result in
+                continuation.resume(returning: (try? result.get()) ?? [])
+            }
+        }
+
+        let scps = runner.requests.filter { $0.executable == "/usr/bin/scp" }
+        #expect(paths.count == 1)
+        #expect(scps.count == 2)
+        #expect(scps.first?.timeout ?? 0 < 20)
+        #expect(scps.first?.arguments.last == scps.last?.arguments.last)
+    }
+
     @Test("Reverse relay fallback ends option parsing and keeps its forward")
     func reverseRelayFallbackEndsOptionParsingAndKeepsItsForward() throws {
         let coordinator = Self.makeCoordinator(
@@ -162,4 +200,13 @@ struct RemoteSessionSSHDestinationArgumentTests {
             )
         )
     }
+}
+
+/// Thread-safe call counter for scripted process runners.
+final class Counter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = 0
+
+    /// Increments and returns the new count.
+    func increment() -> Int { lock.withLock { value += 1; return value } }
 }
