@@ -1,4 +1,5 @@
 import GhosttyKit
+import CmuxSettings
 
 extension GhosttyApp {
     /// Removes host-action defaults before loading user files. Otherwise clearing
@@ -12,7 +13,8 @@ extension GhosttyApp {
         ]
         loadInlineGhosttyConfig(
             triggers.map { "keybind = \($0)=unbind" }.joined(separator: "\n")
-                + "\n" + Self.numberedWorkspaceGhosttyUnbinds,
+                + "\n" + Self.numberedWorkspaceGhosttyUnbinds
+                + (CmuxDevBoxEdition.isActive ? "\n" + Self.devBoxShiftEnterNewline : ""),
             into: config,
             prefix: "cmux-host-keybind-defaults",
             logLabel: "host keybind defaults"
@@ -50,6 +52,12 @@ extension GhosttyApp {
     /// hardcoded (https://github.com/manaflow-ai/cmux/issues/5189). Ghostty registers
     /// each digit under both its Unicode form (`super+1`) and its physical-key form
     /// (`super+digit_1`), so both are unbound here.
+    /// DevBox: Shift+Enter sends ESC CR, the same bytes as Option+Enter, so
+    /// agents such as Claude Code insert a newline even through SSH and a tmux
+    /// without extended keys (which would deliver a plain Enter). Loaded with
+    /// the host defaults, before user files, so a user keybind still wins.
+    static let devBoxShiftEnterNewline = "keybind = shift+enter=text:\\x1b\\r"
+
     private static let numberedWorkspaceGhosttyUnbinds: String = {
         (1...9).flatMap { digit in
             ["keybind = super+\(digit)=unbind", "keybind = super+digit_\(digit)=unbind"]
