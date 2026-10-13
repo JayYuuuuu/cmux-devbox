@@ -75,13 +75,23 @@ public enum CmuxDevBoxEdition {
     public static func applyDefaults(
         bundleIdentifier: String? = Bundle.main.bundleIdentifier,
         defaults: UserDefaults = .standard,
-        appSupportDirectory: URL? = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first,
-        fileManager: FileManager = .default
+        appSupportDirectory: URL? = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
     ) {
         guard isEdition(bundleIdentifier: bundleIdentifier) else { return }
+        // The registration domain is process-wide, so this is the only caller.
         defaults.register(defaults: defaultSettings)
-        guard let appSupportDirectory else { return }
-        let directory = appSupportDirectory.appendingPathComponent(Self.bundleIdentifier, isDirectory: true)
+        if let appSupportDirectory {
+            seedGhosttyConfigIfMissing(appSupportDirectory: appSupportDirectory)
+        }
+    }
+
+    /// Writes ``defaultGhosttyConfig`` to the edition's `config.ghostty` unless
+    /// that file already exists.
+    public static func seedGhosttyConfigIfMissing(
+        appSupportDirectory: URL,
+        fileManager: FileManager = .default
+    ) {
+        let directory = appSupportDirectory.appendingPathComponent(bundleIdentifier, isDirectory: true)
         let config = directory.appendingPathComponent("config.ghostty", isDirectory: false)
         guard !fileManager.fileExists(atPath: config.path) else { return }
         try? fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
