@@ -9,7 +9,7 @@ import Foundation
 /// unaffected. Everything the edition turns off flows from the sets below:
 ///
 /// - ``forcedPolicyKeys`` are reported as enforced by ``ManagedDevicePolicy``,
-///   which already hides and stops Cloud, remote control, Iroh networking and
+///   which already hides and stops Cloud, remote control and Iroh networking
 ///   everywhere the app consults MDM policy.
 /// - `CmuxFeatureFlags.devBoxEditionPinnedOffKeys` (app target) are pinned off
 ///   regardless of the remote flag service, for UI the policy does not cover

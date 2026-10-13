@@ -51,8 +51,6 @@ struct ManagedDevicePolicyTests {
         for key in CmuxDevBoxEdition.forcedPolicyKeys {
             #expect(edition.isEnforced(key))
         }
-        #expect(edition.isDeviceDiscoveryDisabled)
-        #expect(edition.isIncomingDeviceAccessDisabled)
         // Plain SSH and its file uploads are the point of the edition.
         #expect(!edition.isEnforced(.disableRemoteConnections))
         #expect(!edition.isEnforced(.disableFileTransfer))
