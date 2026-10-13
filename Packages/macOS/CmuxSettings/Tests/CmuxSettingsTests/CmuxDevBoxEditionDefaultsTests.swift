@@ -19,10 +19,7 @@ struct CmuxDevBoxEditionDefaultsTests {
         let terminal = TerminalCatalogSection()
         #expect(app.appearance.value(in: defaults) == .dark)
         #expect(app.confirmQuitMode.value(in: defaults) == .never)
-        #expect(app.warnBeforeClosingWorkspace.value(in: defaults) == false)
         #expect(terminal.copyOnSelect.value(in: defaults) == true)
-        #expect(terminal.reflowHardWrapOnCopy.value(in: defaults) == true)
-        #expect(terminal.showCopyConfirmation.value(in: defaults) == true)
     }
 
     @Test func seedsGhosttyConfigOnlyWhenMissing() throws {

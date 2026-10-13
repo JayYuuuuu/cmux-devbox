@@ -45,10 +45,7 @@ public enum CmuxDevBoxEdition {
     public static var defaultSettings: [String: Any] { [
         "appearanceMode": "dark",
         "confirmQuit": "never",
-        "warnBeforeClosingWorkspace": false,
         "terminal.copyOnSelect": true,
-        "terminal.reflowHardWrapOnCopy": true,
-        "terminal.showCopyConfirmation": true,
     ] }
 
     /// The edition's starting Ghostty config, written once when the edition has
