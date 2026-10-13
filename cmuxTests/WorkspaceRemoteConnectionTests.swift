@@ -2656,6 +2656,46 @@ final class WorkspaceRemoteConnectionTests: XCTestCase {
         XCTAssertEqual(source.bonsplitController.tabs(inPane: sourcePaneID).count, 0)
     }
 
+    // DevBox: a paste whose scp timed out (the server had the file in 0.2 s)
+    // was rolled back and reported as failed; the next paste always worked.
+    func testDetectedSSHUploadRetriesOnceAfterTimeout() throws {
+        let fileURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cmux-detected-ssh-retry-\(UUID().uuidString).png")
+        try Data(count: 300_000).write(to: fileURL)
+        defer { try? FileManager.default.removeItem(at: fileURL) }
+
+        let session = DetectedSSHSession(
+            destination: "dev@example.com",
+            port: nil,
+            identityFile: nil,
+            configFile: nil,
+            jumpHost: nil,
+            controlPath: nil,
+            useIPv4: false,
+            useIPv6: false,
+            forwardAgent: false,
+            compressionEnabled: false,
+            sshOptions: []
+        )
+
+        var scpTimeouts: [TimeInterval] = []
+        DetectedSSHSession.runProcessOverrideForTesting = { executable, _, timeout, _ in
+            guard executable == "/usr/bin/scp" else { return (status: 0, stdout: "", stderr: "") }
+            scpTimeouts.append(timeout)
+            if scpTimeouts.count == 1 {
+                throw NSError(domain: "cmux.detected-ssh.drop", code: 3, userInfo: nil)
+            }
+            return (status: 0, stdout: "", stderr: "")
+        }
+        defer { DetectedSSHSession.runProcessOverrideForTesting = nil }
+
+        let paths = try session.uploadDroppedFilesSyncForTesting([fileURL])
+
+        XCTAssertEqual(paths.count, 1)
+        XCTAssertEqual(scpTimeouts.count, 2)
+        XCTAssertLessThan(scpTimeouts.first ?? 45, 20)
+    }
+
     func testDetectedSSHUploadFailureCleansUpEarlierRemoteUploads() throws {
         let fileManager = FileManager.default
         let directoryURL = fileManager.temporaryDirectory.appendingPathComponent(
