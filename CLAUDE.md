@@ -1,7 +1,7 @@
 # cmux DevBox fork: read first
 
 This checkout is **cmux DevBox**, a personal fork of manaflow-ai/cmux (branch
-`devbox-custom`, upstream base in `scripts/build-devbox.sh` `UPSTREAM_TAG`).
+`devbox-064` (v0.64 line; `devbox-custom` is the retired v0.65 line), upstream base in `scripts/build-devbox.sh` `UPSTREAM_TAG`).
 These rules override the upstream notes below where they conflict.
 User-facing details: [docs/devbox-edition.md](docs/devbox-edition.md).
 
@@ -13,7 +13,7 @@ User-facing details: [docs/devbox-edition.md](docs/devbox-edition.md).
   ad-hoc `if` checks, and never let edition code change behavior for other ids.
 - **Keep the patch set small** so upstream upgrades stay cheap: one change per
   commit, prefer gating over deleting upstream code. Upgrades cherry-pick
-  `devbox-custom` onto a new stable tag; never track upstream `main`.
+  `devbox-064` onto a new stable tag; never track upstream `main`.
 - **Image paste is the core feature.** Uploads must insert the remote
   *absolute* path (Claude Code does not expand `~`). Any change near
   `RemotePasteFileTransferPolicy`, `TerminalSSHSessionDetector` or the
@@ -30,7 +30,7 @@ User-facing details: [docs/devbox-edition.md](docs/devbox-edition.md).
 - **Public repo hygiene.** Commits use the GitHub noreply author; nothing in the
   repo may name private machines, accounts, hosts, LAN addresses or home paths
   (the build also fails if `$HOME/` leaks into the bundle). Signing keys and the
-  signing keychain never enter the repo. No force pushes to `devbox-custom`.
+  signing keychain never enter the repo. No force pushes to `devbox-064` or `devbox-custom`.
 - Machine-specific build and release notes live in an untracked `CLAUDE.local.md`.
 
 ---

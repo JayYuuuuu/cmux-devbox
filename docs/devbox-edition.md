@@ -1,6 +1,6 @@
 # cmux DevBox 定制版
 
-基于 [cmux](https://github.com/manaflow-ai/cmux) `v0.65.0`（`dda24fbd2250dfacf41bf5e8e3d20d488acf6182`）的个人定制版：专门用来从 Mac 通过普通 SSH 连远程开发机、在远端跑 Claude Code。补丁集中在分支 `devbox-custom` 上，每个提交只做一件事。非官方版本，与 Manaflow 无关；许可证沿用上游（macOS 客户端 GPL-3.0-or-later）。
+基于 [cmux](https://github.com/manaflow-ai/cmux) `v0.64.25` 的个人定制版：专门用来从 Mac 通过普通 SSH 连远程开发机、在远端跑 Claude Code。补丁集中在分支 `devbox-064` 上，每个提交只做一件事。`devbox.1`~`devbox.10` 曾基于 `v0.65.0`（分支 `devbox-custom`）；0.65 起普通 SSH 粘图频繁「传完了却等满 45 秒报超时」，`devbox.11` 起回到 0.64 线，只把 0.65 的中文字体显示改进（Ghostty 按终端格子宽度给 CJK 回退字体定尺寸）搬过来。非官方版本，与 Manaflow 无关；许可证沿用上游（macOS 客户端 GPL-3.0-or-later）。
 
 ## 下载安装
 
@@ -20,10 +20,14 @@
 
 | 改动 | 说明 |
 | --- | --- |
-| 远程图片粘贴 | 普通 SSH 和 `cmux ssh` 上传后，插入远端**绝对路径**（如 `/home/<用户>/.cache/cmux/paste/<会话>/cmux-paste-<uuid>.png`），而不是 `\~/.cache/...`。Claude Code 不展开 `~`，只有绝对路径才会变成 `[Image #1]`。远端是 macOS 时上传最后一步的 `chmod --` 报错也一并修了。 |
+| 远程图片粘贴 | 沿用 0.64 原版：每张图一次 scp 传到远端 `/tmp/cmux-drop-<uuid>.png`，插入这个绝对路径（Claude Code 不展开 `~`，只有绝对路径才会变成 `[Image #1]`）。 |
+| 中文字体显示 | Ghostty 子模块指向 `JayYuuuuu/ghostty` 的 `devbox-064` 分支：0.64 用的 Ghostty 加上上游两个提交，让中文等 CJK 回退字体按终端格子宽度排版（0.65 的显示效果）。 |
 | 无 Cloud / 账号 / 手机 | 单一开关 `CmuxDevBoxEdition`（按 bundle id 生效）：复用 MDM 策略关掉 Cloud、远控配对、Iroh、设备发现；钉死相关远程 feature flag；登录入口、账号命令、手机通知转发、设置里的 账户/手机/Cloud/电脑/网络 页全部隐藏。 |
 | 独立身份 | bundle id `com.cmuxterm.app.staging.devbox`，名字 `cmux DevBox`，socket `/tmp/cmux-staging-devbox.sock`，会话/历史/配置按 bundle id 隔离；与官方 `cmux.app` 同时运行互不影响。 |
 | 自己的更新通道 | Sparkle 只读本仓库最新 Release 里的 `appcast.xml`，安装包必须带本版的 EdDSA 签名，官方 cmux 的更新包会被拒绝；应用用固定的自签名证书签名，更新后系统权限不丢。 |
+| 出厂设置 | `CmuxDevBoxEdition.defaultSettings` 注册为默认值（深色外观、选中即复制并提示、复制时合并硬换行、退出和关闭工作区不确认），用户改过的值和 `cmux.json` 仍优先；本版自己的 `config.ghostty` 不存在时写入一份起始终端配置（Everforest Dark Hard、方块不闪光标、不透明背景）。 |
+| Shift+回车换行 | 终端里 Shift+回车发送 ESC CR（与 Option+回车相同），经 SSH 和未开 extended-keys 的 tmux 到远端 Claude Code 仍是换行；用户自己的 keybind 优先。 |
+| 中文界面数值标签 | 中英文相同的文案（单位、数值格式、品牌名）补上简体中文条目，设置里不再显示内部键名。 |
 | 关于窗口 | 显示 `cmux DevBox`、定制版版本号和上游基线。 |
 
 仍与所有 cmux 渠道共享（上游设计如此）：`~/.config/cmux/` 下的设置文件、`~/Library/Application Support/cmux/` 下的搜索库等少量全局文件。
@@ -31,7 +35,7 @@
 ## 使用
 
 1. 打开后照常 `ssh <你的主机别名>`（读 `~/.ssh/config`，别名、密钥、端口、ProxyJump 都沿用，不需要 `cmux ssh`）。
-2. 在远端 Claude Code 里按 Command+V 粘贴截图/图片：cmux 先上传到远端 `~/.cache/cmux/paste/`，再把绝对路径粘进去，Claude Code 显示 `[Image #1]`。
+2. 在远端 Claude Code 里按 Command+V 粘贴截图/图片：cmux 先上传到远端 `/tmp/cmux-drop-<uuid>`，再把绝对路径粘进去，Claude Code 显示 `[Image #1]`。远端不自动删，建议开发机定时清理一天前的。
 3. 失败时 cmux 会提示上传失败的原因（scp 的报错原文）。常见原因：SSH 需要交互输入密码/2FA（后台上传用 BatchMode，答不了，请用密钥登录）、远端磁盘满、连接已断。
 4. 恢复 Claude Code 会话：远端 `claude --resume` 或 `claude --continue`，与终端无关。
 
@@ -42,7 +46,7 @@ Computer Use 等需要系统权限的功能：ad-hoc 签名每次重建都会变
 前置：macOS 14+、完整 Xcode（已同意许可：`sudo xcodebuild -license accept`）、Metal 工具链（`xcodebuild -downloadComponent MetalToolchain`）、Rust（rustup）、Zig 0.16.x（在 PATH 里）。不需要 Go：WireGuard 只给 Cloud 隧道用，构建时用 stub。
 
 ```bash
-git clone --branch devbox-custom --recurse-submodules https://github.com/JayYuuuuu/cmux-devbox.git
+git clone --branch devbox-064 --recurse-submodules https://github.com/JayYuuuuu/cmux-devbox.git
 cd cmux-devbox
 ./scripts/setup.sh
 ./scripts/build-devbox.sh               # 本机架构；--universal 出通用版
@@ -52,7 +56,7 @@ cd cmux-devbox
 
 ## 发布新版本（维护者）
 
-在构建 Mac 上，代码已提交并推送到 `devbox-custom` 后：
+在构建 Mac 上，代码已提交并推送到 `devbox-064` 后：
 
 ```bash
 ./scripts/release-devbox.sh <n> notes.md   # n = 上一版的 devbox 序号 + 1
@@ -68,7 +72,7 @@ cd cmux-devbox
 
 ## 升级上游
 
-不跟 main。选定新的稳定标签后，在新标签上 cherry-pick `devbox-custom` 的提交，解决冲突，把 `build-devbox.sh` 里的 `UPSTREAM_TAG` 改成新标签，跑 `python3 scripts/verify-local.py --affected <新标签>` 和相关包测试（`CmuxRemoteSession`、`CmuxSettings`、`CmuxSettingsUI`），重新构建，再按下面的验收清单走一遍。
+不跟 main。选定新的稳定标签后，在新标签上 cherry-pick `devbox-064` 的提交（Ghostty 子模块也要在新标签用的 Ghostty 上重放 `devbox-064` 分支的提交），解决冲突，把 `build-devbox.sh` 里的 `UPSTREAM_TAG` 改成新标签，跑 `python3 scripts/verify-local.py --affected <新标签>` 和相关包测试（`CmuxRemoteSession`、`CmuxSettings`、`CmuxSettingsUI`），重新构建，再按下面的验收清单走一遍。
 
 ## 验收清单
 
