@@ -275,6 +275,9 @@ extension GhosttyApp {
                             session.uploadDroppedFiles(
                                 fileURLs,
                                 operation: operation,
+                                usingControlPath: MainActor.assumeIsolated {
+                                    AppDelegate.shared?.sshUploadCoordinator?.controlPath(for: session)
+                                },
                                 completion: { result in
                                     finish(result)
                                     preparationService.cleanupTransferredTemporaryFiles(

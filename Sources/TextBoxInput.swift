@@ -2938,6 +2938,9 @@ struct TextBoxInputContainer: View {
             session.uploadDroppedFiles(
                 fileURLs,
                 operation: operation,
+                usingControlPath: MainActor.assumeIsolated {
+                    AppDelegate.shared?.sshUploadCoordinator?.controlPath(for: session)
+                },
                 completion: finish
             )
         }

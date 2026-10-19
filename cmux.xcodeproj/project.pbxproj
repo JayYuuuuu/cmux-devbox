@@ -2372,6 +2372,7 @@
 		8672F0018672F0018672F001 /* PiFeedOwnershipTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8672F0028672F0028672F002 /* PiFeedOwnershipTests.swift */; };
 		8672F0068672F0068672F006 /* PiFeedV2CallResultBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8672F0058672F0058672F005 /* PiFeedV2CallResultBox.swift */; };
 		B3575000000000000000000A /* PiVaultAgentPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B35750000000000000000009 /* PiVaultAgentPersistenceTests.swift */; };
+		B3864E31AD459E3A111A39D6 /* PlainSSHUploadCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FC3DB6ACE6A45F268586FE4 /* PlainSSHUploadCoordinator.swift */; };
 		5B0C00010000000000000005 /* PortalDividerCursorOcclusionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B0C00010000000000000006 /* PortalDividerCursorOcclusionTests.swift */; };
 		B1D5CEE0407545B6B57E3B0E /* PortalHitTestingPerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4335E241A33344C48361AD51 /* PortalHitTestingPerformanceTests.swift */; };
 		D0C658660000000000000004 /* PortalSplitDividerCacheInvalidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C658660000000000000003 /* PortalSplitDividerCacheInvalidator.swift */; };
@@ -3041,6 +3042,7 @@
 		D6B29560DEE34B08842A143A /* SSHStartupManualReconnectTests+Fixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37B04BC7D56945E59781D11F /* SSHStartupManualReconnectTests+Fixtures.swift */; };
 		EF70B7123200D1FB6F03DB26 /* SSHStartupManualReconnectTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F73A5C0BB93507E18261385 /* SSHStartupManualReconnectTests.swift */; };
 		F6355600A1B2C3D4E5F60718 /* SSHStartupSignalLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6355601A1B2C3D4E5F60718 /* SSHStartupSignalLifecycleTests.swift */; };
+		07AD95F87988FC9DBA557696 /* SSHUploadEndpointTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FB460F3645B67D3626C2EF /* SSHUploadEndpointTests.swift */; };
 		A11C00020000000000000001 /* StackAccountAvatarImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11C00020000000000000002 /* StackAccountAvatarImageLoader.swift */; };
 		A11C00030000000000000001 /* StackAccountAvatarImageLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11C00030000000000000002 /* StackAccountAvatarImageLoaderTests.swift */; };
 		A5C017000000000000000005 /* StackAccountAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C017000000000000000006 /* StackAccountAvatarView.swift */; };
@@ -6195,6 +6197,7 @@
 		8672F0028672F0028672F002 /* PiFeedOwnershipTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiFeedOwnershipTests.swift; sourceTree = "<group>"; };
 		8672F0058672F0058672F005 /* PiFeedV2CallResultBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiFeedV2CallResultBox.swift; sourceTree = "<group>"; };
 		B35750000000000000000009 /* PiVaultAgentPersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiVaultAgentPersistenceTests.swift; sourceTree = "<group>"; };
+		3FC3DB6ACE6A45F268586FE4 /* PlainSSHUploadCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlainSSHUploadCoordinator.swift; sourceTree = "<group>"; };
 		5B0C00010000000000000006 /* PortalDividerCursorOcclusionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortalDividerCursorOcclusionTests.swift; sourceTree = "<group>"; };
 		4335E241A33344C48361AD51 /* PortalHitTestingPerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortalHitTestingPerformanceTests.swift; sourceTree = "<group>"; };
 		D0C658660000000000000003 /* PortalSplitDividerCacheInvalidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortalSplitDividerCacheInvalidator.swift; sourceTree = "<group>"; };
@@ -6851,6 +6854,7 @@
 		37B04BC7D56945E59781D11F /* SSHStartupManualReconnectTests+Fixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SSHStartupManualReconnectTests+Fixtures.swift"; sourceTree = "<group>"; };
 		4F73A5C0BB93507E18261385 /* SSHStartupManualReconnectTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHStartupManualReconnectTests.swift; sourceTree = "<group>"; };
 		F6355601A1B2C3D4E5F60718 /* SSHStartupSignalLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHStartupSignalLifecycleTests.swift; sourceTree = "<group>"; };
+		C0FB460F3645B67D3626C2EF /* SSHUploadEndpointTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHUploadEndpointTests.swift; sourceTree = "<group>"; };
 		A11C00020000000000000002 /* StackAccountAvatarImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StackAccountAvatarImageLoader.swift; sourceTree = "<group>"; };
 		A11C00030000000000000002 /* StackAccountAvatarImageLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StackAccountAvatarImageLoaderTests.swift; sourceTree = "<group>"; };
 		A5C017000000000000000006 /* StackAccountAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StackAccountAvatarView.swift; sourceTree = "<group>"; };
@@ -10365,6 +10369,7 @@
 				B2EFC94293EC97FE78539D9E /* NotificationTextSanitizer.swift */,
 				0581DFBCDBEE482A8D4CDB6C /* CloudVMLoadingPanelView.swift */,
 				9720CD7F02C94F41A07E193D /* CloudTerminalCreationCoordinator.swift */,
+				3FC3DB6ACE6A45F268586FE4 /* PlainSSHUploadCoordinator.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -11566,6 +11571,7 @@
 				9A1261600000000000000003 /* CloudDesktopAccessTests.swift */,
 				A6D3896BB28B4549B3D33A83 /* CloudPortAccessLateCoordinatorTests.swift */,
 				C51600000000000000000002 /* CLIExecInheritedSignalStateTests.swift */,
+				C0FB460F3645B67D3626C2EF /* SSHUploadEndpointTests.swift */,
 			);
 			path = cmuxTests;
 			sourceTree = "<group>";
@@ -13661,6 +13667,7 @@
 				D1F0A0990000000000000001 /* PhoneReplyInboxClient.swift in Sources */,
 				D1F0A0990000000000000003 /* PhoneReplyInboxCoordinator.swift in Sources */,
 				B79500210000000000000001 /* PIDPresence.swift in Sources */,
+				B3864E31AD459E3A111A39D6 /* PlainSSHUploadCoordinator.swift in Sources */,
 				D0C658660000000000000004 /* PortalSplitDividerCacheInvalidator.swift in Sources */,
 				D0C658660000000000000002 /* PortalSplitDividerRegion.swift in Sources */,
 				B79500310000000000000001 /* PortLsofScanResult.swift in Sources */,
@@ -15824,6 +15831,7 @@
 				D6B29560DEE34B08842A143A /* SSHStartupManualReconnectTests+Fixtures.swift in Sources */,
 				EF70B7123200D1FB6F03DB26 /* SSHStartupManualReconnectTests.swift in Sources */,
 				F6355600A1B2C3D4E5F60718 /* SSHStartupSignalLifecycleTests.swift in Sources */,
+				07AD95F87988FC9DBA557696 /* SSHUploadEndpointTests.swift in Sources */,
 				A11C00030000000000000001 /* StackAccountAvatarImageLoaderTests.swift in Sources */,
 				A11C00050000000000000001 /* StackAccountAvatarViewTests.swift in Sources */,
 				D01100800000000000000004 /* SurfaceCatalogQueryServiceTests.swift in Sources */,

@@ -4,7 +4,7 @@ import CmuxRemoteSession
 import Foundation
 import Darwin
 
-struct DetectedSSHSession: Equatable {
+struct DetectedSSHSession: Equatable, Sendable {
     let destination: String
     let port: Int?
     let identityFile: String?
@@ -16,17 +16,19 @@ struct DetectedSSHSession: Equatable {
     let forwardAgent: Bool
     let compressionEnabled: Bool
     let sshOptions: [String]
+    var allowsUploadPrewarming = true
 
     func uploadDroppedFiles(
         _ fileURLs: [URL],
         operation: TerminalImageTransferOperation,
+        usingControlPath: String? = nil,
         completion: @escaping (Result<[String], Error>) -> Void
     ) {
         let session = self
         DispatchQueue.global(qos: .userInitiated).async {
             let result: Result<[String], Error>
             do {
-                let remotePaths = try session.uploadDroppedFilesSync(fileURLs, operation: operation)
+                let remotePaths = try session.uploadDroppedFilesSync(fileURLs, operation: operation, usingControlPath: usingControlPath)
                 do {
                     try operation.throwIfCancelled()
                     result = .success(remotePaths)
@@ -86,7 +88,8 @@ struct DetectedSSHSession: Equatable {
     func uploadDroppedFilesSync(
         _ fileURLs: [URL],
         operation: TerminalImageTransferOperation,
-        managedDevicePolicy: ManagedDevicePolicy = ManagedDevicePolicy()
+        managedDevicePolicy: ManagedDevicePolicy = ManagedDevicePolicy(),
+        usingControlPath: String? = nil
     ) throws -> [String] {
         // `DisableFileTransfer` (MDM): the detected-SSH transfer is cmux
         // mediating an upload, so it fails closed. A user's own `scp` typed
@@ -111,12 +114,27 @@ struct DetectedSSHSession: Equatable {
                 }
 
                 let remotePath = RemoteSessionCoordinator.remoteDropPath(for: normalizedLocalURL)
-                let result = try Self.runProcess(
-                    executable: "/usr/bin/scp",
-                    arguments: scpArguments(localPath: normalizedLocalURL.path, remotePath: remotePath),
-                    timeout: 45,
-                    operation: operation
-                )
+                func transfer(using path: String?) throws -> CommandResult {
+                    try Self.runProcess(
+                        executable: "/usr/bin/scp",
+                        arguments: scpArguments(localPath: normalizedLocalURL.path, remotePath: remotePath, usingControlPath: path),
+                        timeout: 45, operation: operation
+                    )
+                }
+                let result: CommandResult
+                if usingControlPath != nil {
+                    // Handle both a nonzero exit and a thrown timeout. Never
+                    // retry cancellation or enter an unbounded retry loop.
+                    let sharedAttempt = Result { try transfer(using: usingControlPath) }
+                    if case .success(let shared) = sharedAttempt, shared.status == 0 {
+                        result = shared
+                    } else {
+                        try operation.throwIfCancelled()
+                        result = try transfer(using: nil)
+                    }
+                } else {
+                    result = try transfer(using: nil)
+                }
                 guard result.status == 0 else {
                     throw NSError(domain: "cmux.detected-ssh.drop", code: 2, userInfo: [
                         NSLocalizedDescriptionKey: String(
@@ -136,7 +154,7 @@ struct DetectedSSHSession: Equatable {
         }
     }
 
-    private func scpArguments(localPath: String, remotePath: String) -> [String] {
+    private func scpArguments(localPath: String, remotePath: String, usingControlPath: String? = nil) -> [String] {
         var args: [String] = [
             "-q",
             "-o", "ConnectTimeout=6",
@@ -145,6 +163,8 @@ struct DetectedSSHSession: Equatable {
             "-o", "BatchMode=yes",
             "-o", "ControlMaster=no",
         ]
+
+        if let usingControlPath { args += ["-o", "ControlPath=\(usingControlPath)"] }
 
         if useIPv4 {
             args.append("-4")
@@ -186,6 +206,30 @@ struct DetectedSSHSession: Equatable {
 
         args += [localPath, "\(Self.scpRemoteDestination(destination)):\(remotePath)"]
         return args
+    }
+
+    /// Session-only environment is irrelevant to the upload transport. Keep
+    /// identity, route, config-file and arbitrary authentication options in the
+    /// key, and leave explicitly user-managed masters alone.
+    var uploadEndpoint: SSHUploadEndpoint? {
+        guard allowsUploadPrewarming, controlPath == nil,
+              !Self.hasSSHOptionKey(sshOptions, key: "ControlPath"),
+              !Self.hasSSHOptionKey(sshOptions, key: "ControlMaster") else { return nil }
+        let raw = Array(sshArguments(command: "true").dropLast(2))
+        let resolver = SSHAgentSocketResolver()
+        var args: [String] = []
+        var index = 0
+        while index < raw.count {
+            if raw[index] == "-o", index + 1 < raw.count,
+               ["setenv", "sendenv"].contains(resolver.optionKey(raw[index + 1])) {
+                index += 2
+                continue
+            }
+            args.append(raw[index])
+            index += 1
+        }
+        args.append(destination)
+        return SSHUploadEndpoint(arguments: args)
     }
 
     private func sshArguments(command: String) -> [String] {
@@ -403,6 +447,16 @@ enum TerminalSSHSessionDetector {
         let tpgid: Int32
         let tty: String
         let executableName: String
+    }
+
+    /// Uses the terminal's existing foreground PID instead of launching a
+    /// process-tree scan periodically. Shells and non-SSH jobs are ignored.
+    static func detect(foregroundPID: Int32) -> DetectedSSHSession? {
+        guard let arguments = commandLineArguments(forPID: foregroundPID),
+              let first = arguments.first,
+              RemoteShellSessionParsing.normalizedExecutableName(first) == "ssh",
+              isInteractiveSSHArguments(arguments) else { return nil }
+        return parseSSHCommandLine(arguments)
     }
 
     static func detect(forTTY ttyName: String) -> DetectedSSHSession? {
@@ -746,6 +800,7 @@ enum TerminalSSHSessionDetector {
         var forwardAgent = false
         var compressionEnabled = false
         var sshOptions: [String] = []
+        var allowsUploadPrewarming = true
 
         func consumeValue(_ value: String, for option: Character) -> Bool {
             let trimmedValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -772,6 +827,12 @@ enum TerminalSSHSessionDetector {
                 loginName = trimmedValue
                 return true
             case "o":
+                let resolver = SSHAgentSocketResolver()
+                if resolver.optionKey(trimmedValue) == "controlmaster",
+                   let value = resolver.optionValue(named: "ControlMaster", in: [trimmedValue]),
+                   ["no", "false", "off"].contains(value.lowercased()) {
+                    allowsUploadPrewarming = false
+                }
                 return RemoteShellSessionParsing.consumeSSHOption(
                     trimmedValue,
                     port: &port,
@@ -858,7 +919,8 @@ enum TerminalSSHSessionDetector {
             useIPv6: useIPv6,
             forwardAgent: forwardAgent,
             compressionEnabled: compressionEnabled,
-            sshOptions: sshOptions
+            sshOptions: sshOptions,
+            allowsUploadPrewarming: allowsUploadPrewarming
         )
     }
 }

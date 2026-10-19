@@ -1145,6 +1145,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     }
 #endif
 
+    var sshUploadCoordinator: PlainSSHUploadCoordinator?
+
     var mainWindowContexts: [ObjectIdentifier: MainWindowContext] {
         get { mainWindowLifecycleCoordinator.registeredContextsByLookupKey }
         set { mainWindowLifecycleCoordinator.replaceRegisteredContextLookups(newValue) }
@@ -2431,6 +2433,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        sshUploadCoordinator?.stop()
+        sshUploadCoordinator = nil
         cloudWorkspaceOperationController?.cancelAll()
         StartupBreadcrumbLog.append("appDelegate.willTerminate.begin")
         // Backstop for any terminate path that did not route through
@@ -2653,6 +2657,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             .trustedTopologySignature(of: currentDisplayGeometries().available)
         prepareStartupSessionSnapshotIfNeeded()
         startSessionAutosaveTimerIfNeeded()
+        if CmuxDevBoxEdition.isActive, !isRunningUnderXCTest(ProcessInfo.processInfo.environment) {
+            let coordinator = PlainSSHUploadCoordinator(
+                broker: TerminalController.shared.nativeSSHConnectionBroker,
+                foregroundPIDs: { [weak self] in
+                    guard let self else { return [] }
+                    var pids = Set(self.paneMemoryGuardrailDescriptors().compactMap {
+                        $0.foregroundPID.flatMap(Int32.init(exactly:))
+                    })
+                    for context in self.mainWindowContexts.values {
+                        let docks = context.tabManager.tabs.compactMap(\._dockSplit)
+                            + [context.existingWindowDock()].compactMap { $0 }
+                        for dock in docks {
+                            for case let terminal as TerminalPanel in dock.panels.values {
+                                if terminal.surface.hasLiveSurface,
+                                   let pid = terminal.surface.foregroundProcessID().flatMap(Int32.init(exactly:)) {
+                                    pids.insert(pid)
+                                }
+                            }
+                        }
+                    }
+                    return Array(pids)
+                }
+            )
+            sshUploadCoordinator = coordinator
+            coordinator.start()
+        }
 #if DEBUG
         setupJumpUnreadUITestIfNeeded()
         setupTerminalCmdClickUITestIfNeeded()

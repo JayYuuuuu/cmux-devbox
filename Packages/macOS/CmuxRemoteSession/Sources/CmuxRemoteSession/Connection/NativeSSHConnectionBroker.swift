@@ -24,6 +24,9 @@ public final class NativeSSHConnectionBroker {
     private let inheritedMasterReapCoordinator:
         NativeSSHControlMasterReapCoordinator
 
+    var uploadConnections: [SSHUploadEndpoint: SSHUploadConnectionEntry] = [:]
+    var uploadConnectionDirectory: URL?
+
     var ownerLeases: [UUID: [NativeSSHControlMasterKey: WorkspaceRemoteConfiguration]] = [:]
     var ownersByControlMaster: [NativeSSHControlMasterKey: Set<UUID>] = [:]
     var attemptStates: [NativeSSHConnectionKey: NativeSSHConnectionAttemptState] = [:]
