@@ -59,9 +59,14 @@ extension RemoteSessionCoordinator {
         var uploadedRemotePaths: [String] = []
         do {
             try operation.throwIfCancelled()
-            // Mark before preparing: a failed prepare may still leave the directory.
+            // Mark before starting: preparation or a partial copy may need cleanup.
             hasTouchedRemotePasteDirectory = true
-            let remoteHomeDirectory = try prepareRemotePasteDirectoryLocked()
+            let remoteHomeDirectory: String
+            if remotePastePolicy.usesTemporaryDirectory {
+                remoteHomeDirectory = ""
+            } else {
+                remoteHomeDirectory = try prepareRemotePasteDirectoryLocked()
+            }
             for localURL in fileURLs {
                 try operation.throwIfCancelled()
                 let normalizedLocalURL = localURL.standardizedFileURL
@@ -100,11 +105,11 @@ extension RemoteSessionCoordinator {
                 // the local scp lingered until a fixed 45 s timeout. Scale the
                 // timeout with the file and retry a timed-out copy once.
                 let fileSize = (try? normalizedLocalURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
-                let timeout = Self.uploadTimeout(forFileSize: fileSize)
+                let timeout = remotePastePolicy.usesTemporaryDirectory ? Self.uploadTimeout(forFileSize: fileSize) : 45
                 let scpResult: RemoteCommandResult
                 do {
                     scpResult = try scpExec(arguments: scpArgs, timeout: timeout, operation: operation)
-                } catch let error as NSError where Self.isProcessTimeout(error) {
+                } catch let error as NSError where remotePastePolicy.usesTemporaryDirectory && Self.isProcessTimeout(error) {
                     try operation.throwIfCancelled()
                     scpResult = try scpExec(arguments: scpArgs, timeout: timeout, operation: operation)
                 }
@@ -113,7 +118,9 @@ extension RemoteSessionCoordinator {
                         "scp exited \(scpResult.status)"
                     throw RemoteDropUploadError.uploadFailed(detail)
                 }
-                try finalizeRemotePasteFileLocked(remotePath)
+                if !remotePastePolicy.usesTemporaryDirectory {
+                    try finalizeRemotePasteFileLocked(remotePath)
+                }
             }
             return uploadedRemotePaths
         } catch {

@@ -131,7 +131,10 @@ struct RemoteSessionSSHDestinationArgumentTests {
             } ? "__CMUX_REMOTE_PASTE_HOME__/home/test user\n" : ""
             return RemoteCommandResult(status: 0, stdout: stdout, stderr: "")
         }
-        let coordinator = Self.makeCoordinator(runner: runner)
+        let coordinator = Self.makeCoordinator(
+            runner: runner,
+            remotePastePolicy: RemotePasteFileTransferPolicy(usesTemporaryDirectory: true)
+        )
         defer { coordinator.stop() }
 
         let paths = try await withCheckedThrowingContinuation { continuation in

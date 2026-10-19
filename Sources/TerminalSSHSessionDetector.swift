@@ -45,7 +45,9 @@ struct DetectedSSHSession: Equatable, Sendable {
         forwardAgent: Bool,
         compressionEnabled: Bool,
         sshOptions: [String],
-        remotePastePolicy: RemotePasteFileTransferPolicy = RemotePasteFileTransferPolicy()
+        remotePastePolicy: RemotePasteFileTransferPolicy = RemotePasteFileTransferPolicy(
+            usesTemporaryDirectory: CmuxDevBoxEdition.isActive
+        )
     ) {
         self.destination = destination
         self.port = port
@@ -143,7 +145,12 @@ struct DetectedSSHSession: Equatable, Sendable {
         var uploadedRemotePaths: [String] = []
         do {
             try operation.throwIfCancelled()
-            let remoteHomeDirectory = try prepareRemotePasteDirectory()
+            let remoteHomeDirectory: String
+            if remotePastePolicy.usesTemporaryDirectory {
+                remoteHomeDirectory = ""
+            } else {
+                remoteHomeDirectory = try prepareRemotePasteDirectory()
+            }
             for localURL in fileURLs {
                 try operation.throwIfCancelled()
                 let normalizedLocalURL = localURL.standardizedFileURL
@@ -164,7 +171,7 @@ struct DetectedSSHSession: Equatable, Sendable {
                 // DevBox: scale the timeout with the file and retry a timed-out
                 // copy once, so a stuck transfer costs seconds, not a failed paste.
                 let fileSize = (try? normalizedLocalURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
-                let uploadTimeout = Self.uploadTimeout(forFileSize: fileSize)
+                let uploadTimeout = remotePastePolicy.usesTemporaryDirectory ? Self.uploadTimeout(forFileSize: fileSize) : 45
                 let arguments = scpArguments(localPath: normalizedLocalURL.path, remotePath: remotePath)
                 let result: CommandResult
                 do {
@@ -174,7 +181,7 @@ struct DetectedSSHSession: Equatable, Sendable {
                         timeout: uploadTimeout,
                         operation: operation
                     )
-                } catch let error as NSError where Self.isTimeout(error) {
+                } catch let error as NSError where remotePastePolicy.usesTemporaryDirectory && Self.isTimeout(error) {
                     try operation.throwIfCancelled()
                     result = try runProcess(
                         executable: "/usr/bin/scp",
@@ -211,7 +218,9 @@ struct DetectedSSHSession: Equatable, Sendable {
                     ])
                 }
 
-                try finalizeRemotePasteFile(remotePath)
+                if !remotePastePolicy.usesTemporaryDirectory {
+                    try finalizeRemotePasteFile(remotePath)
+                }
             }
 
             return uploadedRemotePaths

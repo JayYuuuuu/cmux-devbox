@@ -3,6 +3,7 @@ import CmuxCore
 import CmuxRemoteDaemon
 import CmuxRemoteSession
 import CmuxRemoteWorkspace
+import CmuxSettings
 import Foundation
 
 @MainActor
@@ -134,7 +135,8 @@ extension Workspace {
             buildInfo: WorkspaceRemoteSessionBuildInfo(),
             codexWrapperScript: RemoteSessionBundledResourceLoader().codexWrapperScript(),
             daemonStrings: RemoteDaemonStrings.appLocalized,
-            strings: RemoteSessionStrings.appLocalized
+            strings: RemoteSessionStrings.appLocalized,
+            remotePastePolicy: RemotePasteFileTransferPolicy(usesTemporaryDirectory: CmuxDevBoxEdition.isActive)
         )
         activeRemoteSessionControllerID = controllerID
         remoteSessionController = controller

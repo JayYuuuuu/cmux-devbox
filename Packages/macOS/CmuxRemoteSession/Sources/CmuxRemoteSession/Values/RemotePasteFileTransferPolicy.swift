@@ -1,6 +1,6 @@
 public import Foundation
 
-/// Owns the private remote directory and cleanup contract for pasted files.
+/// Owns remote paste paths and cleanup; the host can opt into direct /tmp copies.
 public struct RemotePasteFileTransferPolicy: Equatable, Sendable {
     /// Whether the host opts into the DevBox single-copy /tmp transport.
     public let usesTemporaryDirectory: Bool
@@ -16,6 +16,13 @@ public struct RemotePasteFileTransferPolicy: Equatable, Sendable {
     public let sessionID: UUID
 
     /// Creates a policy for one remote session.
+    ///
+    /// - Parameters:
+    ///   - sessionID: Identity used to clean up only this session's files.
+    ///   - maximumByteCount: Private-directory storage cap; unused for direct /tmp copies.
+    ///   - maximumAge: Private-directory cleanup age; unused for direct /tmp copies.
+    ///   - usesTemporaryDirectory: Opt into one SCP per file without directory setup or chmod.
+    ///     Defaults to `false` so ordinary hosts retain the upstream private-directory behavior.
     public init(
         sessionID: UUID = UUID(),
         maximumByteCount: Int64 = 200 * 1024 * 1024,
@@ -30,7 +37,12 @@ public struct RemotePasteFileTransferPolicy: Equatable, Sendable {
 
     /// Returns the shell path used by SCP for an uploaded file.
     public func remotePath(for fileURL: URL, uuid: UUID = UUID()) -> String {
-        "~/" + relativePath(for: fileURL, uuid: uuid)
+        if usesTemporaryDirectory {
+            let suffix = sanitizedExtension(fileURL.pathExtension)
+            return "/tmp/" + temporaryFilePrefix + uuid.uuidString.lowercased()
+                + (suffix.isEmpty ? "" : "." + suffix)
+        }
+        return "~/" + relativePath(for: fileURL, uuid: uuid)
     }
 
     /// Returns an absolute remote path for an uploaded file.
@@ -46,6 +58,7 @@ public struct RemotePasteFileTransferPolicy: Equatable, Sendable {
         homeDirectory: String,
         uuid: UUID = UUID()
     ) -> String {
+        if usesTemporaryDirectory { return remotePath(for: fileURL, uuid: uuid) }
         let normalizedHome = homeDirectory.hasSuffix("/") && homeDirectory != "/"
             ? String(homeDirectory.dropLast())
             : homeDirectory
@@ -85,6 +98,7 @@ public struct RemotePasteFileTransferPolicy: Equatable, Sendable {
 
     /// Returns a shell script that creates the private directory and removes stale or oversized files.
     public func maintenanceScript() -> String {
+        if usesTemporaryDirectory { return "true" }
         let directory = shellDirectoryExpression
         let ageMinutes = max(1, Int(maximumAge / 60))
         return [
@@ -122,6 +136,7 @@ public struct RemotePasteFileTransferPolicy: Equatable, Sendable {
 
     /// Returns a shell script that enforces mode `0600` after SCP creates a file.
     public func finalizeScript(for remotePath: String) -> String {
+        if usesTemporaryDirectory { return "true" }
         guard let fileName = ownedFileName(from: remotePath) else {
             return "false"
         }
@@ -133,6 +148,10 @@ public struct RemotePasteFileTransferPolicy: Equatable, Sendable {
 
     /// Returns a shell script that removes only files owned by this policy.
     public func cleanupScript(for remotePaths: [String]) -> String {
+        if usesTemporaryDirectory {
+            guard !remotePaths.isEmpty, remotePaths.allSatisfy(isOwnedTemporaryPath) else { return "true" }
+            return "rm -f -- " + remotePaths.map { "'" + $0 + "'" }.joined(separator: " ")
+        }
         let fileNames = remotePaths.compactMap { remotePath -> String? in
             ownedFileName(from: remotePath).map(String.init)
         }
@@ -147,6 +166,7 @@ public struct RemotePasteFileTransferPolicy: Equatable, Sendable {
 
     /// Returns a shell script that removes this session's paste files after relay teardown.
     public func teardownCleanupScript() -> String {
+        if usesTemporaryDirectory { return "rm -f -- /tmp/" + temporaryFilePrefix + "*" }
         let directory = shellDirectoryExpression
         return [
             "set -eu",
@@ -160,6 +180,18 @@ public struct RemotePasteFileTransferPolicy: Equatable, Sendable {
 
     private var relativeDirectoryPath: String {
         ".cache/cmux/paste/" + sessionID.uuidString.lowercased()
+    }
+
+    private var temporaryFilePrefix: String { "cmux-paste-" + sessionID.uuidString.lowercased() + "-" }
+
+    /// Cleanup must keep other sessions' files, including when a copy only partly completed.
+    private func isOwnedTemporaryPath(_ path: String) -> Bool {
+        let prefix = "/tmp/" + temporaryFilePrefix
+        guard path.hasPrefix(prefix) else { return false }
+        let suffix = path.dropFirst(prefix.count)
+        return !suffix.isEmpty && suffix.unicodeScalars.allSatisfy {
+            (48...57).contains($0.value) || (97...122).contains($0.value) || $0 == "-" || $0 == "."
+        }
     }
 
     private var shellDirectoryExpression: String {

@@ -4,6 +4,45 @@ import Testing
 
 @Suite("Remote paste file transfer policy")
 struct RemotePasteFileTransferPolicyTests {
+    @Test("DevBox paths are absolute and need no home lookup")
+    func devBoxPathIsAbsolute() {
+        let policy = RemotePasteFileTransferPolicy(usesTemporaryDirectory: true)
+        let file = URL(fileURLWithPath: "/tmp/screenshot.PnG")
+        let id = UUID()
+        let path = policy.remotePath(for: file, uuid: id)
+        #expect(path.hasPrefix("/tmp/cmux-paste-"))
+        #expect(path.hasSuffix(".png"))
+        #expect(policy.remotePath(for: file, homeDirectory: "", uuid: id) == path)
+        #expect(policy.maintenanceScript() == "true")
+        #expect(policy.finalizeScript(for: path) == "true")
+    }
+
+    @Test("DevBox teardown keeps files from other sessions")
+    func devBoxTeardownKeepsOtherSessions() throws {
+        let policy = RemotePasteFileTransferPolicy(usesTemporaryDirectory: true)
+        let otherPolicy = RemotePasteFileTransferPolicy(usesTemporaryDirectory: true)
+        let owned = policy.remotePath(for: URL(fileURLWithPath: "/tmp/own.png"))
+        let other = otherPolicy.remotePath(for: URL(fileURLWithPath: "/tmp/other.png"))
+        try Data("own".utf8).write(to: URL(fileURLWithPath: owned))
+        try Data("other".utf8).write(to: URL(fileURLWithPath: other))
+        defer {
+            try? FileManager.default.removeItem(atPath: owned)
+            try? FileManager.default.removeItem(atPath: other)
+        }
+        #expect(FileManager.default.fileExists(atPath: owned))
+        #expect(FileManager.default.fileExists(atPath: other))
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = ["-c", policy.teardownCleanupScript()]
+        try process.run()
+        process.waitUntilExit()
+        #expect(process.terminationStatus == 0)
+        #expect(!FileManager.default.fileExists(atPath: owned))
+        #expect(FileManager.default.fileExists(atPath: other))
+        #expect(policy.cleanupScript(for: [other]) == "true")
+        #expect(policy.cleanupScript(for: [owned + "'; rm -rf /"]) == "true")
+    }
+
     @Test("maintenance reports the remote home used for absolute paste paths")
     func maintenanceReportsRemoteHome() {
         let policy = RemotePasteFileTransferPolicy(

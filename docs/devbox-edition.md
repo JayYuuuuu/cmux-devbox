@@ -20,7 +20,7 @@
 
 | 改动 | 说明 |
 | --- | --- |
-| 远程图片粘贴 | 普通 SSH 和 `cmux ssh` 上传后，插入远端**绝对路径**（如 `/home/<用户>/.cache/cmux/paste/<会话>/cmux-paste-<uuid>.png`），而不是 `\~/.cache/...`。Claude Code 不展开 `~`，只有绝对路径才会变成 `[Image #1]`。超时按大小算（10 秒 + 每 100KB 1 秒，最多 45 秒），超时自动重试一次。 |
+| 远程图片粘贴 | 普通 SSH 和 `cmux ssh` 都沿用旧版的一次 SCP 直传 `/tmp/cmux-paste-<会话>-<uuid>.png`，不建私有目录、不追加权限校验连接。插入远端**绝对路径**，Claude Code 可直接识别为 `[Image #1]`。超时按大小算（10 秒 + 每 100KB 1 秒，最多 45 秒），超时自动重试一次。 |
 | 无 Cloud / 账号 / 手机 | 单一开关 `CmuxDevBoxEdition`（按 bundle id 生效）：复用 MDM 策略关掉 Cloud、远控配对、Iroh、设备发现；钉死相关远程 feature flag；登录入口、账号命令、手机通知转发、设置里的 账户/手机/Cloud/电脑/网络 页全部隐藏。 |
 | 独立身份 | bundle id `com.cmuxterm.app.staging.devbox`，名字 `cmux DevBox`，socket `/tmp/cmux-staging-devbox.sock`，会话/历史/配置按 bundle id 隔离；与官方 `cmux.app` 同时运行互不影响。 |
 | 自己的更新通道 | Sparkle 只读本仓库最新 Release 里的 `appcast.xml`，安装包必须带本版的 EdDSA 签名，官方 cmux 的更新包会被拒绝；应用用固定的自签名证书签名，更新后系统权限不丢。 |
@@ -30,14 +30,14 @@
 | 配置报错过滤 | 切换浅/深色时 Ghostty 重放配置产生的不带文件位置的报错，若针对 cmux 自己的设置项（如 `surface-tab-bar-font-size`）也不再弹「配置错误」。 |
 | 关于窗口 | 显示 `cmux DevBox`、定制版版本号和上游基线。 |
 
-0.65 线保留上游的私有上传目录、文件权限和清理策略，不沿用旧版直接传到 `/tmp` 的优化。普通 SSH 上传仍沿用上游的进程启动方式；本版增加的只是按文件大小设置超时和一次超时重试，不能据此宣称旧故障的成因已确定或已修复。
+直接上传 `/tmp` 仅由 DevBox 身份启用，其他版本保留上游行为。上传失败或取消时回收本次文件。旧远程会话协调器在结束时清理本会话文件；普通 SSH 和新终端通道的成功文件留在远端 `/tmp`，沿用远端自己的临时文件清理安排。普通 SSH 上传仍沿用上游的进程启动方式；超时和重试不能据此证明旧故障的成因已确定或已修复。
 
 仍与所有 cmux 渠道共享（上游设计如此）：`~/.config/cmux/` 下的设置文件、`~/Library/Application Support/cmux/` 下的搜索库等少量全局文件。
 
 ## 使用
 
 1. 打开后照常 `ssh <你的主机别名>`（读 `~/.ssh/config`，别名、密钥、端口、ProxyJump 都沿用，不需要 `cmux ssh`）。
-2. 在远端 Claude Code 里按 Command+V 粘贴截图/图片：cmux 先上传到远端 `~/.cache/cmux/paste/`，再把绝对路径粘进去，Claude Code 显示 `[Image #1]`。
+2. 在远端 Claude Code 里按 Command+V 粘贴截图/图片：cmux 用一次 SCP 上传到远端 `/tmp/`，再把绝对路径粘进去，Claude Code 显示 `[Image #1]`。
 3. 失败时 cmux 会提示上传失败的原因（scp 的报错原文）。常见原因：SSH 需要交互输入密码/2FA（后台上传用 BatchMode，答不了，请用密钥登录）、远端磁盘满、连接已断。
 4. 恢复 Claude Code 会话：远端 `claude --resume` 或 `claude --continue`，与终端无关。
 
