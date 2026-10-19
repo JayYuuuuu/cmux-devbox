@@ -94,4 +94,17 @@ struct SSHUploadEndpointTests {
     }
 
 
+    @Test(arguments: [true, false])
+    func wrapperChildrenMustBelongToTheForegroundJob(sameGroup: Bool) throws {
+        let detected = TerminalSSHSessionDetector.detect(
+            foregroundPID: 100,
+            argumentsForPID: { pid in
+                pid == 100 ? ["ghostty", "+ssh", "--", "user@host.example"] : ["ssh", "user@host.example"]
+            },
+            processGroup: { pid in pid == 100 || sameGroup ? 100 : 200 },
+            childPIDs: { $0 == 100 ? [101] : [] }
+        )
+        #expect((detected?.destination == "user@host.example") == sameGroup)
+    }
+
 }

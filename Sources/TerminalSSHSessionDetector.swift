@@ -451,8 +451,13 @@ enum TerminalSSHSessionDetector {
 
     /// Uses the terminal's existing foreground PID instead of launching a
     /// process-tree scan periodically. Shells and non-SSH jobs are ignored.
-    static func detect(foregroundPID: Int32) -> DetectedSSHSession? {
-        guard let arguments = commandLineArguments(forPID: foregroundPID),
+    static func detect(
+        foregroundPID: Int32,
+        argumentsForPID: (Int32) -> [String]? = commandLineArguments(forPID:),
+        processGroup: (Int32) -> Int32 = { getpgid($0) },
+        childPIDs: (Int32) -> [Int32] = { _ in [] }
+    ) -> DetectedSSHSession? {
+        guard let arguments = argumentsForPID(foregroundPID),
               let first = arguments.first,
               RemoteShellSessionParsing.normalizedExecutableName(first) == "ssh",
               isInteractiveSSHArguments(arguments) else { return nil }
