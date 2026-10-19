@@ -29,7 +29,9 @@ extension ContentView {
         }
     }
 
-    static func commandPaletteProCommandContributions() -> [CommandPaletteCommandContribution] {
+    static func commandPaletteProCommandContributions(
+        bundleIdentifier: String? = Bundle.main.bundleIdentifier
+    ) -> [CommandPaletteCommandContribution] {
         func constant(_ value: String) -> (CommandPaletteContextSnapshot) -> String {
             { _ in value }
         }

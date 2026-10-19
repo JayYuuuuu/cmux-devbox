@@ -14,6 +14,21 @@ import Testing
 /// see Pro, Pro sees Max, and Max sees nothing.
 @MainActor
 struct AccountUpgradeOfferTests {
+    @Test func devBoxHasNoPaidAccountEntrypoints() {
+        let edition = "com.cmuxterm.app.staging.devbox"
+        #expect(ContentView.commandPaletteProCommandContributions(bundleIdentifier: edition).isEmpty)
+        #expect(!SidebarFooterPresentationPolicy.isUpgradeVisible(isProActive: false, bundleIdentifier: edition))
+        var opened = false
+        ProUpgradePresenter.present(source: .commandPalette, bundleIdentifier: edition, open: { _ in opened = true })
+        #expect(!opened)
+
+        // Positive controls: official and ordinary debug bundles keep upstream behavior.
+        for bundle in ["com.cmuxterm.app", "com.cmuxterm.app.debug.edition-test"] {
+            #expect(ContentView.commandPaletteProCommandContributions(bundleIdentifier: bundle).count == 2)
+            #expect(SidebarFooterPresentationPolicy.isUpgradeVisible(isProActive: false, bundleIdentifier: bundle))
+        }
+    }
+
     @Test func menuTitlesNameTheOfferedTier() {
         #expect(ProUpgradePresenter.upgradeMenuTitle(for: .pro) == String(
             localized: "menu.help.upgradeToPro", defaultValue: "Upgrade to cmux Pro…"

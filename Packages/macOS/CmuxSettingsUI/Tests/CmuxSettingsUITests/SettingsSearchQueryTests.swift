@@ -29,6 +29,27 @@ import Testing
 
     static let index = SettingsSearchIndex(catalog: SettingCatalog())
 
+    /// Exercise the actual sidebar result publisher, including its async search path.
+    @Test func editionSectionsStayOutOfBrowseAndSearch() async throws {
+        let hidden: Set<SettingsSectionID> = [.account, .mobile, .cloudMachines, .computers, .networking]
+        let query = SettingsSearchQuery(index: Self.index, hiddenSections: hidden)
+        #expect(query.results.contains { $0.id == "section:terminal" })
+        for section in hidden {
+            // Positive control: the ordinary edition really has each section.
+            #expect(Self.index.match("").contains { $0.id == "section:\(section.rawValue)" })
+            #expect(!query.results.contains { $0.id == "section:\(section.rawValue)" })
+        }
+        query.text = "iphone"
+        await query.settle()
+        #expect(Self.index.match("iphone").contains { $0.id == "setting:mobile:phone-push-forwarding" })
+        #expect(!query.results.contains {
+            if case .setting(let parent) = $0.kind { return hidden.contains(parent) }
+            return false
+        })
+        query.text = ""
+        #expect(!query.results.contains { $0.id == "section:account" })
+    }
+
     static func makeQuery(log: MatchLog) -> SettingsSearchQuery {
         let index = index
         return SettingsSearchQuery(

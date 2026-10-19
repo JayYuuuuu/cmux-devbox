@@ -56,7 +56,11 @@ final class SettingsSearchQuery {
         self.results = match("")
     }
 
-    convenience init(index: SettingsSearchIndex, debounce: Duration = .milliseconds(100)) {
+    convenience init(
+        index: SettingsSearchIndex,
+        hiddenSections: Set<SettingsSectionID> = [],
+        debounce: Duration = .milliseconds(100)
+    ) {
         self.init(match: { index.match($0) }, debounce: debounce)
     }
 

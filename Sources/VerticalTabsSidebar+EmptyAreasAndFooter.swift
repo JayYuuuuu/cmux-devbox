@@ -99,7 +99,8 @@ enum SidebarFooterPresentationPolicy {
 
     static func isUpgradeVisible(
         isProActive: Bool,
-        isProStatusKnown: Bool = true
+        isProStatusKnown: Bool = true,
+        bundleIdentifier: String? = Bundle.main.bundleIdentifier
     ) -> Bool {
         isProStatusKnown && !isProActive
     }

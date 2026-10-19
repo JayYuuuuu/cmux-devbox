@@ -56,6 +56,7 @@ enum ProUpgradePresenter {
     static func present(
         source: ProUpgradeSource,
         analytics: ProductAnalytics = .app,
+        bundleIdentifier: String? = Bundle.main.bundleIdentifier,
         open: @MainActor (ProUpgradeSource) -> Void = { presentAppPricingWeb(source: $0) }
     ) {
         analytics.track(.upgradeOpened(source, destination: .pricingPage))
