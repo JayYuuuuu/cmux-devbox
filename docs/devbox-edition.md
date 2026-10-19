@@ -1,6 +1,6 @@
 # cmux DevBox 定制版
 
-基于 [cmux](https://github.com/manaflow-ai/cmux) `v0.65.0`（`dda24fbd2250dfacf41bf5e8e3d20d488acf6182`）的个人定制版：专门用来从 Mac 通过普通 SSH 连远程开发机、在远端跑 Claude Code。补丁集中在分支 `devbox-custom` 上，每个提交只做一件事。非官方版本，与 Manaflow 无关；许可证沿用上游（macOS 客户端 GPL-3.0-or-later）。
+基于 [cmux](https://github.com/manaflow-ai/cmux) `v0.65.2`（`9d01f956c51cd895e10e7d56b6dd7b5f6fcce625`）的个人定制版：专门用来从 Mac 通过普通 SSH 连远程开发机、在远端跑 Claude Code。补丁集中在分支 `devbox-065` 上，每个提交只做一件事。`devbox-064` 是更早停在 `v0.64.25` 上的版本（`devbox.11`）；回退到 0.64 是为了躲开 0.65.0 首次粘新截图超时的问题，0.65.2 修了这条并自带中文字体排版，所以 0.65 线不再 fork Ghostty 子模块。非官方版本，与 Manaflow 无关；许可证沿用上游（macOS 客户端 GPL-3.0-or-later）。
 
 ## 下载安装
 
@@ -46,7 +46,7 @@ Computer Use 等需要系统权限的功能：ad-hoc 签名每次重建都会变
 前置：macOS 14+、完整 Xcode（已同意许可：`sudo xcodebuild -license accept`）、Metal 工具链（`xcodebuild -downloadComponent MetalToolchain`）、Rust（rustup）、Zig 0.16.x（在 PATH 里）。不需要 Go：WireGuard 只给 Cloud 隧道用，构建时用 stub。
 
 ```bash
-git clone --branch devbox-custom --recurse-submodules https://github.com/JayYuuuuu/cmux-devbox.git
+git clone --branch devbox-065 --recurse-submodules https://github.com/JayYuuuuu/cmux-devbox.git
 cd cmux-devbox
 ./scripts/setup.sh
 ./scripts/build-devbox.sh               # 本机架构；--universal 出通用版
@@ -56,7 +56,7 @@ cd cmux-devbox
 
 ## 发布新版本（维护者）
 
-在构建 Mac 上，代码已提交并推送到 `devbox-custom` 后：
+在构建 Mac 上，代码已提交并推送到 `devbox-065` 后：
 
 ```bash
 ./scripts/release-devbox.sh <n> notes.md   # n = 上一版的 devbox 序号 + 1
@@ -72,7 +72,7 @@ cd cmux-devbox
 
 ## 升级上游
 
-不跟 main。选定新的稳定标签后，在新标签上 cherry-pick `devbox-custom` 的提交，解决冲突，把 `build-devbox.sh` 里的 `UPSTREAM_TAG` 改成新标签，跑 `python3 scripts/verify-local.py --affected <新标签>` 和相关包测试（`CmuxRemoteSession`、`CmuxSettings`、`CmuxSettingsUI`），重新构建，再按下面的验收清单走一遍。
+不跟 main。选定新的稳定标签后，在新标签上 cherry-pick `devbox-065` 的提交，解决冲突，把 `build-devbox.sh` 里的 `UPSTREAM_TAG` 改成新标签，跑 `python3 scripts/verify-local.py --affected <新标签>` 和相关包测试（`CmuxRemoteSession`、`CmuxSettings`、`CmuxSettingsUI`），重新构建，再按下面的验收清单走一遍。
 
 ## 验收清单
 
