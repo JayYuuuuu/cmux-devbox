@@ -171,8 +171,9 @@ final class CmuxFeatureFlags {
         defaultWhenUnavailable: CmuxFeatureFlags.goPlanDefault
     )
 
+    // DevBox v0.65.2 integration retains the upstream rollout; review again in 30 days.
     // FLAG(key: agent-inbox-quick-view-enabled-release, owner: lawrencecchen,
-    //      reviewBy: 2026-10-15, defaultWhenUnavailable: false)
+    //      reviewBy: 2026-11-18, defaultWhenUnavailable: false)
     // Keeps the agent inbox quick view behind an explicit rollout while the
     // placement and cross-agent attention model are evaluated.
     static let agentInboxQuickViewFlag = CmuxFeatureFlagDefinition(
@@ -182,8 +183,9 @@ final class CmuxFeatureFlags {
         defaultWhenUnavailable: CmuxFeatureFlags.agentInboxQuickViewDefault
     )
 
+    // DevBox v0.65.2 integration retains the upstream rollout; review again in 30 days.
     // FLAG(key: conversation-sidebar-release, owner: teamleaderleo,
-    //      reviewBy: 2026-10-18, defaultWhenUnavailable: false)
+    //      reviewBy: 2026-11-18, defaultWhenUnavailable: false)
     // Controls availability of the opt-in multi-provider conversation sidebar.
     // The user-facing beta setting is evaluated separately by the sidebar
     // integration; this flag is the remote rollout gate and emergency kill
