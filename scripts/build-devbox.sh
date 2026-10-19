@@ -22,7 +22,7 @@ set -euo pipefail
 APP_NAME="cmux DevBox"
 BUNDLE_ID="com.cmuxterm.app.staging.devbox"
 STAGING_SLUG="devbox"
-UPSTREAM_TAG="v0.65.0"
+UPSTREAM_TAG="v0.65.2"
 SPARKLE_FEED_URL="https://github.com/JayYuuuuu/cmux-devbox/releases/latest/download/appcast.xml"
 SPARKLE_PUBLIC_ED_KEY="GGisbyyaEckq0hn9j95M8VRWzfVpddZFZTssLqfz4qU="
 SIGN_IDENTITY_NAME="cmux DevBox Code Signing"
