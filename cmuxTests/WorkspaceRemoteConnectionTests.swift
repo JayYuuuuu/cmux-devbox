@@ -2656,8 +2656,7 @@ final class WorkspaceRemoteConnectionTests: XCTestCase {
         XCTAssertEqual(source.bonsplitController.tabs(inPane: sourcePaneID).count, 0)
     }
 
-    // DevBox: a paste whose scp timed out (the server had the file in 0.2 s)
-    // was rolled back and reported as failed; the next paste always worked.
+    // A retry must reach scp after resolving the remote home directory.
     func testDetectedSSHUploadRetriesOnceAfterTimeout() throws {
         let fileURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("cmux-detected-ssh-retry-\(UUID().uuidString).png")
@@ -2679,8 +2678,13 @@ final class WorkspaceRemoteConnectionTests: XCTestCase {
         )
 
         var scpTimeouts: [TimeInterval] = []
-        DetectedSSHSession.runProcessOverrideForTesting = { executable, _, timeout, _ in
-            guard executable == "/usr/bin/scp" else { return (status: 0, stdout: "", stderr: "") }
+        DetectedSSHSession.runProcessOverrideForTesting = { executable, arguments, timeout, _ in
+            guard executable == "/usr/bin/scp" else {
+                let stdout = arguments.contains {
+                    $0.contains("__CMUX_REMOTE_PASTE_HOME__")
+                } ? "__CMUX_REMOTE_PASTE_HOME__/home/test user\n" : ""
+                return (status: 0, stdout: stdout, stderr: "")
+            }
             scpTimeouts.append(timeout)
             if scpTimeouts.count == 1 {
                 throw NSError(domain: "cmux.detected-ssh.drop", code: 3, userInfo: nil)

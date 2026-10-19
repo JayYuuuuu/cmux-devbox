@@ -88,9 +88,7 @@ struct RemoteSessionSSHDestinationArgumentTests {
         #expect(arguments.last?.contains(":/home/test user/.cache/cmux/paste/") == true)
     }
 
-    // DevBox: a paste once finished on the server in 0.2 s while the local
-    // scp lingered until the fixed 45 s timeout. A small file gets a short,
-    // size-scaled timeout and one automatic retry.
+    // Exercise a timed-out copy after the directory preparation has succeeded.
     @Test("Dropped-file upload retries once after a timeout")
     func droppedFileUploadRetriesOnceAfterTimeout() async throws {
         let localFile = FileManager.default.temporaryDirectory
@@ -105,17 +103,20 @@ struct RemoteSessionSSHDestinationArgumentTests {
                     NSLocalizedDescriptionKey: "scp timed out after \(Int(request.timeout))s",
                 ])
             }
-            return RemoteCommandResult(status: 0, stdout: "", stderr: "")
+            let stdout = request.arguments.contains {
+                $0.contains("__CMUX_REMOTE_PASTE_HOME__")
+            } ? "__CMUX_REMOTE_PASTE_HOME__/home/test user\n" : ""
+            return RemoteCommandResult(status: 0, stdout: stdout, stderr: "")
         }
         let coordinator = Self.makeCoordinator(runner: runner)
         defer { coordinator.stop() }
 
-        let paths = await withCheckedContinuation { continuation in
+        let paths = try await withCheckedThrowingContinuation { continuation in
             coordinator.uploadDroppedFiles(
                 [localFile],
                 operation: RemoteProcessCancellationOperation()
             ) { result in
-                continuation.resume(returning: (try? result.get()) ?? [])
+                continuation.resume(with: result)
             }
         }
 
