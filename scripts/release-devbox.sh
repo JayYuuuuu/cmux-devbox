@@ -91,7 +91,7 @@ EOF
 (cd "$OUT_DIR" && shasum -a 256 cmux-DevBox.zip appcast.xml > SHA256SUMS.txt)
 
 gh release create "$TAG" --repo "$REPO" --target "$HEAD_SHA" \
-  --title "cmux DevBox ${SHORT_VERSION}" --notes-file "$NOTES_FILE" \
+  --title "cmux DevBox ${SHORT_VERSION}" --notes-file "$NOTES_FILE" --latest \
   "$ZIP_PATH" "${OUT_DIR}/appcast.xml" "${OUT_DIR}/SHA256SUMS.txt"
 
 # Read back what installed copies will see.

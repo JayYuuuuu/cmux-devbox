@@ -155,14 +155,13 @@ pb_set CFBundleName string "$APP_NAME"
 pb_set CFBundleDisplayName string "$APP_NAME"
 pb_set CFBundleIdentifier string "$BUNDLE_ID"
 # Versions: <upstream>-devbox.<n> / <upstream build>.<n>. Sparkle compares
-# CFBundleVersion, so 108.2 > 108.1 > 108 and the next upstream build (109.x)
-# sorts above every edition release of this one.
+# CFBundleVersion, independent of the displayed upstream version. Keep the
+# rollback floor above every previously published edition build.
 UPSTREAM_SHORT_VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST")"
 UPSTREAM_BUILD="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$PLIST")"
-# Releases 1-10 were built on v0.65.0 (build 108); the edition now follows
-# v0.64 (build 106). Keep the build number from going backwards so installed
-# copies still see newer releases.
-DEVBOX_MIN_UPSTREAM_BUILD=108
+# v0.65.2 shipped as build 111.2. This v0.64 recovery release must sort
+# above it so existing installations can recover through Sparkle.
+DEVBOX_MIN_UPSTREAM_BUILD=112
 if (( UPSTREAM_BUILD < DEVBOX_MIN_UPSTREAM_BUILD )); then
   UPSTREAM_BUILD=$DEVBOX_MIN_UPSTREAM_BUILD
 fi
