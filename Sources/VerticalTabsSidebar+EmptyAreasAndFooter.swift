@@ -4,6 +4,7 @@ import CmuxCloud
 import CmuxProductAnalytics
 import CmuxFoundation
 import CmuxSettingsUI
+import CmuxSettings
 import CmuxSidebar
 import CmuxSidebarProviderKit
 import CmuxUpdater
@@ -102,7 +103,7 @@ enum SidebarFooterPresentationPolicy {
         isProStatusKnown: Bool = true,
         bundleIdentifier: String? = Bundle.main.bundleIdentifier
     ) -> Bool {
-        isProStatusKnown && !isProActive
+        !CmuxDevBoxEdition.isEdition(bundleIdentifier: bundleIdentifier) && isProStatusKnown && !isProActive
     }
 }
 

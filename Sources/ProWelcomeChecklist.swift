@@ -1,6 +1,7 @@
 import CmuxFoundation
 import CmuxCloud
 import AppKit
+import CmuxSettings
 import CmuxBrowser
 import CmuxTerminalCore
 import Foundation
@@ -254,6 +255,7 @@ extension ProUpgradePresenter {
     /// same dedicated workspace surface used for pricing, matching upgrade/pricing.
     @MainActor
     static func presentProWelcomeWeb() {
+        guard !CmuxDevBoxEdition.isActive else { return }
         let url = decoratedAppWebURL(AuthEnvironment.appProWelcomeURL)
         guard BrowserAvailabilitySettings.isEnabled() else {
             NSWorkspace.shared.open(url)

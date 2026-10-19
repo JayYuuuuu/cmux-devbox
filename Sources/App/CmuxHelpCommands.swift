@@ -1,5 +1,6 @@
 import AppKit
 import CmuxFeedback
+import CmuxSettings
 import SwiftUI
 
 extension cmuxApp {
@@ -11,8 +12,10 @@ extension cmuxApp {
 
             Divider()
 
-            Button(String(localized: "cloud.diagnostics.menu", defaultValue: "Cloud Diagnostics…")) {
-                AppDelegate.shared?.showCloudDiagnostics()
+            if !ManagedDevicePolicy().isEnforced(.disableCloud) {
+                Button(String(localized: "cloud.diagnostics.menu", defaultValue: "Cloud Diagnostics…")) {
+                    AppDelegate.shared?.showCloudDiagnostics()
+                }
             }
 
             splitCommandButton(title: String(localized: "sidebar.help.sendFeedback", defaultValue: "Send Feedback"), shortcut: menuShortcut(for: .sendFeedback)) {

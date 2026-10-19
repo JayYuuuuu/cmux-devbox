@@ -1,4 +1,5 @@
 import CmuxCloud
+import CmuxSettings
 import CmuxProductAnalytics
 import AppKit
 import CMUXMobileCore
@@ -41,6 +42,7 @@ enum ProUpgradePresenter {
     /// already on the top tier or its plan is not yet known.
     @MainActor
     static var currentUpgradeOffer: CmuxPlanTier? {
+        guard !CmuxDevBoxEdition.isActive else { return nil }
         guard let flow = AppDelegate.shared?.auth?.accountFlow else { return .pro }
         return flow.upgradeOffer
     }
@@ -51,6 +53,7 @@ enum ProUpgradePresenter {
     /// - Parameters:
     ///   - source: The surface; it also travels to checkout as `cmux_source`.
     ///   - analytics: The emitter. Tests pass their own.
+    ///   - bundleIdentifier: Host identity; the DevBox edition has no paid account flow.
     ///   - open: Opens pricing. Tests pass a no-op.
     @MainActor
     static func present(
@@ -59,6 +62,7 @@ enum ProUpgradePresenter {
         bundleIdentifier: String? = Bundle.main.bundleIdentifier,
         open: @MainActor (ProUpgradeSource) -> Void = { presentAppPricingWeb(source: $0) }
     ) {
+        guard !CmuxDevBoxEdition.isEdition(bundleIdentifier: bundleIdentifier) else { return }
         analytics.track(.upgradeOpened(source, destination: .pricingPage))
         open(source)
     }
@@ -69,6 +73,7 @@ enum ProUpgradePresenter {
     /// entry is a no-op.
     @MainActor
     static func prefetch(source: ProUpgradeSource) {
+        guard !CmuxDevBoxEdition.isActive else { return }
         guard BrowserAvailabilitySettings.isEnabled() else { return }
         // When an upgrade workspace already exists, present() refocuses it and
         // navigates its existing panel, so a prewarmed webview would go unused.
@@ -89,6 +94,7 @@ enum ProUpgradePresenter {
 
     @MainActor
     static func presentAppPricingWeb(source: ProUpgradeSource) {
+        guard !CmuxDevBoxEdition.isActive else { return }
         let url = appPricingURLForCurrentAppearance(source: source)
         guard BrowserAvailabilitySettings.isEnabled() else {
             NSWorkspace.shared.open(url)
@@ -102,6 +108,7 @@ enum ProUpgradePresenter {
 
     @MainActor
     static func presentNativePricingPreview() {
+        guard !CmuxDevBoxEdition.isActive else { return }
         NativePricingWindowController.shared.show()
     }
 
@@ -111,6 +118,7 @@ enum ProUpgradePresenter {
         plan: CheckoutPlan = .pro,
         analytics: ProductAnalytics = .app
     ) {
+        guard !CmuxDevBoxEdition.isActive else { return }
         analytics.track(.upgradeOpened(source, plan: plan, destination: .checkout))
         NSWorkspace.shared.open(checkoutURL(source: source, plan: plan))
     }
@@ -127,6 +135,7 @@ enum ProUpgradePresenter {
 
     @MainActor
     static func presentBillingPortal() {
+        guard !CmuxDevBoxEdition.isActive else { return }
         NSWorkspace.shared.open(AuthEnvironment.billingPortalURL)
     }
 

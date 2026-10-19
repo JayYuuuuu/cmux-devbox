@@ -1,8 +1,10 @@
 import AppKit
+import CmuxSettings
 import SwiftUI
 
 extension AppDelegate {
     func showCloudDiagnostics() {
+        guard !ManagedDevicePolicy().isEnforced(.disableCloud) else { return }
         guard let cloudOperations else { return }
         if let controller = cloudDiagnosticsWindowController {
             controller.showWindow(nil)

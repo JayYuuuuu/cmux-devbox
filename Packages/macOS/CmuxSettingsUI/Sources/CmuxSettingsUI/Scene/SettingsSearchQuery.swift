@@ -61,7 +61,17 @@ final class SettingsSearchQuery {
         hiddenSections: Set<SettingsSectionID> = [],
         debounce: Duration = .milliseconds(100)
     ) {
-        self.init(match: { index.match($0) }, debounce: debounce)
+        self.init(match: { query in
+            guard !hiddenSections.isEmpty else { return index.match(query) }
+            return index.match(query).filter { entry in
+                switch entry.kind {
+                case .section:
+                    return !hiddenSections.contains { entry.id == "section:\($0.rawValue)" }
+                case .setting(let parent):
+                    return !hiddenSections.contains(parent)
+                }
+            }
+        }, debounce: debounce)
     }
 
     /// Waits for any scheduled filtering to finish. Tests use it to observe

@@ -1,6 +1,6 @@
 # cmux DevBox 定制版
 
-基于 [cmux](https://github.com/manaflow-ai/cmux) `v0.65.2`（`9d01f956c51cd895e10e7d56b6dd7b5f6fcce625`）的个人定制版：专门用来从 Mac 通过普通 SSH 连远程开发机、在远端跑 Claude Code。补丁集中在分支 `devbox-065` 上，每个提交只做一件事。`devbox-064` 是更早停在 `v0.64.25` 上的版本（`devbox.11`）；回退到 0.64 是为了躲开 0.65.0 首次粘新截图超时的问题，0.65.2 修了这条并自带中文字体排版，所以 0.65 线不再 fork Ghostty 子模块。非官方版本，与 Manaflow 无关；许可证沿用上游（macOS 客户端 GPL-3.0-or-later）。
+基于 [cmux](https://github.com/manaflow-ai/cmux) `v0.65.2`（`9d01f956c51cd895e10e7d56b6dd7b5f6fcce625`）的个人定制版：专门用来从 Mac 通过普通 SSH 连远程开发机、在远端跑 Claude Code。补丁集中在分支 `devbox-065` 上，每个提交只做一件事。`devbox-064` 是更早停在 `v0.64.25` 上的版本（`devbox.11`）；回退到 0.64 是为了躲开 0.65.0 首次粘新截图超时的问题，0.65.2 调整了图片准备阶段的超时计算并自带中文字体排版；是否解决旧版首次截图故障仍需实机验收，所以 0.65 线不再 fork Ghostty 子模块。非官方版本，与 Manaflow 无关；许可证沿用上游（macOS 客户端 GPL-3.0-or-later）。
 
 ## 下载安装
 
@@ -29,6 +29,8 @@
 | 中文界面数值标签 | 89 条中英文相同的文案（单位、数值格式、品牌名）补上简体中文条目，设置里滑块旁不再显示内部键名。 |
 | 配置报错过滤 | 切换浅/深色时 Ghostty 重放配置产生的不带文件位置的报错，若针对 cmux 自己的设置项（如 `surface-tab-bar-font-size`）也不再弹「配置错误」。 |
 | 关于窗口 | 显示 `cmux DevBox`、定制版版本号和上游基线。 |
+
+0.65 线保留上游的私有上传目录、文件权限和清理策略，不沿用旧版直接传到 `/tmp` 的优化。普通 SSH 上传仍沿用上游的进程启动方式；本版增加的只是按文件大小设置超时和一次超时重试，不能据此宣称旧故障的成因已确定或已修复。
 
 仍与所有 cmux 渠道共享（上游设计如此）：`~/.config/cmux/` 下的设置文件、`~/Library/Application Support/cmux/` 下的搜索库等少量全局文件。
 
@@ -62,7 +64,7 @@ cd cmux-devbox
 ./scripts/release-devbox.sh <n> notes.md   # n = 上一版的 devbox 序号 + 1
 ```
 
-它会编通用版、用固定证书签名、给 ZIP 加 EdDSA 签名、生成 `appcast.xml`，以 `v<上游版本>-devbox.<n>` 发 Release，最后回读线上 appcast 和 ZIP 校验。版本号：显示 `<上游>-devbox.<n>`，内部 build 号 `<上游 build>.<n>`；上游升级后 build 号自然变大，`n` 可以从 1 重新开始。
+它会仅编苹果芯片版、用固定证书签名、给 ZIP 加 EdDSA 签名、生成 `appcast.xml`，以 `v<上游版本>-devbox.<n>` 发 Release，最后回读线上 appcast 和 ZIP 校验。版本号：显示 `<上游>-devbox.<n>`，内部 build 号 `<上游 build>.<n>`；上游升级后 build 号自然变大，`n` 可以从 1 重新开始。
 
 构建 Mac 上的一次性准备（都在 `~/.config/cmux-devbox/`，权限 600，**不进仓库**）：
 - 签名钥匙串 `~/Library/Keychains/cmux-devbox-signing.keychain-db`，内含自签名身份「cmux DevBox Code Signing」，密码在 `signing-keychain-password`，打包脚本自动解锁，无需弹框授权。

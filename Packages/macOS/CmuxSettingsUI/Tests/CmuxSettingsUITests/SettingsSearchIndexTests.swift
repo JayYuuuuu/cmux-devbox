@@ -11,7 +11,7 @@ import Testing
 @Suite("SettingsSearchIndex")
 struct SettingsSearchIndexTests {
     @MainActor
-    @Test func settingsWindowRootsReuseRuntimeCachedIndex() throws {
+    @Test func settingsWindowRootsReuseRuntimeCachedIndex() async throws {
         let catalog = SettingCatalog()
         let suiteName = "SettingsSearchIndexTests.\(UUID().uuidString)"
         defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
@@ -43,10 +43,14 @@ struct SettingsSearchIndexTests {
         let firstRoot = SettingsWindowRoot(runtime: runtime)
         let secondRoot = SettingsWindowRoot(runtime: runtime)
 
-        #expect(firstRoot.sidebarEntries(matching: "issue3384-cache-sentinel").contains {
+        firstRoot.searchQuery.text = "issue3384-cache-sentinel"
+        secondRoot.searchQuery.text = "issue3384-cache-sentinel"
+        await firstRoot.searchQuery.settle()
+        await secondRoot.searchQuery.settle()
+        #expect(firstRoot.searchQuery.results.contains {
             $0.id == expectedID
         })
-        #expect(secondRoot.sidebarEntries(matching: "issue3384-cache-sentinel").contains {
+        #expect(secondRoot.searchQuery.results.contains {
             $0.id == expectedID
         })
     }

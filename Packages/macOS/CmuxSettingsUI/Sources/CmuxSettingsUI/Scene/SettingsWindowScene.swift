@@ -45,7 +45,10 @@ public struct SettingsWindowRoot: View {
         self.searchIndex = runtime.searchIndex
         self.initialSection = initialSection
         _pendingInitialSection = State(initialValue: initialSection)
-        _searchQuery = State(initialValue: SettingsSearchQuery(index: runtime.searchIndex))
+        _searchQuery = State(initialValue: SettingsSearchQuery(
+            index: runtime.searchIndex,
+            hiddenSections: Self.editionHiddenSections
+        ))
         // The `@AppStorage` properties below read the same store; the restore
         // target has to be known before the first body evaluation because
         // that pass runs inside `NSWindow(contentViewController:)`.
@@ -72,7 +75,7 @@ public struct SettingsWindowRoot: View {
     @State private var cloudFeatureFlagRevision = 0
     /// Never read in this body, so a keystroke does not re-render the root
     /// or its detail pane; see ``SettingsSearchQuery``.
-    @State private var searchQuery: SettingsSearchQuery
+    @State var searchQuery: SettingsSearchQuery
 
     var cloudSectionIdentity: String {
         "cloud-machines-section-\(cloudFeatureFlagRevision)"
@@ -261,19 +264,6 @@ public struct SettingsWindowRoot: View {
         }
         if !isCloudSectionAvailable && selectedSection == .cloudMachines {
             navigate(to: Self.defaultSection)
-        }
-    }
-
-    func sidebarEntries(matching query: String) -> [SettingsSearchIndex.Entry] {
-        searchIndex.match(query).filter { entry in
-            switch entry.kind {
-            case .section:
-                return !Self.editionHiddenSections.contains {
-                    entry.id == "section:\($0.rawValue)"
-                }
-            case .setting(let parent):
-                return !Self.editionHiddenSections.contains(parent)
-            }
         }
     }
 

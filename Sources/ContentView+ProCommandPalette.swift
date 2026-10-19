@@ -1,4 +1,5 @@
 import CmuxCommandPalette
+import CmuxSettings
 import AppKit
 import CMUXMobileCore
 import Foundation
@@ -32,6 +33,7 @@ extension ContentView {
     static func commandPaletteProCommandContributions(
         bundleIdentifier: String? = Bundle.main.bundleIdentifier
     ) -> [CommandPaletteCommandContribution] {
+        guard !CmuxDevBoxEdition.isEdition(bundleIdentifier: bundleIdentifier) else { return [] }
         func constant(_ value: String) -> (CommandPaletteContextSnapshot) -> String {
             { _ in value }
         }
