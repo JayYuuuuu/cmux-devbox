@@ -2674,11 +2674,14 @@ final class WorkspaceRemoteConnectionTests: XCTestCase {
             useIPv6: false,
             forwardAgent: false,
             compressionEnabled: false,
-            sshOptions: []
+            sshOptions: [],
+            remotePastePolicy: RemotePasteFileTransferPolicy(usesTemporaryDirectory: true)
         )
 
         var scpTimeouts: [TimeInterval] = []
+        var executables: [String] = []
         DetectedSSHSession.runProcessOverrideForTesting = { executable, arguments, timeout, _ in
+            executables.append(executable)
             guard executable == "/usr/bin/scp" else {
                 let stdout = arguments.contains {
                     $0.contains("__CMUX_REMOTE_PASTE_HOME__")
@@ -2698,6 +2701,8 @@ final class WorkspaceRemoteConnectionTests: XCTestCase {
         XCTAssertEqual(paths.count, 1)
         XCTAssertEqual(scpTimeouts.count, 2)
         XCTAssertLessThan(scpTimeouts.first ?? 45, 20)
+        XCTAssertEqual(executables, ["/usr/bin/scp", "/usr/bin/scp"])
+        XCTAssertTrue(paths.first?.hasPrefix("/tmp/cmux-paste-") == true)
     }
 
     func testDetectedSSHUploadFailureCleansUpEarlierRemoteUploads() throws {

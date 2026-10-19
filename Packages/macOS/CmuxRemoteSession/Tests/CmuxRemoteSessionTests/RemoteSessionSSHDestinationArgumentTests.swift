@@ -89,6 +89,29 @@ struct RemoteSessionSSHDestinationArgumentTests {
     }
 
     // Exercise a timed-out copy after the directory preparation has succeeded.
+    @Test("DevBox upload is one copy directly to an absolute temporary path")
+    func devBoxUploadIsOneCopy() async throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("single-copy-\(UUID()).png")
+        try Data("image".utf8).write(to: file)
+        defer { try? FileManager.default.removeItem(at: file) }
+        let runner = RecordingProcessRunner()
+        let coordinator = Self.makeCoordinator(
+            runner: runner,
+            remotePastePolicy: RemotePasteFileTransferPolicy(usesTemporaryDirectory: true)
+        )
+        defer { coordinator.stop() }
+        let paths = try await withCheckedThrowingContinuation { continuation in
+            coordinator.uploadDroppedFiles([file], operation: RemoteProcessCancellationOperation()) {
+                continuation.resume(with: $0)
+            }
+        }
+        #expect(runner.requests.map(\.executable) == ["/usr/bin/scp"])
+        let path = try #require(paths.first)
+        #expect(path.hasPrefix("/tmp/cmux-paste-"))
+        #expect(path.hasSuffix(".png"))
+        #expect(runner.requests.first?.arguments.last == "user@example.test:" + path)
+    }
+
     @Test("Dropped-file upload retries once after a timeout")
     func droppedFileUploadRetriesOnceAfterTimeout() async throws {
         let localFile = FileManager.default.temporaryDirectory
@@ -157,7 +180,8 @@ struct RemoteSessionSSHDestinationArgumentTests {
 
     private static func makeCoordinator(
         runner: RecordingProcessRunner,
-        sshOptions: [String] = []
+        sshOptions: [String] = [],
+        remotePastePolicy: RemotePasteFileTransferPolicy = RemotePasteFileTransferPolicy()
     ) -> RemoteSessionCoordinator {
         let configuration = WorkspaceRemoteConfiguration(
             destination: "user@example.test",
@@ -198,7 +222,8 @@ struct RemoteSessionSSHDestinationArgumentTests {
                 reverseRelayUnavailableRetrying: "",
                 reverseRelayPortUnavailableRetrying: "",
                 controlMasterOwnershipUnavailable: ""
-            )
+            ),
+            remotePastePolicy: remotePastePolicy
         )
     }
 }

@@ -2,6 +2,8 @@ public import Foundation
 
 /// Owns the private remote directory and cleanup contract for pasted files.
 public struct RemotePasteFileTransferPolicy: Equatable, Sendable {
+    /// Whether the host opts into the DevBox single-copy /tmp transport.
+    public let usesTemporaryDirectory: Bool
     private static let remoteHomeMarker = "__CMUX_REMOTE_PASTE_HOME__"
 
     /// The maximum number of bytes retained in one session's paste directory.
@@ -17,9 +19,11 @@ public struct RemotePasteFileTransferPolicy: Equatable, Sendable {
     public init(
         sessionID: UUID = UUID(),
         maximumByteCount: Int64 = 200 * 1024 * 1024,
-        maximumAge: TimeInterval = 24 * 60 * 60
+        maximumAge: TimeInterval = 24 * 60 * 60,
+        usesTemporaryDirectory: Bool = false
     ) {
         self.sessionID = sessionID
+        self.usesTemporaryDirectory = usesTemporaryDirectory
         self.maximumByteCount = max(1, maximumByteCount)
         self.maximumAge = max(60, maximumAge)
     }
