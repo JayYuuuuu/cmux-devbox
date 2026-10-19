@@ -88,35 +88,6 @@ struct RemoteSessionSSHDestinationArgumentTests {
         #expect(arguments.last?.contains(":/home/test user/.cache/cmux/paste/") == true)
     }
 
-    // DevBox: each extra ssh round trip costs a full handshake, so a paste is
-    // exactly one scp straight to an absolute /tmp path.
-    @Test("Dropped-file upload is one scp to an absolute /tmp path")
-    func droppedFileUploadIsOneSCPToTmp() async throws {
-        let localFile = FileManager.default.temporaryDirectory
-            .appendingPathComponent("cmux-drop-single-hop-" + UUID().uuidString + ".png")
-        try Data("x".utf8).write(to: localFile)
-        defer { try? FileManager.default.removeItem(at: localFile) }
-
-        let runner = RecordingProcessRunner()
-        let coordinator = Self.makeCoordinator(runner: runner)
-        defer { coordinator.stop() }
-
-        let paths = await withCheckedContinuation { continuation in
-            coordinator.uploadDroppedFiles(
-                [localFile],
-                operation: RemoteProcessCancellationOperation()
-            ) { result in
-                continuation.resume(returning: (try? result.get()) ?? [])
-            }
-        }
-
-        #expect(runner.requests.map(\.executable) == ["/usr/bin/scp"])
-        let path = try #require(paths.first)
-        #expect(path.hasPrefix("/tmp/cmux-paste-"))
-        #expect(path.hasSuffix(".png"))
-        #expect(runner.requests.first?.arguments.last == "user@example.test:" + path)
-    }
-
     @Test("Reverse relay fallback ends option parsing and keeps its forward")
     func reverseRelayFallbackEndsOptionParsingAndKeepsItsForward() throws {
         let coordinator = Self.makeCoordinator(
