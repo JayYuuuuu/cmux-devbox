@@ -2,6 +2,8 @@
 
 基于 [cmux](https://github.com/manaflow-ai/cmux) `v0.65.2`（`9d01f956c51cd895e10e7d56b6dd7b5f6fcce625`）的个人定制版：专门用来从 Mac 通过普通 SSH 连远程开发机、在远端跑 Claude Code。补丁集中在分支 `devbox-065` 上，每个提交只做一件事。`devbox-064` 是更早停在 `v0.64.25` 上的版本（`devbox.11`）；回退到 0.64 是为了躲开 0.65.0 首次粘新截图超时的问题，0.65.2 调整了图片准备阶段的超时计算并自带中文字体排版；是否解决旧版首次截图故障仍需实机验收，所以 0.65 线不再 fork Ghostty 子模块。非官方版本，与 Manaflow 无关；许可证沿用上游（macOS 客户端 GPL-3.0-or-later）。
 
+
+此 0.65 升级实验已停止发布。当前稳定发布和后续补丁重放源是 `devbox-064`；`0.64.25-devbox.12` 已由用户确认恢复原有字体和截图粘贴，`0.64.25-devbox.13` 在该基线上增加上传连接预热。不要以本实验分支作为下一次定制升级的补丁源。
 ## 下载安装
 
 1. 下载 [cmux-DevBox.zip](https://github.com/JayYuuuuu/cmux-devbox/releases/latest/download/cmux-DevBox.zip)（永远是最新版；只支持 Apple 芯片，需要 macOS 14+；devbox.7 及以前是通用版）。

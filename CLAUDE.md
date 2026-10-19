@@ -5,6 +5,9 @@ This checkout is **cmux DevBox**, a personal fork of manaflow-ai/cmux (branch
 These rules override the upstream notes below where they conflict.
 User-facing details: [docs/devbox-edition.md](docs/devbox-edition.md).
 
+`devbox-065` is a retired upgrade experiment. Current releases and future
+patch replay start from `devbox-064`; do not ship this experiment as an upgrade.
+
 - **Edition switch.** Every edition-only behavior keys off the bundle id
   `com.cmuxterm.app.staging.devbox`: `CmuxDevBoxEdition` (CmuxSettings: forced
   MDM keys, Settings sections, sign-in), `CmuxFeatureFlags.devBoxEditionPinnedOffKeys`
@@ -18,7 +21,13 @@ User-facing details: [docs/devbox-edition.md](docs/devbox-edition.md).
   *absolute* path (Claude Code does not expand `~`). Any change near
   `RemotePasteFileTransferPolicy`, `TerminalSSHSessionDetector` or the
   clipboard paste path needs the package tests plus a real Cmd+V into remote
-  Claude Code showing `[Image #N]`.
+  Codex showing `[Image #N]` and correctly describing the image. User acceptance
+  on the affected device remains required; success on another device is scoped evidence.
+- **Preserve the accepted font style.** Chinese glyphs must fill two terminal
+  cells as in `0.64.25-devbox.12` with unchanged settings. Do not adopt an
+  ASCII-height cap or replace the Ghostty fork based only on an upstream CJK
+  fix claim; require same-display visual acceptance. Details and upload
+  connection acceptance live in `docs/devbox-edition.md`.
 - **Verify** with `python3 scripts/verify-local.py --affected <upstream tag>` and
   the touched packages' `swift test` (at least CmuxRemoteSession, CmuxSettings,
   CmuxSettingsUI, CmuxUpdater). A build is not a test run.
