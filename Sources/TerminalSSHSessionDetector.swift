@@ -449,19 +449,43 @@ enum TerminalSSHSessionDetector {
         let executableName: String
     }
 
-    /// Uses the terminal's existing foreground PID instead of launching a
-    /// process-tree scan periodically. Shells and non-SSH jobs are ignored.
+    /// Uses the terminal's foreground job instead of spawning a process-tree
+    /// scan. Ghostty's +ssh helper and shell wrappers can own the group leader;
+    /// only descendants in that same foreground group are eligible.
     static func detect(
         foregroundPID: Int32,
         argumentsForPID: (Int32) -> [String]? = commandLineArguments(forPID:),
         processGroup: (Int32) -> Int32 = { getpgid($0) },
-        childPIDs: (Int32) -> [Int32] = { _ in [] }
+        childPIDs: (Int32) -> [Int32] = foregroundChildPIDs
     ) -> DetectedSSHSession? {
-        guard let arguments = argumentsForPID(foregroundPID),
-              let first = arguments.first,
-              RemoteShellSessionParsing.normalizedExecutableName(first) == "ssh",
-              isInteractiveSSHArguments(arguments) else { return nil }
-        return parseSSHCommandLine(arguments)
+        let group = processGroup(foregroundPID)
+        guard group > 0 else { return nil }
+        var pending = [foregroundPID]
+        var visited: Set<Int32> = []
+        while !pending.isEmpty, visited.count < 64 {
+            let pid = pending.removeFirst()
+            guard visited.insert(pid).inserted, processGroup(pid) == group else { continue }
+            if let arguments = argumentsForPID(pid),
+               let first = arguments.first,
+               RemoteShellSessionParsing.normalizedExecutableName(first) == "ssh",
+               isInteractiveSSHArguments(arguments),
+               let session = parseSSHCommandLine(arguments) {
+                return session
+            }
+            // Root SSH wins before any jump/proxy children. Background jobs
+            // with another process group are never followed.
+            pending.append(contentsOf: childPIDs(pid).prefix(max(0, 64 - visited.count - pending.count)))
+        }
+        return nil
+    }
+
+    private static func foregroundChildPIDs(_ pid: Int32) -> [Int32] {
+        var pids = [pid_t](repeating: 0, count: 64)
+        let count = pids.withUnsafeMutableBufferPointer { buffer in
+            proc_listchildpids(pid, buffer.baseAddress, Int32(buffer.count * MemoryLayout<pid_t>.stride))
+        }
+        guard count > 0 else { return [] }
+        return pids.prefix(min(pids.count, Int(count))).filter { $0 > 0 }
     }
 
     static func detect(forTTY ttyName: String) -> DetectedSSHSession? {
