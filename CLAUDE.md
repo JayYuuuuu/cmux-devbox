@@ -20,6 +20,11 @@ User-facing details: [docs/devbox-edition.md](docs/devbox-edition.md).
   clipboard paste path needs the package tests plus a real Cmd+V into remote
   Codex showing `[Image #N]` and correctly describing the image. User acceptance
   on the affected device remains required; success on another device is scoped evidence.
+- **Accepted upgrade baseline: `0.64.25-devbox.13`.** Preserve the accepted
+  font rendering, stable single-SCP image paste, and prewarmed per-device upload
+  connections across upgrades. Same-device sessions share the connection;
+  different devices must remain independent. Treat these as acceptance gates,
+  not disposable optimizations. See `docs/devbox-edition.md`.
 - **Preserve the accepted font style.** Chinese glyphs must fill two terminal
   cells as in `0.64.25-devbox.12` with unchanged settings. Do not adopt an
   ASCII-height cap or replace the Ghostty fork based only on an upstream CJK
