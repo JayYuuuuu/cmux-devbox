@@ -4,6 +4,7 @@ import AppKit
 import CMUXAuthCore
 import CMUXMobileCore
 import CmuxAuthRuntime
+import CmuxSettings
 import CmuxSettingsUI
 import Foundation
 import Observation
