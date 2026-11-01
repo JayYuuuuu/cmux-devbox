@@ -79,6 +79,9 @@ if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
   fi
 fi
 
+ZIP_URL="https://github.com/${REPO}/releases/download/${TAG}/cmux-DevBox.zip"
+NOTES_URL="https://github.com/${REPO}/releases/tag/${TAG}"
+
 if [[ "$PUBLISH_EXISTING" != --publish-existing ]]; then
 SPARKLE_BIN="$(find "${WORK_ROOT}/DerivedData/SourcePackages/artifacts" -type f -name sign_update -path '*/bin/*' | head -n 1)"
 [[ -x "$SPARKLE_BIN" ]] || { echo "error: Sparkle sign_update not found" >&2; exit 1; }
@@ -86,8 +89,6 @@ SPARKLE_BIN="$(find "${WORK_ROOT}/DerivedData/SourcePackages/artifacts" -type f 
 ED_ATTRIBUTES="$("$SPARKLE_BIN" --ed-key-file "$ED_KEY_FILE" "$ZIP_PATH")"
 [[ "$ED_ATTRIBUTES" == *'sparkle:edSignature="'* ]] || { echo "error: sign_update: $ED_ATTRIBUTES" >&2; exit 1; }
 
-ZIP_URL="https://github.com/${REPO}/releases/download/${TAG}/cmux-DevBox.zip"
-NOTES_URL="https://github.com/${REPO}/releases/tag/${TAG}"
 PUB_DATE="$(LC_ALL=C date -u '+%a, %d %b %Y %H:%M:%S +0000')"
 cat > "${OUT_DIR}/appcast.xml" <<EOF
 <?xml version="1.0" encoding="utf-8"?>
