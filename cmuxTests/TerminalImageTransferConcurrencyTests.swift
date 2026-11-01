@@ -12,6 +12,50 @@ import Testing
 @Suite("Terminal image transfer concurrency")
 struct TerminalImageTransferConcurrencyTests {
     @MainActor
+    @Test("plain-text fast path bypasses an occupied full-worker lane")
+    func plainTextFastPathBypassesOccupiedWorker() async {
+        let operation = ControlledPastePreparationOperation()
+        let service = TerminalImageTransferPreparationService(
+            deadline: .seconds(30),
+            operation: { try await operation.run($0) },
+            cleanup: { _ in },
+            fastOperation: { request in
+                guard request.pasteboard.pasteboardName.contains("fast") else {
+                    return nil
+                }
+                return .terminal(.insertText("fast-path"))
+            },
+            failureSignal: { _ in }
+        )
+        var started = operation.startedEvents().makeAsyncIterator()
+        let (blockedPasteboard, blockedRequest) = makeReadRequest(
+            label: "blocked"
+        )
+        let (fastPasteboard, fastRequest) = makeReadRequest(label: "fast")
+        defer {
+            blockedPasteboard.clearContents()
+            blockedPasteboard.releaseGlobally()
+            fastPasteboard.clearContents()
+            fastPasteboard.releaseGlobally()
+        }
+
+        let blockedTask = Task {
+            await service.prepare(request: blockedRequest, mode: .paste)
+        }
+        #expect(await started.next() == blockedRequest.pasteboardName)
+
+        let fastResult = await service.prepare(
+            request: fastRequest,
+            mode: .paste
+        )
+        #expect(fastResult == .insertText("fast-path"))
+        #expect(await operation.snapshot().maximumActiveCount == 1)
+
+        await operation.release(blockedRequest.pasteboardName)
+        #expect(await blockedTask.value == .insertText(blockedRequest.pasteboardName))
+    }
+
+    @MainActor
     @Test("failure event streams finish when their probe is released")
     func failureProbeFinishesOnRelease() async {
         var probe: PastePreparationFailureProbe? = PastePreparationFailureProbe()

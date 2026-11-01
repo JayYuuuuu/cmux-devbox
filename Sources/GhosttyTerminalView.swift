@@ -296,18 +296,19 @@ class GhosttyApp {
         engine: GhosttyApp.shared,
         viewProvider: {
             let pasteboardService = GhosttyApp.terminalPasteboard
+            let client = TerminalPastePreparationWorkerClient
+                .reexecingCurrentBinary(pasteboardService: pasteboardService)
             let preparationService = TerminalImageTransferPreparationService(
                 operation: { request in
-                    let client = TerminalPastePreparationWorkerClient
-                        .reexecingCurrentBinary(
-                            pasteboardService: pasteboardService
-                    )
-                    return try await client.prepare(request)
+                    try await client.prepare(request)
                 },
                 cleanup: { result in
                     result.cleanupTransferredTemporaryFiles(
                         using: pasteboardService
                     )
+                },
+                fastOperation: { request in
+                    try await client.prepareFastPath(request)
                 }
             )
             return TerminalSurfaceViewFactory(

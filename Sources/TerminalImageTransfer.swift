@@ -8,6 +8,8 @@ import UniformTypeIdentifiers
 enum TerminalImageTransferMode: Codable, Sendable {
     case paste
     case drop
+    /// Program-initiated text reads never return image or file payloads.
+    case plainText
 }
 
 enum TerminalRemoteUploadTarget: Equatable {
@@ -186,6 +188,11 @@ enum TerminalImageTransferPlanner {
                 pasteboard: pasteboard,
                 pasteboardService: pasteboardService
             )
+        case .plainText:
+            guard let text = pasteboardService.fallbackPlainTextContents(
+                from: pasteboard
+            ), !text.isEmpty else { return .reject }
+            return .insertText(text)
         }
     }
 

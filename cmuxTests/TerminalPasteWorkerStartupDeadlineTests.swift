@@ -23,7 +23,7 @@ struct TerminalPasteWorkerStartupDeadlineTests {
         defer { worker.remove() }
         let service = worker.service(deadline: .seconds(2))
 
-        let content = await service.prepare(
+        let outcome = await service.prepareReportingFailure(
             request: TerminalPasteboardReadRequest(
                 pasteboardName: "cmux-slow-worker-start-\(UUID())",
                 changeCount: 0
@@ -31,9 +31,65 @@ struct TerminalPasteWorkerStartupDeadlineTests {
             mode: .paste
         )
 
-        #expect(content == .insertText("pasted after a slow start"))
+        #expect(outcome.failure == nil)
+        #expect(outcome.content == .insertText("pasted after a slow start"))
     }
 
+    @Test("a started worker that stalls is still killed at the deadline")
+    func stalledStartedWorkerStillTimesOut() async throws {
+        let worker = try ScriptedPasteWorker(
+            startupDelay: "0",
+            afterReady: "sleep 30",
+            response: .terminal(.insertText("never delivered"))
+        )
+        defer { worker.remove() }
+        // Longer than the bound below: only the readiness restart can end
+        // this paste within it.
+        let service = worker.service(
+            deadline: .seconds(1),
+            workerStartupAllowance: .seconds(30)
+        )
+        let started = ContinuousClock.now
+
+        let outcome = await service.prepareReportingFailure(
+            request: TerminalPasteboardReadRequest(
+                pasteboardName: "cmux-stalled-worker-\(UUID())",
+                changeCount: 0
+            ),
+            mode: .paste
+        )
+
+        #expect(outcome.failure == .deadlineExceeded)
+        #expect(outcome.content == .reject)
+        #expect(started.duration(to: .now) < .seconds(20))
+    }
+
+    @Test("a worker that never finishes starting is killed at the startup allowance")
+    func hungWorkerStartupIsBounded() async throws {
+        let worker = try ScriptedPasteWorker(
+            startupDelay: "30",
+            afterReady: "cp \"$RESPONSE\" \"$3/response.json\"",
+            response: .terminal(.insertText("never delivered"))
+        )
+        defer { worker.remove() }
+        let service = worker.service(
+            deadline: .seconds(1),
+            workerStartupAllowance: .seconds(2)
+        )
+        let started = ContinuousClock.now
+
+        let outcome = await service.prepareReportingFailure(
+            request: TerminalPasteboardReadRequest(
+                pasteboardName: "cmux-hung-worker-start-\(UUID())",
+                changeCount: 0
+            ),
+            mode: .paste
+        )
+
+        #expect(outcome.failure == .deadlineExceeded)
+        #expect(outcome.content == .reject)
+        #expect(started.duration(to: .now) < .seconds(20))
+    }
 }
 
 /// A shell script standing in for `cmux --cmux-paste-preparation-worker`.
@@ -79,15 +135,19 @@ struct ScriptedPasteWorker {
     }
 
     func service(
-        deadline: Duration
+        deadline: Duration,
+        workerStartupAllowance: Duration = TerminalImageTransferPreparationService
+            .defaultWorkerStartupAllowance
     ) -> TerminalImageTransferPreparationService {
         let pasteboardService = TerminalPasteboardService()
         let client = TerminalPastePreparationWorkerClient(
             executableURL: executableURL,
-            pasteboardService: pasteboardService
+            pasteboardService: pasteboardService,
+            plainTextExecutableURL: nil
         )
         return TerminalImageTransferPreparationService(
             deadline: deadline,
+            workerStartupAllowance: workerStartupAllowance,
             operation: { request in try await client.prepare(request) },
             cleanup: { result in
                 result.cleanupTransferredTemporaryFiles(using: pasteboardService)

@@ -22,4 +22,15 @@ The new upstream remote-home finalization flow is intentionally not imported: th
 
 ## Evidence
 
-Pending implementation and validation. No claim that these fixes explain or resolve the previously unproven remote upload failure.
+- Baseline runtime regression reproduced on the build host: a scripted worker with a 3-second startup was rejected at 2.009 seconds under a 2-second preparation budget. Native Swift Testing executed one test and reported the expected content mismatch; the failure is behavioral, not a compilation failure.
+- The baseline initially failed before tests because Zig was absent from the noninteractive PATH. The rerun used the documented toolchain PATH.
+- The documented `scripts/verify-local.py` is absent on this v0.64 checkout. Use the available project normalization/test-wiring checks and native/package tests; do not claim that missing command passed.
+- Candidate imports the upstream clipboard cancellation/reaping dependency so the clipboard read lease is held until worker teardown, plus the resident text helper required by #18650.
+- Candidate native run: 27 tests in four focused suites passed in 6.987 seconds. Covers worker startup, preparation/startup stalls, busy full-lane bypass, FIFO/cancellation/queue behavior, stale clipboard generations, native rich/image flavor fidelity, and reaping before clipboard lease release.
+- Required unchanged package gates: CmuxRemoteSession 186, CmuxSettings 338, CmuxSettingsUI 169, CmuxUpdater 98 tests passed (791 total), using the locked dependencies on the build host. Relevant package sources were not modified by this backport.
+- Isolated helper/provider behavioral run: 20 tests passed in 22.301 seconds, including Unicode byte fidelity, native image/file precedence, rich-text fallback, stale generations, parent disappearance, hard deadlines, and resident-reader reuse.
+- Same-board seven-sample text preparation comparison, native Debug app-host: full worker median 91.073916 ms; helper median 0.146208 ms (first helper read 3.938459 ms). This measures local text preparation with identical mixed-language data, not remote upload or total Cmd+V latency.
+- Project normalization and test wiring passed. No user-facing app strings or locale keys changed; internal documentation and test descriptions only.
+- Production Swift pipe-client probes: three tests passed in 4.596 seconds. Checks clipboard restoration, cancellation/reaping before helper replacement, and rejecting/reaping an oversized response.
+- Resident helper idle sample: 7,616 KiB RSS, displayed CPU 0.0%, CPU time 0:00.00 unchanged across five seconds. The old v0.64 source path has no resident helper, so this is additional process cost; it is not a before/after total-app measurement.
+- Signed candidate artifact and actual-device Codex paste are still pending. No claim that these fixes explain or resolve the previously unproven remote upload failure.

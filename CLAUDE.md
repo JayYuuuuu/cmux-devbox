@@ -30,9 +30,12 @@ User-facing details: [docs/devbox-edition.md](docs/devbox-edition.md).
   ASCII-height cap or replace the Ghostty fork based only on an upstream CJK
   fix claim; require same-display visual acceptance. Details and upload
   connection acceptance live in `docs/devbox-edition.md`.
-- **Verify** with `python3 scripts/verify-local.py --affected <upstream tag>` and
-  the touched packages' `swift test` (at least CmuxRemoteSession, CmuxSettings,
-  CmuxSettingsUI, CmuxUpdater). A build is not a test run.
+- **Verify** with `bash scripts/check-pbxproj.sh`,
+  `bash scripts/lint-pbxproj-test-wiring.sh`, focused native clipboard tests,
+  and the touched packages' `swift test` (at least CmuxRemoteSession,
+  CmuxSettings, CmuxSettingsUI, CmuxUpdater). The newer upstream
+  `scripts/verify-local.py` does not exist on this v0.64 baseline. A build is
+  not a test run.
 - **Build and release** only with `scripts/build-devbox.sh` / `scripts/release-devbox.sh`
   (never upstream reload scripts for releases, never the stable id). Releases
   are `v<upstream>-devbox.<n>`, `<n>` strictly increasing; installed copies

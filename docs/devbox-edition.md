@@ -90,7 +90,7 @@ DevBox 版在本机终端出现普通前台 SSH 连接时提前建立专供上�
 
 ## 升级上游
 
-不跟 main。选定新的稳定标签后，在新标签上 cherry-pick `devbox-064` 的提交（Ghostty 子模块也要在新标签用的 Ghostty 上重放 `devbox-064` 分支的提交），解决冲突，把 `build-devbox.sh` 里的 `UPSTREAM_TAG` 改成新标签，跑 `python3 scripts/verify-local.py --affected <新标签>` 和相关包测试（`CmuxRemoteSession`、`CmuxSettings`、`CmuxSettingsUI`），重新构建，再按下面的验收清单走一遍。
+不跟 main。选定新的稳定标签后，在新标签上 cherry-pick `devbox-064` 的提交（Ghostty 子模块也要在新标签用的 Ghostty 上重放 `devbox-064` 分支的提交），解决冲突，把 `build-devbox.sh` 里的 `UPSTREAM_TAG` 改成新标签，先运行新标签实际提供的检查脚本（当前 0.64 基线使用 `bash scripts/check-pbxproj.sh`、`bash scripts/lint-pbxproj-test-wiring.sh`，不含 `verify-local.py`）和相关包测试（`CmuxRemoteSession`、`CmuxSettings`、`CmuxSettingsUI`），重新构建，再按下面的验收清单走一遍。
 
 ## 验收清单
 
@@ -101,3 +101,12 @@ DevBox 版在本机终端出现普通前台 SSH 连接时提前建立专供上�
 - 普通文本、多行文本粘贴不变。
 - 设置、侧栏、命令面板、菜单里没有 Cloud / 登录 / 手机配对入口。
 - 与官方 cmux 同时开着，两边互不影响。
+
+
+## DevBox 14 剪贴板修复候选（2026-11-01）
+
+保持 v0.64.25 底座、已验收的 Ghostty 字体、一次 SCP 临时目录上传和按连接配置预热不变，只移植官方 v0.65.1 的剪贴板修复及其必要依赖：普通文字由独立的小型读取程序处理，不再排在图片准备后面；完整图片程序的启动等待和准备超时分别计时；取消操作后等读取程序退出再释放剪贴板读取权。图片、文件和有损富文本仍由可终止的隔离程序处理，不把第三方剪贴板读取移回主线程。文字程序的输出大小、启动/处理时限、错误回收以及下一次读取恢复均有针对验证。
+
+来源：[文字粘贴绕过图片等待 #18650](https://github.com/manaflow-ai/cmux/pull/18650)、[图片程序启动超时 #19164](https://github.com/manaflow-ai/cmux/pull/19164)。官方 [绝对路径修复 #18280](https://github.com/manaflow-ai/cmux/pull/18280) 已核对；当前版本的临时文件上传本来就返回绝对路径，因此保留原上传实现，不引入新的远端目录准备与清理流程。没有据此宣称历史远端上传卡住的根因已解决。
+
+候选的自动验证和性能结果见 [移植记录](plans/devbox-14-paste-backport.md)。发布与常用设备验收以该记录为准，不把旧版验收套到候选包上。

@@ -1562,6 +1562,7 @@
 		D10786DB0000000000000003 /* DeferredBrowserPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D10786DB0000000000000004 /* DeferredBrowserPanelView.swift */; };
 		F87910140000000000000001 /* DeferredWorkspaceTerminalFontSizeCoordinatorJoin.swift in Sources */ = {isa = PBXBuildFile; fileRef = F87910140000000000000002 /* DeferredWorkspaceTerminalFontSizeCoordinatorJoin.swift */; };
 		C0DE75890000000000000003 /* DeflatedAssetTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE75890000000000000004 /* DeflatedAssetTestSupport.swift */; };
+		B12715000000000000000003 /* DelayedPastePreparationTermination.swift in Sources */ = {isa = PBXBuildFile; fileRef = B12715000000000000000004 /* DelayedPastePreparationTermination.swift */; };
 		A5001F000000000000000001 /* DetachedFolderDragIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5001F000000000000000002 /* DetachedFolderDragIcon.swift */; };
 		B05553C10000000000000001 /* DetachedFolderPathLookupCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B05553C10000000000000002 /* DetachedFolderPathLookupCache.swift */; };
 		B0555303B0555303B0555303 /* DetachedFolderPathLookupCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0555304B0555304B0555304 /* DetachedFolderPathLookupCacheTests.swift */; };
@@ -3328,6 +3329,7 @@
 		B8835A000000000000000005 /* TerminalImageTransferConcurrencyTests+Timeouts.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8835A000000000000000006 /* TerminalImageTransferConcurrencyTests+Timeouts.swift */; };
 		B88350000000000000000001 /* TerminalImageTransferConcurrencyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B88350000000000000000002 /* TerminalImageTransferConcurrencyTests.swift */; };
 		124760000000000000000029 /* TerminalImageTransferPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 124770000000000000000029 /* TerminalImageTransferPlan.swift */; };
+		B8835B000000000000000001 /* TerminalImageTransferPreparationOutcome.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8835B000000000000000002 /* TerminalImageTransferPreparationOutcome.swift */; };
 		B88351000000000000000003 /* TerminalImageTransferPreparationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B88351000000000000000004 /* TerminalImageTransferPreparationService.swift */; };
 		B88351000000000000000005 /* TerminalImageTransferPreparedContent+Cleanup.swift in Sources */ = {isa = PBXBuildFile; fileRef = B88351000000000000000006 /* TerminalImageTransferPreparedContent+Cleanup.swift */; };
 		B88357000000000000000007 /* TerminalImageTransferPreparedContent+DebugDescription.swift in Sources */ = {isa = PBXBuildFile; fileRef = B88357000000000000000008 /* TerminalImageTransferPreparedContent+DebugDescription.swift */; };
@@ -3391,6 +3393,7 @@
 		B88355000000000000000003 /* TerminalPastePreparationJob.swift in Sources */ = {isa = PBXBuildFile; fileRef = B88355000000000000000004 /* TerminalPastePreparationJob.swift */; };
 		B88358000000000000000007 /* TerminalPastePreparationOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B88358000000000000000008 /* TerminalPastePreparationOperation.swift */; };
 		B88358000000000000000009 /* TerminalPastePreparationProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8835800000000000000000A /* TerminalPastePreparationProcess.swift */; };
+		B12715000000000000000001 /* TerminalPastePreparationReapingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B12715000000000000000002 /* TerminalPastePreparationReapingTests.swift */; };
 		B88355000000000000000005 /* TerminalPastePreparationRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = B88355000000000000000006 /* TerminalPastePreparationRequest.swift */; };
 		B88358000000000000000001 /* TerminalPastePreparationResult+TransferredFiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = B88358000000000000000002 /* TerminalPastePreparationResult+TransferredFiles.swift */; };
 		B88355000000000000000007 /* TerminalPastePreparationResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = B88355000000000000000008 /* TerminalPastePreparationResult.swift */; };
@@ -3403,6 +3406,9 @@
 		E4C22189E38274D789F19994 /* TerminalPasteWorkerStartupDeadlineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90DE3B8367240280F25B9F8F /* TerminalPasteWorkerStartupDeadlineTests.swift */; };
 		C13519000000000000000013 /* TerminalPathEnvironmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13519000000000000000014 /* TerminalPathEnvironmentTests.swift */; };
 		F87910110000000000000001 /* TerminalPendingConfigurationReload.swift in Sources */ = {isa = PBXBuildFile; fileRef = F87910110000000000000002 /* TerminalPendingConfigurationReload.swift */; };
+		C12758000000000000000001 /* TerminalPlainTextPasteStartupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C12758000000000000000002 /* TerminalPlainTextPasteStartupTests.swift */; };
+		D12660000000000000000003 /* TerminalPlainTextPasteWorkerConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D12660000000000000000004 /* TerminalPlainTextPasteWorkerConnection.swift */; };
+		D12660000000000000000001 /* TerminalPlainTextPasteWorkerPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = D12660000000000000000002 /* TerminalPlainTextPasteWorkerPool.swift */; };
         C12681010000000000000001 /* TerminalPortalGeometryFixture.swift in Sources */ = {isa = PBXBuildFile; fileRef = C12681010000000000000002 /* TerminalPortalGeometryFixture.swift */; };
 		9612A0010000000000000001 /* TerminalPortalReconciliation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9612B0010000000000000001 /* TerminalPortalReconciliation.swift */; };
 		126570000000000000000004 /* TerminalPortalTestWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 126570000000000000000003 /* TerminalPortalTestWorkspace.swift */; };
@@ -5397,6 +5403,7 @@
 		D10786DB0000000000000004 /* DeferredBrowserPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/DeferredBrowserPanelView.swift; sourceTree = "<group>"; };
 		F87910140000000000000002 /* DeferredWorkspaceTerminalFontSizeCoordinatorJoin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeferredWorkspaceTerminalFontSizeCoordinatorJoin.swift; sourceTree = "<group>"; };
 		C0DE75890000000000000004 /* DeflatedAssetTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeflatedAssetTestSupport.swift; sourceTree = "<group>"; };
+		B12715000000000000000004 /* DelayedPastePreparationTermination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DelayedPastePreparationTermination.swift; sourceTree = "<group>"; };
 		A5001F000000000000000002 /* DetachedFolderDragIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetachedFolderDragIcon.swift; sourceTree = "<group>"; };
 		B05553C10000000000000002 /* DetachedFolderPathLookupCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetachedFolderPathLookupCache.swift; sourceTree = "<group>"; };
 		B0555304B0555304B0555304 /* DetachedFolderPathLookupCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetachedFolderPathLookupCacheTests.swift; sourceTree = "<group>"; };
@@ -7140,6 +7147,7 @@
 		B8835A000000000000000006 /* TerminalImageTransferConcurrencyTests+Timeouts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalImageTransferConcurrencyTests+Timeouts.swift"; sourceTree = "<group>"; };
 		B88350000000000000000002 /* TerminalImageTransferConcurrencyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalImageTransferConcurrencyTests.swift; sourceTree = "<group>"; };
 		124770000000000000000029 /* TerminalImageTransferPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sources/TerminalImageTransferPlan.swift"; sourceTree = SOURCE_ROOT; };
+		B8835B000000000000000002 /* TerminalImageTransferPreparationOutcome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalImageTransferPreparationOutcome.swift; sourceTree = "<group>"; };
 		B88351000000000000000004 /* TerminalImageTransferPreparationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalImageTransferPreparationService.swift; sourceTree = "<group>"; };
 		B88351000000000000000006 /* TerminalImageTransferPreparedContent+Cleanup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalImageTransferPreparedContent+Cleanup.swift"; sourceTree = "<group>"; };
 		B88357000000000000000008 /* TerminalImageTransferPreparedContent+DebugDescription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalImageTransferPreparedContent+DebugDescription.swift"; sourceTree = "<group>"; };
@@ -7203,6 +7211,7 @@
 		B88355000000000000000004 /* TerminalPastePreparationJob.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalPastePreparationJob.swift; sourceTree = "<group>"; };
 		B88358000000000000000008 /* TerminalPastePreparationOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalPastePreparationOperation.swift; sourceTree = "<group>"; };
 		B8835800000000000000000A /* TerminalPastePreparationProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalPastePreparationProcess.swift; sourceTree = "<group>"; };
+		B12715000000000000000002 /* TerminalPastePreparationReapingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalPastePreparationReapingTests.swift; sourceTree = "<group>"; };
 		B88355000000000000000006 /* TerminalPastePreparationRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalPastePreparationRequest.swift; sourceTree = "<group>"; };
 		B88358000000000000000002 /* TerminalPastePreparationResult+TransferredFiles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalPastePreparationResult+TransferredFiles.swift"; sourceTree = "<group>"; };
 		B88355000000000000000008 /* TerminalPastePreparationResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalPastePreparationResult.swift; sourceTree = "<group>"; };
@@ -7215,6 +7224,9 @@
 		90DE3B8367240280F25B9F8F /* TerminalPasteWorkerStartupDeadlineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalPasteWorkerStartupDeadlineTests.swift; sourceTree = "<group>"; };
 		C13519000000000000000014 /* TerminalPathEnvironmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalPathEnvironmentTests.swift; sourceTree = "<group>"; };
 		F87910110000000000000002 /* TerminalPendingConfigurationReload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalPendingConfigurationReload.swift; sourceTree = "<group>"; };
+		C12758000000000000000002 /* TerminalPlainTextPasteStartupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalPlainTextPasteStartupTests.swift; sourceTree = "<group>"; };
+		D12660000000000000000004 /* TerminalPlainTextPasteWorkerConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalPlainTextPasteWorkerConnection.swift; sourceTree = "<group>"; };
+		D12660000000000000000002 /* TerminalPlainTextPasteWorkerPool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalPlainTextPasteWorkerPool.swift; sourceTree = "<group>"; };
         C12681010000000000000002 /* TerminalPortalGeometryFixture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalPortalGeometryFixture.swift; sourceTree = "<group>"; };
 		9612B0010000000000000001 /* TerminalPortalReconciliation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalPortalReconciliation.swift; sourceTree = "<group>"; };
 		126570000000000000000003 /* TerminalPortalTestWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalPortalTestWorkspace.swift"; sourceTree = "<group>"; };
@@ -9517,6 +9529,9 @@
 				B8835800000000000000000A /* TerminalPastePreparationProcess.swift */,
 				B8835800000000000000000E /* TerminalPastePreparationWorker.swift */,
 				B8835800000000000000000C /* TerminalPastePreparationWorkerClient.swift */,
+				D12660000000000000000002 /* TerminalPlainTextPasteWorkerPool.swift */,
+				D12660000000000000000004 /* TerminalPlainTextPasteWorkerConnection.swift */,
+				B8835B000000000000000002 /* TerminalImageTransferPreparationOutcome.swift */,
 				B88359000000000000000002 /* TerminalPastePreparationWorkerSupervisor.swift */,
 				B88358000000000000000006 /* TerminalPastePreparationWorkerError.swift */,
 				B88358000000000000000004 /* TerminalPastePreparationWorkerResponse.swift */,
@@ -10938,6 +10953,9 @@
 				EC010C02 /* TerminalUploadCommandTests.swift */,
 				02FC74F2C27127CC565B3E8C /* TerminalAndGhosttyTests.swift */,
 				B88350000000000000000002 /* TerminalImageTransferConcurrencyTests.swift */,
+				B12715000000000000000004 /* DelayedPastePreparationTermination.swift */,
+				B12715000000000000000002 /* TerminalPastePreparationReapingTests.swift */,
+				C12758000000000000000002 /* TerminalPlainTextPasteStartupTests.swift */,
 				90DE3B8367240280F25B9F8F /* TerminalPasteWorkerStartupDeadlineTests.swift */,
 				B8835A000000000000000006 /* TerminalImageTransferConcurrencyTests+Timeouts.swift */,
 				C0DE1A6E0000000000000002 /* TerminalLocalImageTransferFileLifetimeTests.swift */,
@@ -11697,6 +11715,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = A5001060 /* Build configuration list for PBXNativeTarget "cmux" */;
 			buildPhases = (
+				C12758000000000000000005 /* Build Plain Text Paste Worker */,
 				A5001051 /* Sources */,
 				A5001030 /* Frameworks */,
 				A5001102 /* Resources */,
@@ -12258,6 +12277,23 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${SRCROOT}/scripts/build-wireguard-go.sh\"";
+		};
+		C12758000000000000000005 /* Build Plain Text Paste Worker */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = (
+				"$(SRCROOT)/scripts/build-plain-text-paste-worker.sh",
+				"$(SRCROOT)/workers/cmux-paste-text/main.m",
+			);
+			name = "Build Plain Text Paste Worker";
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/bin/cmux-paste-text-worker",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/scripts/build-plain-text-paste-worker.sh\" \"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/bin/cmux-paste-text-worker\" \"${ARCHS}\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -14340,6 +14376,7 @@
 				C86270000000000000000001 /* TerminalHTMLFileBrowserAction.swift in Sources */,
 				A5001542 /* TerminalImageTransfer.swift in Sources */,
 				124760000000000000000029 /* TerminalImageTransferPlan.swift in Sources */,
+				B8835B000000000000000001 /* TerminalImageTransferPreparationOutcome.swift in Sources */,
 				B88351000000000000000003 /* TerminalImageTransferPreparationService.swift in Sources */,
 				B88351000000000000000005 /* TerminalImageTransferPreparedContent+Cleanup.swift in Sources */,
 				B88357000000000000000007 /* TerminalImageTransferPreparedContent+DebugDescription.swift in Sources */,
@@ -14400,6 +14437,8 @@
 				B88359000000000000000001 /* TerminalPastePreparationWorkerSupervisor.swift in Sources */,
 				2681A216F02BEE5AD12CE00D /* TerminalPastePreparationWorkerTextPayload.swift in Sources */,
 				F87910110000000000000001 /* TerminalPendingConfigurationReload.swift in Sources */,
+				D12660000000000000000003 /* TerminalPlainTextPasteWorkerConnection.swift in Sources */,
+				D12660000000000000000001 /* TerminalPlainTextPasteWorkerPool.swift in Sources */,
 				9612A0010000000000000001 /* TerminalPortalReconciliation.swift in Sources */,
 				D5671001D5671001D5671001 /* TerminalScrollSpeedSettings.swift in Sources */,
 				862C77A9D235803A22B715B5 /* TerminalSearchNavigation.swift in Sources */,
@@ -15420,6 +15459,7 @@
 				917300000000000000000001 /* DeferredActionReplacementStackTests.swift in Sources */,
 				A54730000000000000000006 /* DeferredAgentResumeIndexFallbackTests.swift in Sources */,
 				C0DE75890000000000000003 /* DeflatedAssetTestSupport.swift in Sources */,
+				B12715000000000000000003 /* DelayedPastePreparationTermination.swift in Sources */,
 				B0555303B0555303B0555303 /* DetachedFolderPathLookupCacheTests.swift in Sources */,
 				DE71CE000000000000000002 /* DeviceRegistryClientTests.swift in Sources */,
 				D1FFC0DE000000000000C002 /* DiffCommentStoreTests.swift in Sources */,
@@ -15886,8 +15926,10 @@
 				A5E380700000000000000001 /* TerminalNotificationSocketActionTests.swift in Sources */,
 				11189010A1B2C3D4E5F60718 /* TerminalNotificationSocketAttributionTests.swift in Sources */,
 				596100000000000000000007 /* TerminalNotificationStore+NativeNotificationDeliveryTesting.swift in Sources */,
+				B12715000000000000000001 /* TerminalPastePreparationReapingTests.swift in Sources */,
 				E4C22189E38274D789F19994 /* TerminalPasteWorkerStartupDeadlineTests.swift in Sources */,
 				C13519000000000000000013 /* TerminalPathEnvironmentTests.swift in Sources */,
+				C12758000000000000000001 /* TerminalPlainTextPasteStartupTests.swift in Sources */,
 				C12681010000000000000001 /* TerminalPortalGeometryFixture.swift in Sources */,
 				126570000000000000000004 /* TerminalPortalTestWorkspace.swift in Sources */,
 				D5671101D5671101D5671101 /* TerminalScrollSpeedSettingsFileStoreTests.swift in Sources */,
