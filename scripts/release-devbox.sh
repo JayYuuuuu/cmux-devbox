@@ -2,11 +2,11 @@
 # Publishes one cmux DevBox release to GitHub so installed copies update
 # themselves through Sparkle.
 #
-#   ./scripts/release-devbox.sh <n> <notes.md>
+#   ./scripts/release-devbox.sh <n> <notes.md> [--publish-existing]
 #
 # Builds an Apple silicon (arm64), stably signed app as <upstream>-devbox.<n>, EdDSA-signs
 # the ZIP, writes appcast.xml, creates release tag v<upstream>-devbox.<n> on
-# the pushed HEAD of devbox-custom, uploads ZIP + appcast + SHA256SUMS, then
+# the pushed HEAD of devbox-064, uploads ZIP + appcast + SHA256SUMS, then
 # reads the published appcast back and checks it.
 #
 # Needs (on the build Mac): the signing keychain and Sparkle private key under
@@ -23,6 +23,11 @@ MIN_SYSTEM_VERSION="14.0"
 
 RELEASE_NUMBER="${1:?usage: release-devbox.sh <n> <notes.md>}"
 NOTES_FILE="${2:?usage: release-devbox.sh <n> <notes.md>}"
+PUBLISH_EXISTING="${3:-}"
+if [[ -n "$PUBLISH_EXISTING" && "$PUBLISH_EXISTING" != --publish-existing ]]; then
+  echo "error: unknown option $PUBLISH_EXISTING" >&2
+  exit 2
+fi
 [[ -f "$NOTES_FILE" ]] || { echo "error: notes file $NOTES_FILE not found" >&2; exit 1; }
 [[ -f "$ED_KEY_FILE" ]] || { echo "error: Sparkle key $ED_KEY_FILE not found" >&2; exit 1; }
 
@@ -42,10 +47,11 @@ if [[ "$HEAD_SHA" != "$REMOTE_SHA" ]]; then
 fi
 
 OUT_DIR="${WORK_ROOT}/release-${RELEASE_NUMBER}"
-rm -rf "$OUT_DIR"
-# arm64 only: every Mac running this edition is Apple silicon, and a
-# universal build compiles every Swift file twice.
-CMUX_DEVBOX_ARCH=arm64 ./scripts/build-devbox.sh --release "$RELEASE_NUMBER" --out "$OUT_DIR"
+if [[ "$PUBLISH_EXISTING" != --publish-existing ]]; then
+  rm -rf "$OUT_DIR"
+  # arm64 only: every Mac running this edition is Apple silicon.
+  CMUX_DEVBOX_ARCH=arm64 ./scripts/build-devbox.sh --release "$RELEASE_NUMBER" --out "$OUT_DIR"
+fi
 
 APP_PATH="${OUT_DIR}/cmux DevBox.app"
 ZIP_PATH="${OUT_DIR}/cmux-DevBox.zip"
@@ -53,12 +59,27 @@ PLIST="$APP_PATH/Contents/Info.plist"
 SHORT_VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST")"
 BUNDLE_VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$PLIST")"
 TAG="v${SHORT_VERSION}"
-
-if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-  echo "error: release $TAG already exists" >&2
-  exit 1
+if [[ "$PUBLISH_EXISTING" == --publish-existing ]]; then
+  EDITION_VERSION="$(/usr/libexec/PlistBuddy -c "Print :CMUXEditionVersion" "$PLIST")"
+  if [[ "$SHORT_VERSION" != *"-devbox.${RELEASE_NUMBER}" || "$EDITION_VERSION" != "${SHORT_VERSION} (${HEAD_SHA:0:9})" ]]; then
+    echo "error: existing artifact version or source commit does not match this checkout" >&2
+    exit 1
+  fi
+  codesign --verify --deep --strict "$APP_PATH"
+  (cd "$OUT_DIR" && shasum -a 256 -c SHA256SUMS.txt)
 fi
 
+RELEASE_API=""
+if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+  IS_DRAFT="$(gh release view "$TAG" --repo "$REPO" --json isDraft --jq .isDraft)"
+  RELEASE_HEAD="$(gh release view "$TAG" --repo "$REPO" --json targetCommitish --jq .targetCommitish)"
+  if [[ "$IS_DRAFT" != true || "$RELEASE_HEAD" != "$HEAD_SHA" ]]; then
+    echo "error: release $TAG is already published or belongs to another commit" >&2
+    exit 1
+  fi
+fi
+
+if [[ "$PUBLISH_EXISTING" != --publish-existing ]]; then
 SPARKLE_BIN="$(find "${WORK_ROOT}/DerivedData/SourcePackages/artifacts" -type f -name sign_update -path '*/bin/*' | head -n 1)"
 [[ -x "$SPARKLE_BIN" ]] || { echo "error: Sparkle sign_update not found" >&2; exit 1; }
 # Prints: sparkle:edSignature="..." length="..."
@@ -90,9 +111,36 @@ EOF
 
 (cd "$OUT_DIR" && shasum -a 256 cmux-DevBox.zip appcast.xml > SHA256SUMS.txt)
 
-gh release create "$TAG" --repo "$REPO" --target "$HEAD_SHA" \
-  --title "cmux DevBox ${SHORT_VERSION}" --notes-file "$NOTES_FILE" --latest \
-  "$ZIP_PATH" "${OUT_DIR}/appcast.xml" "${OUT_DIR}/SHA256SUMS.txt"
+fi
+
+# Keep a failed upload resumable and invisible to Sparkle. GitHub can accept
+# an upload and then return a duplicate-name error on an HTTP retry; the
+# server's uploaded state and SHA-256 digest decide success, not that error.
+if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+  gh release create "$TAG" --repo "$REPO" --target "$HEAD_SHA" \
+    --title "cmux DevBox ${SHORT_VERSION}" --notes-file "$NOTES_FILE" --draft
+fi
+RELEASE_API="$(gh release view "$TAG" --repo "$REPO" --json apiUrl --jq .apiUrl)"
+
+verify_release_asset() {
+  local asset_name="$1" expected_sha="$2" remote_state
+  remote_state="$(gh api "${RELEASE_API}/assets" --jq ".[] | select(.name == \"${asset_name}\") | \"\(.state) \(.digest)\"")" || return 1
+  [[ "$remote_state" == "uploaded sha256:${expected_sha}" ]]
+}
+
+for asset_path in "$ZIP_PATH" "${OUT_DIR}/appcast.xml" "${OUT_DIR}/SHA256SUMS.txt"; do
+  asset_name="$(basename "$asset_path")"
+  asset_sha="$(shasum -a 256 "$asset_path" | cut -d' ' -f1)"
+  if ! verify_release_asset "$asset_name" "$asset_sha"; then
+    # A lost upload response is harmless only if readback proves the exact bytes.
+    gh release upload "$TAG" "$asset_path" --repo "$REPO" || true
+  fi
+  if ! verify_release_asset "$asset_name" "$asset_sha"; then
+    echo "error: draft $TAG retained; $asset_name is missing or its digest differs" >&2
+    exit 1
+  fi
+done
+gh release edit "$TAG" --repo "$REPO" --draft=false --latest
 
 # Read back what installed copies will see.
 LIVE_APPCAST="$(curl -fsSL "https://github.com/${REPO}/releases/latest/download/appcast.xml")"
