@@ -47,7 +47,8 @@
 1. 远端放 `scripts/devbox/claude-usage-report.mjs`，在 Claude Code 的 `statusLine` 命令里先 `input=$(cat)`，再后台执行 `printf '%s' "$input" | node claude-usage-report.mjs &`，原状态栏照旧用 `$input`。
 2. 在 tmux 里用时需要 `set -g allow-passthrough on`（否则 tmux 会吞掉这段序列）。
 3. 账号名取 `CLAUDE_USAGE_WHO`，没有就用 `CLAUDE_AS_NAME`、`USER`。同一会话内容不变时最多 5 分钟重发一次。
-4. 只有该窗口里的 Claude Code 开着时会更新；关掉后徽章保留最后一次数值，过了重置时间自动显示 0%。侧边栏设置里隐藏「状态信息」时徽章一起隐藏。
+4. 选中行上徽章用深色底、账号名白底反色，保证在选中色上可读。旧版把这类报告存成了普通通知，本版启动时从恢复的会话通知和通知历史里丢掉它们。
+5. 只有该窗口里的 Claude Code 开着时会更新；关掉后徽章保留最后一次数值，过了重置时间自动显示 0%。侧边栏设置里隐藏「状态信息」时徽章一起隐藏。
 
 Computer Use 等需要系统权限的功能：ad-hoc 签名每次重建都会变，权限要重新授权。
 

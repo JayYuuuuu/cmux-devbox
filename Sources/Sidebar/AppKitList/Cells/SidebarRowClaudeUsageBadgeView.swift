@@ -37,6 +37,7 @@ final class SidebarRowClaudeUsageBadgeView: NSView {
         var primary: NSColor
         var secondary: NSColor
         var chipFill: NSColor
+        var chipText: NSColor
         var capsuleFill: NSColor
         var track: NSColor
     }
@@ -140,7 +141,7 @@ final class SidebarRowClaudeUsageBadgeView: NSView {
             let rect = NSRect(x: x, y: 0, width: chipWidth, height: height)
             style.chipFill.setFill()
             NSBezierPath(roundedRect: rect, xRadius: height / 2, yRadius: height / 2).fill()
-            drawTruncatedText(chipText, font: chipFont, color: style.primary, in: rect.insetBy(dx: pad, dy: 0))
+            drawTruncatedText(chipText, font: chipFont, color: style.chipText, in: rect.insetBy(dx: pad, dy: 0))
             x += chipWidth
         }
         for segment in segments {

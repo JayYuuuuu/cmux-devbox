@@ -1,3 +1,5 @@
+import CmuxSettings
+import CmuxSidebar
 import Foundation
 
 /// Main-actor owner of the durable, chronological notification feed.
@@ -194,6 +196,11 @@ final class NotificationFeedHistoryStore {
         case .loaded(let snapshot):
             loadedRevision = snapshot.revision
             loadedNotifications = snapshot.notifications.map { $0.boundedForHistory() }
+            if CmuxDevBoxEdition.isActive {
+                // DevBox: drop Claude usage reports that releases before the
+                // usage badge stored as ordinary notifications.
+                loadedNotifications.removeAll { $0.title == SidebarClaudeUsage.notificationTitle }
+            }
         case .missing, .corrupt:
             loadedRevision = 0
             loadedNotifications = []

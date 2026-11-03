@@ -752,12 +752,16 @@ final class SidebarWorkspaceRowTableCellView: NSTableCellView {
                 metrics: .init(scaled: { model.scaled($0) }),
                 isSelected: selected,
                 primary: palette.primaryText,
-                secondary: palette.secondary(0.8),
+                secondary: palette.secondary(0.85),
+                // Selected rows sit on the saturated selection color: inset the
+                // gauges in a dark wash and invert the account chip so both
+                // keep contrast instead of fading white-on-blue.
                 chipFill: selected
-                    ? palette.selectedForeground(0.22)
+                    ? palette.selectedForeground(0.95)
                     : cmuxAccentNSColor(for: palette.colorScheme).withAlphaComponent(0.22),
+                chipText: selected ? palette.selectedBackground : palette.primaryText,
                 capsuleFill: selected
-                    ? palette.selectedForeground(0.14)
+                    ? NSColor.black.withAlphaComponent(0.24)
                     : palette.semantic(.secondaryLabelColor, opacity: 0.12),
                 track: selected
                     ? palette.selectedForeground(0.3)

@@ -1,4 +1,5 @@
 import CmuxFoundation
+import CmuxSidebar
 import CmuxNotifications
 import AppKit
 import Combine
@@ -2187,6 +2188,8 @@ final class TerminalNotificationStore: ObservableObject {
         var usedNotificationIds = Set(notifications.filter { $0.tabId != tabId }.map(\.id))
         let restoredForTab = restoredNotifications
             .filter { $0.tabId == tabId }
+            // DevBox: usage reports saved as notifications by older releases.
+            .filter { !(CmuxDevBoxEdition.isActive && $0.title == SidebarClaudeUsage.notificationTitle) }
             .sorted(by: Self.notificationSortPrecedes)
             .map { Self.notificationWithUniqueId($0, usedIds: &usedNotificationIds) }
         let keptNotifications = notifications.filter { $0.tabId != tabId }
