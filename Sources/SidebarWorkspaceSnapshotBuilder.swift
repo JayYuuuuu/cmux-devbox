@@ -73,6 +73,8 @@ struct SidebarWorkspaceSnapshotBuilder {
         let checklistTotalCount: Int
         let checklistFirstUncheckedText: String?
         var taskStatusInput = SidebarWorkspaceTaskStatusSnapshot()
+        /// DevBox Claude Code usage badge; nil when unreported or metadata is hidden.
+        var claudeUsage: SidebarClaudeUsage? = nil
 
         func accessibilityLabel(index: Int, workspaceCount: Int) -> String {
             let position = String(

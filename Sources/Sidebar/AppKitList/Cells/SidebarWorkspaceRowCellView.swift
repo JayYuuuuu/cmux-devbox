@@ -43,6 +43,7 @@ final class SidebarWorkspaceRowTableCellView: NSTableCellView {
     private let remoteTargetView = SidebarRowTextView(lines: 1)
     private let remoteStatusView = SidebarRowTextView(lines: 1)
     private let remoteReconnectButton = NSButton()
+    private let claudeUsageBadge = SidebarRowClaudeUsageBadgeView()
     private var metadataRows: [SidebarRowIconTextLine] = []
     private let metadataToggleButton = SidebarRowLinkButton()
     private var markdownBlocks: [SidebarRowTextView] = []
@@ -229,6 +230,8 @@ final class SidebarWorkspaceRowTableCellView: NSTableCellView {
         remoteReconnectButton.target = self
         remoteReconnectButton.action = #selector(didClickReconnect)
         contentContainer.addSubview(remoteReconnectButton)
+        claudeUsageBadge.isHidden = true
+        contentContainer.addSubview(claudeUsageBadge)
         contentContainer.addSubview(metadataToggleButton)
         contentContainer.addSubview(markdownToggleButton)
         contentContainer.addSubview(logLine)
@@ -575,6 +578,7 @@ final class SidebarWorkspaceRowTableCellView: NSTableCellView {
             }
         }
 
+        configureClaudeUsage(model: model, palette: palette)
         configureMetadata(model: model, palette: palette)
         configureLogAndProgress(model: model, palette: palette)
         configureBranchDirectory(model: model, palette: palette)
@@ -735,6 +739,31 @@ final class SidebarWorkspaceRowTableCellView: NSTableCellView {
         } else {
             updateCloseVisibility()
         }
+    }
+
+    private func configureClaudeUsage(model: SidebarWorkspaceRowModel, palette: SidebarRowPalette) {
+        let usage = model.settings.visibleAuxiliaryDetails.showsMetadata ? model.snapshot.claudeUsage : nil
+        claudeUsageBadge.isHidden = usage == nil
+        guard let usage else { return }
+        let selected = model.isActive
+        claudeUsageBadge.configure(
+            usage: usage,
+            style: SidebarRowClaudeUsageBadgeView.Style(
+                metrics: .init(scaled: { model.scaled($0) }),
+                isSelected: selected,
+                primary: palette.primaryText,
+                secondary: palette.secondary(0.8),
+                chipFill: selected
+                    ? palette.selectedForeground(0.22)
+                    : cmuxAccentNSColor(for: palette.colorScheme).withAlphaComponent(0.22),
+                capsuleFill: selected
+                    ? palette.selectedForeground(0.14)
+                    : palette.semantic(.secondaryLabelColor, opacity: 0.12),
+                track: selected
+                    ? palette.selectedForeground(0.3)
+                    : palette.semantic(.secondaryLabelColor, opacity: 0.25)
+            )
+        )
     }
 
     private func configureMetadata(model: SidebarWorkspaceRowModel, palette: SidebarRowPalette) {
@@ -1220,6 +1249,12 @@ final class SidebarWorkspaceRowTableCellView: NSTableCellView {
             y += lineHeight
         }
 
+        if !claudeUsageBadge.isHidden {
+            y += spacing
+            let height = SidebarRowClaudeUsageBadgeView.height(scaledLineHeight: model.scaled(16))
+            if apply { claudeUsageBadge.frame = NSRect(x: leading, y: y, width: contentWidth, height: height) }
+            y += height
+        }
         for row in metadataRows where !row.isHidden {
             y += 2
             let height = row.measuredHeight(width: contentWidth)

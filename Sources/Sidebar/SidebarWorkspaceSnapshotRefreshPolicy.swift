@@ -1,3 +1,4 @@
+import CmuxSidebar
 import CmuxWorkspaces
 
 extension SidebarWorkspaceSnapshotBuilder.Snapshot {
@@ -87,7 +88,9 @@ extension SidebarWorkspaceSnapshotBuilder.Snapshot {
             checklistCompletedCount: snapshot.checklistCompletedCount,
             checklistTotalCount: snapshot.checklistTotalCount,
             checklistFirstUncheckedText: snapshot.checklistFirstUncheckedText,
-            taskStatusInput: snapshot.taskStatusInput
+            taskStatusInput: snapshot.taskStatusInput,
+            // Usage is telemetry: stays frozen with the other details while the menu is open.
+            claudeUsage: claudeUsage
         )
     }
 }

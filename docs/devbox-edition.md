@@ -31,6 +31,7 @@
 | Shift+回车换行 | 终端里 Shift+回车发送 ESC CR（与 Option+回车相同），经 SSH 和未开 extended-keys 的 tmux 到远端 Claude Code 仍是换行；用户自己的 keybind 优先。 |
 | 中文界面数值标签 | 中英文相同的文案（单位、数值格式、品牌名）补上简体中文条目，设置里不再显示内部键名。 |
 | 关于窗口 | 显示 `cmux DevBox`、定制版版本号和上游基线。 |
+| 侧边栏 Claude 用量徽章 | 远端 Claude Code 状态栏把 5 小时 / 每周用量（`rate_limits`，长期 token 登录也有）写成 OSC 777 通知，标题 `cmux-devbox-claude-usage`；本版拦下它不弹通知，存成该工作区的状态项 `devbox.claude_usage`，画成「账号名 + 两个环形用量 + 距重置时间」徽章，悬停看具体重置时刻。远端配置见下方「Claude 用量徽章」。 |
 
 仍与所有 cmux 渠道共享（上游设计如此）：`~/.config/cmux/` 下的设置文件、`~/Library/Application Support/cmux/` 下的搜索库等少量全局文件。
 
@@ -40,6 +41,13 @@
 2. 在远端 Claude Code 里按 Command+V 粘贴截图/图片：cmux 先上传到远端 `/tmp/cmux-drop-<uuid>`，再把绝对路径粘进去，Claude Code 显示 `[Image #1]`。远端不自动删，建议开发机定时清理一天前的。
 3. 失败时 cmux 会提示上传失败的原因（scp 的报错原文）。常见原因：SSH 需要交互输入密码/2FA（后台上传用 BatchMode，答不了，请用密钥登录）、远端磁盘满、连接已断。
 4. 恢复 Claude Code 会话：远端 `claude --resume` 或 `claude --continue`，与终端无关。
+
+### Claude 用量徽章（远端配置）
+
+1. 远端放 `scripts/devbox/claude-usage-report.mjs`，在 Claude Code 的 `statusLine` 命令里先 `input=$(cat)`，再后台执行 `printf '%s' "$input" | node claude-usage-report.mjs &`，原状态栏照旧用 `$input`。
+2. 在 tmux 里用时需要 `set -g allow-passthrough on`（否则 tmux 会吞掉这段序列）。
+3. 账号名取 `CLAUDE_USAGE_WHO`，没有就用 `CLAUDE_AS_NAME`、`USER`。同一会话内容不变时最多 5 分钟重发一次。
+4. 只有该窗口里的 Claude Code 开着时会更新；关掉后徽章保留最后一次数值，过了重置时间自动显示 0%。侧边栏设置里隐藏「状态信息」时徽章一起隐藏。
 
 Computer Use 等需要系统权限的功能：ad-hoc 签名每次重建都会变，权限要重新授权。
 

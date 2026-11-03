@@ -1,3 +1,5 @@
+import CmuxSettings
+import CmuxSidebar
 import Foundation
 
 /// Bounded handoff for OSC desktop notifications emitted by Ghostty.
@@ -47,6 +49,11 @@ final class GhosttyDesktopNotificationIngress: Sendable {
 
     @MainActor
     private static func deliver(_ request: GhosttyDesktopNotificationRequest) async {
+        if CmuxDevBoxEdition.isActive, request.title == SidebarClaudeUsage.notificationTitle {
+            // DevBox: a remote statusline's usage report, never a user-visible notification.
+            applyClaudeUsageReport(request)
+            return
+        }
         guard let appDelegate = AppDelegate.shared,
               let target = appDelegate.agentNotificationDeliveryTarget(
                 claimedTabId: request.tabId,
@@ -70,5 +77,16 @@ final class GhosttyDesktopNotificationIngress: Sendable {
             subtitle: request.subtitle,
             origin: request.origin
         )
+    }
+
+    @MainActor
+    private static func applyClaudeUsageReport(_ request: GhosttyDesktopNotificationRequest) {
+        guard let usage = SidebarClaudeUsage.parse(request.body),
+              let appDelegate = AppDelegate.shared,
+              let manager = appDelegate.tabManagerFor(tabId: request.tabId) ?? appDelegate.tabManager,
+              let workspace = manager.workspacesById[request.tabId] else {
+            return
+        }
+        workspace.applyClaudeUsageReport(usage)
     }
 }

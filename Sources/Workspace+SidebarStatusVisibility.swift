@@ -13,6 +13,8 @@ extension Workspace {
         _ entry: SidebarStatusEntry,
         visibleStructuredStatusKeys: Set<String>
     ) -> Bool {
+        // The Claude usage report renders as its own badge, never as a text row.
+        if entry.key == SidebarClaudeUsage.statusKey { return false }
         guard AgentHibernationLifecycleStatusKeys.allowedStatusKeys.contains(entry.key) else {
             return true
         }
