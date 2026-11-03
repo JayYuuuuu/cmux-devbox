@@ -101,7 +101,9 @@ final class SidebarRowClaudeUsageBadgeView: NSView {
 
         let segments = self.segments(for: usage)
         let chipText = usage.who
-        let chipWidth = chipText.isEmpty ? 0 : textWidth(chipText, chipFont) + pad * 2
+        let fullChipWidth = chipText.isEmpty ? 0 : textWidth(chipText, chipFont) + pad * 2
+        // Long names truncate before any gauge detail is dropped.
+        let cappedChipWidth = min(fullChipWidth, pad * 2 + chipFont.pointSize * 4.2)
 
         func segmentWidth(_ segment: Segment, showLabel: Bool, showReset: Bool) -> CGFloat {
             var w = pad + ring + inner + textWidth(percentText(segment.window, now), pctFont) + pad
@@ -109,30 +111,41 @@ final class SidebarRowClaudeUsageBadgeView: NSView {
             if showReset, let reset = resetText(segment.window, now) { w += inner + textWidth(reset, smallFont) }
             return w
         }
-        func totalWidth(showLabel: Bool, showReset: Bool) -> CGFloat {
-            var w = chipWidth
-            for segment in segments {
-                if w > 0 { w += gap }
-                w += segmentWidth(segment, showLabel: showLabel, showReset: showReset)
-            }
-            return w
+        func segmentsWidth(showLabel: Bool, showReset: Bool) -> CGFloat {
+            segments.reduce(0) { $0 + gap + segmentWidth($1, showLabel: showLabel, showReset: showReset) }
         }
-        let tiers: [(Bool, Bool)] = [(true, true), (false, true), (false, false)]
-        let (showLabel, showReset) = tiers.first { totalWidth(showLabel: $0.0, showReset: $0.1) <= bounds.width }
-            ?? (false, false)
+        // Tiers, most detailed first: (chip width, window labels, reset times).
+        let tiers: [(CGFloat, Bool, Bool)] = [
+            (fullChipWidth, true, true),
+            (cappedChipWidth, true, true),
+            (cappedChipWidth, false, true),
+            (cappedChipWidth, false, false),
+        ]
+        let fits = tiers.first { tier in
+            let chip = tier.0
+            let rest = segmentsWidth(showLabel: tier.1, showReset: tier.2) - (chip > 0 ? 0 : gap)
+            return chip + rest <= bounds.width
+        }
+        let showLabel = fits?.1 ?? false
+        let showReset = fits?.2 ?? false
+        var chipWidth = fits?.0 ?? 0
+        if fits == nil, fullChipWidth > 0 {
+            // Gauges always win: the chip takes whatever is left, or disappears.
+            let room = bounds.width - segmentsWidth(showLabel: false, showReset: false)
+            chipWidth = room >= pad * 2 + chipFont.pointSize * 1.5 ? min(cappedChipWidth, room) : 0
+        }
 
         var x: CGFloat = 0
         if chipWidth > 0 {
             let rect = NSRect(x: x, y: 0, width: chipWidth, height: height)
             style.chipFill.setFill()
             NSBezierPath(roundedRect: rect, xRadius: height / 2, yRadius: height / 2).fill()
-            drawText(chipText, font: chipFont, color: style.primary, x: x + pad, height: height)
+            drawTruncatedText(chipText, font: chipFont, color: style.primary, in: rect.insetBy(dx: pad, dy: 0))
             x += chipWidth
         }
         for segment in segments {
             if x > 0 { x += gap }
             let width = segmentWidth(segment, showLabel: showLabel, showReset: showReset)
-            guard x + width <= bounds.width + 0.5 else { break }
             let rect = NSRect(x: x, y: 0, width: width, height: height)
             style.capsuleFill.setFill()
             NSBezierPath(roundedRect: rect, xRadius: height / 2, yRadius: height / 2).fill()
@@ -185,6 +198,17 @@ final class SidebarRowClaudeUsageBadgeView: NSView {
         let size = (text as NSString).size(withAttributes: attributes)
         (text as NSString).draw(at: NSPoint(x: x, y: (height - size.height) / 2), withAttributes: attributes)
         return ceil(size.width)
+    }
+
+    private func drawTruncatedText(_ text: String, font: NSFont, color: NSColor, in rect: NSRect) {
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.lineBreakMode = .byTruncatingTail
+        let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: color, .paragraphStyle: paragraph]
+        let lineHeight = ceil(font.ascender - font.descender)
+        (text as NSString).draw(
+            in: NSRect(x: rect.minX, y: rect.midY - lineHeight / 2, width: rect.width, height: lineHeight),
+            withAttributes: attributes
+        )
     }
 
     private func textWidth(_ text: String, _ font: NSFont) -> CGFloat {
