@@ -62,7 +62,8 @@
 4. Claude Code 自己用 Bash 调起的 `codex exec`（「指挥 Codex」）和 Claude 共用同一个终端，它的钩子不上报（否则会把 Claude 那一行改成 Codex 的状态，跑完还会变成「已退出」）；改由 Claude 的报告带上 `cx=<n> cxs=<开始时间>`，按 Claude 进程下最外层的 `codex` 进程计数；用 `nohup`/`setsid` 脱离出去的（父进程变成 init）靠进程环境里的 `CLAUDE_PID` 认回来。
 5. 状态、提示词、后台 shell 数或 Codex 个数变了才发，否则最多 10 分钟重发一次；一次执行约 10 毫秒。
 6. 这些序列在非 DevBox 终端（官方 cmux、DevBox .14 及更早）会显示成通知，只在大家都用 DevBox .15+ 的环境里打开。
-7. 自定义侧边栏读法：`data.workspaces()` 每一项的 `devbox?.activity?.state`（`working` / `waiting` / `done` / `ended`）与 `devbox?.usage?.h5`。
+7. 自定义侧边栏读法：`data.workspaces()` 每一项的 `devbox?.activity?.state`（`working` / `waiting` / `done` / `ended`）与 `devbox?.usage?.h5`、`devbox?.codexUsage`。
+8. Codex 额度：每次钩子触发（Claude 或 Codex 都算）顺带读 `~/.codex/sessions` 最新会话日志里最后一条 `rate_limits`，按窗口长度把 300 分钟映射成 `h5`、一周映射成 `d7`（Pro 只有周窗口），发 `cx1 plan=… h5=… h5r=… d7=… d7r=… ob=<Codex 记录时间>`；数值不变时最多 10 分钟重发一次。本版（.29+）存成状态项 `devbox.codex_usage`（重启保留），作为 `workspaces[i].devbox.codexUsage`（plan/h5/h5Reset/d7/d7Reset/at）交给面板，面板取 `at` 最新的一份；更早的版本收到 `cx1` 静默丢弃。
 
 Computer Use 等需要系统权限的功能：ad-hoc 签名每次重建都会变，权限要重新授权。
 
