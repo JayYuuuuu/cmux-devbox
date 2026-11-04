@@ -136,6 +136,9 @@ public struct CustomSidebarDataContextBuilder {
         if !workspace.agents.isEmpty {
             fields["agents"] = .array(workspace.agents.map(agentValue(_:)))
         }
+        for (key, value) in workspace.extraFields where fields[key] == nil {
+            fields[key] = value
+        }
         return .object(fields)
     }
 

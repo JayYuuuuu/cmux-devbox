@@ -15,6 +15,8 @@ extension Workspace {
     ) -> Bool {
         // The Claude usage report renders as its own badge, never as a text row.
         if entry.key == SidebarClaudeUsage.statusKey { return false }
+        // Agent activity feeds the DevBox custom sidebar, not a text row.
+        if entry.key == SidebarAgentActivity.statusKey { return false }
         guard AgentHibernationLifecycleStatusKeys.allowedStatusKeys.contains(entry.key) else {
             return true
         }

@@ -1,4 +1,6 @@
+import CmuxSettings
 import CmuxSidebar
+import CmuxSwiftRender
 import Foundation
 
 /// DevBox: Claude Code usage reported by a remote statusline (see
@@ -19,5 +21,35 @@ extension Workspace {
             key: SidebarClaudeUsage.statusKey,
             value: encoded
         )
+    }
+
+    /// The latest remote agent activity report, if any.
+    var agentActivity: SidebarAgentActivity? {
+        statusEntries[SidebarAgentActivity.statusKey].flatMap { SidebarAgentActivity.parse($0.value) }
+    }
+
+    /// Records an agent activity report; identical repeats are dropped.
+    func applyAgentActivityReport(_ activity: SidebarAgentActivity) {
+        let encoded = activity.encoded
+        guard statusEntries[SidebarAgentActivity.statusKey]?.value != encoded else { return }
+        statusEntries[SidebarAgentActivity.statusKey] = SidebarStatusEntry(
+            key: SidebarAgentActivity.statusKey,
+            value: encoded
+        )
+    }
+
+    /// DevBox: the `workspaces[i].devbox` custom-sidebar object, nil outside
+    /// the edition or when no report has arrived.
+    func devBoxCustomSidebarExtraFields(now: Date = Date()) -> [String: SwiftValue] {
+        guard CmuxDevBoxEdition.isActive,
+              let value = SidebarDevBoxCustomSidebarValue.value(
+                usage: claudeUsage,
+                usageReportedAt: statusEntries[SidebarClaudeUsage.statusKey]?.timestamp,
+                activity: agentActivity,
+                now: now
+              ) else {
+            return [:]
+        }
+        return [SidebarDevBoxCustomSidebarValue.key: value]
     }
 }

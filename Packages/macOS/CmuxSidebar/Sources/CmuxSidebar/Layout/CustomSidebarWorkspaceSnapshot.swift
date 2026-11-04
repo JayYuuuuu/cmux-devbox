@@ -90,6 +90,9 @@ public struct CustomSidebarWorkspaceSnapshot: Sendable, Equatable {
     /// Coding-agent sessions hosted by this workspace's terminals, most
     /// recent first (`workspaces[i].agents`); the key is omitted when empty.
     public let agents: [CustomSidebarAgentSnapshot]
+    /// Host-specific extra keys merged into `workspaces[i]` (for example the
+    /// DevBox edition's `devbox` object). They never replace a built-in key.
+    public let extraFields: [String: SwiftValue]
 
     /// Creates a workspace snapshot from already-resolved leaf values.
     public init(
@@ -114,7 +117,8 @@ public struct CustomSidebarWorkspaceSnapshot: Sendable, Equatable {
         latestSubmittedAt: Date?,
         remote: Remote?,
         agents: [CustomSidebarAgentSnapshot] = [],
-        groupId: UUID? = nil
+        groupId: UUID? = nil,
+        extraFields: [String: SwiftValue] = [:]
     ) {
         self.groupId = groupId
         self.id = id
@@ -138,5 +142,6 @@ public struct CustomSidebarWorkspaceSnapshot: Sendable, Equatable {
         self.latestSubmittedAt = latestSubmittedAt
         self.remote = remote
         self.agents = agents
+        self.extraFields = extraFields
     }
 }

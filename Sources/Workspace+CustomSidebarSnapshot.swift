@@ -45,7 +45,8 @@ extension Workspace {
             latestSubmittedAt: latestSubmittedAt,
             remote: remote,
             agents: customSidebarAgentSnapshots(),
-            groupId: groupId
+            groupId: groupId,
+            extraFields: devBoxCustomSidebarExtraFields()
         )
     }
 

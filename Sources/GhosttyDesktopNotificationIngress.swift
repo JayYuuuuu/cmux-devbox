@@ -81,12 +81,17 @@ final class GhosttyDesktopNotificationIngress: Sendable {
 
     @MainActor
     private static func applyClaudeUsageReport(_ request: GhosttyDesktopNotificationRequest) {
-        guard let usage = SidebarClaudeUsage.parse(request.body),
-              let appDelegate = AppDelegate.shared,
+        guard let appDelegate = AppDelegate.shared,
               let manager = appDelegate.tabManagerFor(tabId: request.tabId) ?? appDelegate.tabManager,
               let workspace = manager.workspacesById[request.tabId] else {
             return
         }
-        workspace.applyClaudeUsageReport(usage)
+        // The same channel carries usage reports (statusline) and agent
+        // activity reports (agent hooks); anything else is dropped silently.
+        if let usage = SidebarClaudeUsage.parse(request.body) {
+            workspace.applyClaudeUsageReport(usage)
+        } else if let activity = SidebarAgentActivity.parse(request.body) {
+            workspace.applyAgentActivityReport(activity)
+        }
     }
 }
