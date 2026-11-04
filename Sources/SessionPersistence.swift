@@ -1,6 +1,7 @@
 import CoreGraphics
 import CmuxBrowser
 import CmuxCore
+import CmuxSettings
 import Foundation
 import Bonsplit
 import CmuxWorkspaces
@@ -20,7 +21,10 @@ enum SessionPersistencePolicy {
     // Keep the default equal to the minimum so a fresh sidebar starts at the minimum width.
     // The titlebar title tracks the sidebar's actual width only when it is wider than the
     // minimum, so a default above the minimum would make the folder/title shift when toggling the sidebar at the default width.
-    static let defaultSidebarWidth: Double = 240
+    // DevBox: wider default (the edition's minimal mode shows no titlebar title).
+    static var defaultSidebarWidth: Double {
+        CmuxDevBoxEdition.isActive ? DevBoxSidebarWidth.defaultWidth : 240
+    }
     static let defaultMinimumSidebarWidth: Double = 240
     static let minimumSidebarWidth: Double = 240
     static let sidebarMinimumWidthRange: ClosedRange<Double> = 120...260

@@ -7,6 +7,36 @@ import SwiftUI
 // on a slightly darker canvas, and one-click color theme buttons at the bottom
 // of the sidebar. Both are inert outside the edition.
 
+/// DevBox sidebar width: a little wider than upstream's 240 so the team
+/// panel's quota gauges and session lines fit without truncating.
+enum DevBoxSidebarWidth {
+    static let defaultWidth: Double = 280
+    /// One-time bump of windows still at upstream's untouched default.
+    static let migrationKey = "cmux.devbox.sidebarWidth280.v1"
+    private static let upstreamDefaultWidth: Double = 240
+
+    /// Whether this launch is the one that migrates; decided on the first
+    /// restored window so every window of the launch gets the same answer.
+    @MainActor private static var migratesThisLaunch: Bool?
+
+    /// The width to restore: a window saved at exactly the old default
+    /// (never dragged) moves to ``defaultWidth`` on the first launch of this
+    /// version; any width the user chose is kept.
+    @MainActor
+    static func restoredWidth(_ width: Double, defaults: UserDefaults = .standard) -> Double {
+        guard CmuxDevBoxEdition.isActive else { return width }
+        let migrates: Bool
+        if let decided = migratesThisLaunch {
+            migrates = decided
+        } else {
+            migrates = !defaults.bool(forKey: migrationKey)
+            migratesThisLaunch = migrates
+            defaults.set(true, forKey: migrationKey)
+        }
+        return migrates && width == upstreamDefaultWidth ? defaultWidth : width
+    }
+}
+
 /// Geometry and colors of the DevBox terminal card.
 enum DevBoxCardChrome {
     /// `UserDefaults` switch; on by default in the edition

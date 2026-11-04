@@ -10243,7 +10243,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }
 
         let sidebarWidth = sessionWindowSnapshot?.sidebar.width
-            .map { SessionPersistencePolicy.sanitizedSidebarWidth($0) }
+            .map { SessionPersistencePolicy.sanitizedSidebarWidth(DevBoxSidebarWidth.restoredWidth($0)) }
             ?? SessionPersistencePolicy.defaultSidebarWidth
 #if DEBUG
         let shouldStartWithHiddenSidebarForTerminalViewportUITest =
