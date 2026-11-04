@@ -1797,6 +1797,8 @@ class TerminalController {
             return v2Result(id: request.id, v2CustomSidebarSelect(params: request.params))
         case "sidebar.custom.open":
             return v2Result(id: request.id, v2CustomSidebarOpen(params: request.params))
+        case "devbox.session.open":
+            return v2Result(id: request.id, v2DevBoxSessionOpen(params: request.params))
 #if DEBUG
         case "debug.sidebar.simulate_drag":
             return v2Result(id: request.id, v2DebugSidebarSimulateDrag(params: request.params))

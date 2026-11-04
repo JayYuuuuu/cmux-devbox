@@ -173,6 +173,41 @@ extension TerminalController {
         }
     }
 
+    /// `devbox.session.open {action_id}`: runs one of the DevBox team panel's
+    /// session entries (a cmux.json quick-entry action) exactly as its
+    /// keyboard shortcut does. Only actions the panel lists are accepted.
+    nonisolated func v2DevBoxSessionOpen(params: [String: Any]) -> V2CallResult {
+        let actionID = (params["action_id"] as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return v2MainSync {
+            guard CmuxDevBoxEdition.isActive, !actionID.isEmpty else {
+                return .err(
+                    code: "invalid_params",
+                    message: String(localized: "socket.devbox.sessionOpen.unknown", defaultValue: "No DevBox session entry with that id."),
+                    data: nil
+                )
+            }
+            guard let tabManager = v2CustomSidebarTabManager(params: params),
+                  let appDelegate = AppDelegate.shared,
+                  let store = appDelegate.mainWindowContext(for: tabManager)?.cmuxConfigStore else {
+                return .err(
+                    code: "tab_manager_unavailable",
+                    message: String(localized: "socket.sidebar.custom.openNoWindow", defaultValue: "Unable to access the target workspace."),
+                    data: nil
+                )
+            }
+            guard DevBoxTeamPanel.isSessionAction(actionID, in: store.loadedActions),
+                  appDelegate.executeConfiguredCmuxAction(id: actionID, tabManager: tabManager) else {
+                return .err(
+                    code: "not_found",
+                    message: String(localized: "socket.devbox.sessionOpen.unknown", defaultValue: "No DevBox session entry with that id."),
+                    data: ["action_id": actionID]
+                )
+            }
+            return .ok(["action_id": actionID])
+        }
+    }
+
     private nonisolated func v2CustomSidebarName(params: [String: Any]) -> String? {
         guard let raw = params["name"] as? String else { return nil }
         return raw.trimmingCharacters(in: .whitespacesAndNewlines)

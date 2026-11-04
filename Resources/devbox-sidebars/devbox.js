@@ -11,7 +11,7 @@
 //
 // Data:
 //   - `data.devboxSessions()`: the user's cmux.json quick-entry actions tagged
-//     with the `devbox` keyword, as [{ title, group, command }] in shortcut
+//     with the `devbox` keyword, as [{ action, title, group, command }] in shortcut
 //     order; `group` is the title without its trailing number.
 //   - `workspaces[i].devbox.activity` from the agent hooks and
 //     `.devbox.usage` from the statusline usage reporter (both sent by the
@@ -85,7 +85,10 @@ function open(entry) {
   if (ws) {
     cmux("workspace.select", { workspace_id: ws.id });
   } else {
-    cmux("workspace.create", { title: entry.title, initial_command: entry.command });
+    // Run the cmux.json entry itself: the same path as its keyboard
+    // shortcut. `cmux()` is fire-and-forget, so there is no fallback; the
+    // panel ships with the app that implements the method.
+    cmux("devbox.session.open", { action_id: entry.action });
   }
 }
 
@@ -186,11 +189,36 @@ function agentBadge(ws) {
     .lineLimit(1);
 }
 
+// Codex runs this Claude session started ("指挥 Codex"); the workspace shows
+// them in a split pane, so the badge doubles as "go look".
+function codexRunBadge(ws) {
+  const act = () => {
+    const a = ws()?.devbox?.activity;
+    return a && a.state !== "ended" && (a.codex ?? 0) > 0 ? a : null;
+  };
+  return Text(() => {
+    const a = act();
+    if (!a) return "";
+    const count = a.codex > 1 ? " ×" + a.codex : "";
+    const time = a.codexSince ? " " + elapsed(now() - a.codexSince) : "";
+    return "指挥 Codex" + count + time;
+  })
+    .font(9).weight("semibold")
+    .color(() => (act() ? "#6FD3B8" : "clear"))
+    .paddingHorizontal(() => (act() ? 5 : 0))
+    .paddingVertical(() => (act() ? 1 : 0))
+    .background(() => (act() ? "#10A37F3a" : null))
+    .cornerRadius(4)
+    .help("这个会话派出去的 Codex 还在干活，切过去在分屏里能看到进度")
+    .lineLimit(1);
+}
+
 // Background shells the agent still runs (DevBox .21+ reports them).
 function shellBadge(ws) {
+  // A Codex run lives in one of the background shells; it has its own badge.
   const n = () => {
     const act = ws()?.devbox?.activity;
-    return act && act.state !== "ended" ? act.bg ?? 0 : 0;
+    return act && act.state !== "ended" ? Math.max(0, (act.bg ?? 0) - (act.codex ?? 0)) : 0;
   };
   return Text(() => (n() ? "⚙ " + n() + " shell" : ""))
     .font(9).weight("semibold")
@@ -215,6 +243,7 @@ function openRow(entry) {
           .weight(() => (strong() ? "semibold" : "regular"))
           .lineLimit(1),
         agentBadge(ws),
+        codexRunBadge(ws),
         shellBadge(ws),
         Spacer({ minLength: 0 }),
         Text(() => {

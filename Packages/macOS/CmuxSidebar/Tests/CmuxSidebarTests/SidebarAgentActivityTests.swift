@@ -55,6 +55,26 @@ struct SidebarAgentActivityTests {
         #expect(!none.encoded.contains("bg="))
     }
 
+    @Test("Codex runs round-trip with their start time and reach the sidebar value")
+    func codexRuns() throws {
+        let parsed = try #require(SidebarAgentActivity.parse("v1 ev=agent st=working at=5 agent=claude bg=1 cx=2 cxs=1793770000"))
+        #expect(parsed.codexRuns == 2)
+        #expect(parsed.codexSince == Date(timeIntervalSince1970: 1_793_770_000))
+        #expect(SidebarAgentActivity.parse(parsed.encoded) == parsed)
+        let none = try #require(SidebarAgentActivity.parse("v1 ev=agent st=working at=5 cxs=99"))
+        #expect(none.codexRuns == 0)
+        #expect(none.codexSince == nil)
+        #expect(!none.encoded.contains("cx"))
+        guard case let .object(fields)? = SidebarDevBoxCustomSidebarValue.value(
+            usage: nil, usageReportedAt: nil, activity: parsed, now: Date(timeIntervalSince1970: 6)
+        ), case let .object(activity)? = fields["activity"] else {
+            Issue.record("unexpected shape")
+            return
+        }
+        #expect(activity["codex"] == .int(2))
+        #expect(activity["codexSince"] == .int(1_793_770_000))
+    }
+
     @Test("rejects bodies that are not agent reports")
     func rejectsOtherBodies() {
         #expect(SidebarAgentActivity.parse("v1 who=dev h5=3 d7=7") == nil)

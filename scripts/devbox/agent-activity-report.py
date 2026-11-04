@@ -13,7 +13,9 @@ DevBox report channel) straight to the terminal the agent is drawing on:
     v1 ev=agent st=<working|waiting|done|ended> at=<epoch> agent=<kind>
        who=<account> bg=<n> d=<dir> t=<prompt>   (d and t percent-encoded)
 
-`bg` counts the Claude Code background shells still running (omitted at 0).
+`bg` counts the Claude Code background shells still running (omitted at 0);
+`cx` counts the Codex runs Claude started and `cxs` is when the earliest
+began (both omitted at 0).
 
 cmux DevBox 0.64.25-devbox.20+ stores it for custom sidebars; older DevBox
 builds drop it silently. Other terminals would show it as a notification, so
@@ -79,12 +81,12 @@ def clean_name(raw):
     return re.sub(r"[\s=;\x00-\x1f\x7f]", "", str(raw or ""))[:24]
 
 
-def build_body(state, at, agent, who, directory, title, bg=0):
+def build_body(state, at, agent, who, directory, title, bg=0, cx=0, cxs=0):
     """Body that fits MAX_BODY_BYTES: the prompt is shortened first, then the directory."""
     title = clean(title)
     directory = clean(directory)
     while True:
-        body = _body(state, at, agent, who, directory, title, bg)
+        body = _body(state, at, agent, who, directory, title, bg, cx, cxs)
         if len(body.encode("utf-8")) <= MAX_BODY_BYTES:
             return body
         if title:
@@ -95,7 +97,7 @@ def build_body(state, at, agent, who, directory, title, bg=0):
             return body
 
 
-def _body(state, at, agent, who, directory, title, bg=0):
+def _body(state, at, agent, who, directory, title, bg=0, cx=0, cxs=0):
     parts = ["v1", "ev=agent", f"st={state}", f"at={int(at)}"]
     if clean_name(agent):
         parts.append(f"agent={clean_name(agent)}")
@@ -103,6 +105,10 @@ def _body(state, at, agent, who, directory, title, bg=0):
         parts.append(f"who={clean_name(who)}")
     if bg > 0:
         parts.append(f"bg={int(bg)}")
+    if cx > 0:
+        parts.append(f"cx={int(cx)}")
+        if cxs > 0:
+            parts.append(f"cxs={int(cxs)}")
     if directory:
         parts.append("d=" + urllib.parse.quote(clean(directory), safe="-._~"))
     if title:
@@ -162,6 +168,57 @@ def count_background_shells(agent_pid, own_ancestors):
         if b"shell-snapshots" in cmdline:
             count += 1
     return count
+
+
+def _proc_table():
+    """pid -> (ppid, comm, start epoch) for every visible process."""
+    table = {}
+    try:
+        with open("/proc/stat", encoding="utf-8") as handle:
+            btime = next(int(line.split()[1]) for line in handle if line.startswith("btime "))
+        ticks = os.sysconf("SC_CLK_TCK")
+    except (OSError, StopIteration, ValueError):
+        btime, ticks = 0, 100
+    for entry in os.listdir("/proc"):
+        if not entry.isdigit():
+            continue
+        try:
+            with open(f"/proc/{entry}/stat", encoding="utf-8") as handle:
+                stat = handle.read()
+        except OSError:
+            continue
+        comm = stat[stat.index("(") + 1:stat.rindex(")")]
+        fields = stat[stat.rindex(")") + 2:].split(" ")
+        try:
+            table[int(entry)] = (int(fields[1]), comm, btime + int(fields[19]) // ticks)
+        except (IndexError, ValueError):
+            continue
+    return table
+
+
+def count_codex_runs(agent_pid):
+    """Codex runs Claude Code started (`codex exec` from a Bash call): the
+    outermost `codex` processes below the Claude process. Returns the count
+    and the earliest start time (epoch seconds, 0 when none)."""
+    if not agent_pid:
+        return 0, 0
+    table = _proc_table()
+    count, earliest = 0, 0
+    for pid, (_ppid, comm, started) in table.items():
+        if comm != "codex":
+            continue
+        cursor, outermost = table[pid][0], True
+        for _ in range(32):
+            if cursor == agent_pid or cursor <= 1 or cursor not in table:
+                break
+            if table[cursor][1] == "codex":
+                outermost = False
+                break
+            cursor = table[cursor][0]
+        if outermost and cursor == agent_pid:
+            count += 1
+            earliest = started if not earliest else min(earliest, started)
+    return count, earliest
 
 
 def ancestors():
@@ -234,16 +291,19 @@ def main():
     if title is None:
         title = previous.get("title", "")
     title = clean(title)
-    bg = count_background_shells(find_agent_pid(agent), ancestors()) if agent == "claude" else 0
+    agent_pid = find_agent_pid(agent) if agent == "claude" else None
+    bg = count_background_shells(agent_pid, ancestors()) if agent_pid else 0
+    cx, cxs = count_codex_runs(agent_pid) if agent_pid else (0, 0)
     since = previous.get("since", now) if previous.get("state") == state else now
     if (previous.get("state") == state and previous.get("title") == title
             and previous.get("bg", 0) == bg
+            and previous.get("cx", 0) == cx
             and now - int(previous.get("sent", 0)) < RESEND_SECONDS):
         return
 
     who = os.environ.get("CLAUDE_AS_NAME") or os.environ.get("CMUX_DEVBOX_WHO") or os.environ.get("USER", "")
     directory = os.path.basename(str(payload.get("cwd") or os.getcwd()).rstrip("/"))
-    body = build_body(state, since, agent, who, directory, title, bg)
+    body = build_body(state, since, agent, who, directory, title, bg, cx, cxs)
     try:
         with open(tty, "a", encoding="utf-8") as handle:
             handle.write(build_sequence(body, bool(os.environ.get("TMUX"))))
@@ -252,7 +312,7 @@ def main():
     try:
         os.makedirs(base, mode=0o700, exist_ok=True)
         with open(path, "w", encoding="utf-8") as handle:
-            json.dump({"state": state, "title": title, "since": since, "bg": bg, "sent": now}, handle)
+            json.dump({"state": state, "title": title, "since": since, "bg": bg, "cx": cx, "sent": now}, handle)
     except OSError:
         pass
 

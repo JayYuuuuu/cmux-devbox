@@ -5,7 +5,7 @@ public import Foundation
 ///
 /// Transport: the same OSC 777 channel as ``SidebarClaudeUsage`` (title
 /// ``SidebarClaudeUsage/notificationTitle``), with a body of the form
-/// `v1 ev=agent st=<state> at=<epoch> agent=<kind> who=<name> bg=<n> d=<dir> t=<title>`
+/// `v1 ev=agent st=<state> at=<epoch> agent=<kind> who=<name> bg=<n> cx=<n> cxs=<epoch> d=<dir> t=<title>`
 /// where `d` and `t` are percent-encoded. Reusing the title keeps older DevBox
 /// builds quiet: they consume every report with that title and drop bodies
 /// that are not usage reports, so this never surfaces as a notification. The
@@ -41,6 +41,11 @@ public struct SidebarAgentActivity: Equatable, Sendable {
     public let title: String
     /// Background shells the agent still has running (0 when not reported).
     public let backgroundShells: Int
+    /// Codex runs the agent started and that are still going (`codex exec`
+    /// from a Claude Code tool call), 0 when none.
+    public let codexRuns: Int
+    /// When the earliest of ``codexRuns`` started; nil when none or unknown.
+    public let codexSince: Date?
 
     public init(
         state: State,
@@ -49,7 +54,9 @@ public struct SidebarAgentActivity: Equatable, Sendable {
         who: String,
         directory: String,
         title: String,
-        backgroundShells: Int = 0
+        backgroundShells: Int = 0,
+        codexRuns: Int = 0,
+        codexSince: Date? = nil
     ) {
         self.state = state
         self.since = Date(timeIntervalSince1970: max(0, since.timeIntervalSince1970.rounded(.down)))
@@ -58,6 +65,10 @@ public struct SidebarAgentActivity: Equatable, Sendable {
         self.directory = Self.sanitizedText(directory)
         self.title = Self.sanitizedText(title)
         self.backgroundShells = min(99, max(0, backgroundShells))
+        self.codexRuns = min(99, max(0, codexRuns))
+        self.codexSince = self.codexRuns > 0
+            ? codexSince.flatMap { $0.timeIntervalSince1970 > 0 ? Date(timeIntervalSince1970: $0.timeIntervalSince1970.rounded(.down)) : nil }
+            : nil
     }
 
     /// Canonical body; parsing it round-trips.
@@ -66,6 +77,10 @@ public struct SidebarAgentActivity: Equatable, Sendable {
         if !agent.isEmpty { parts.append("agent=\(agent)") }
         if !who.isEmpty { parts.append("who=\(who)") }
         if backgroundShells > 0 { parts.append("bg=\(backgroundShells)") }
+        if codexRuns > 0 {
+            parts.append("cx=\(codexRuns)")
+            if let codexSince { parts.append("cxs=\(Int(codexSince.timeIntervalSince1970))") }
+        }
         if !directory.isEmpty { parts.append("d=\(Self.percentEncoded(directory))") }
         if !title.isEmpty { parts.append("t=\(Self.percentEncoded(title))") }
         return parts.joined(separator: " ")
@@ -96,7 +111,9 @@ public struct SidebarAgentActivity: Equatable, Sendable {
             who: fields["who"] ?? "",
             directory: text("d"),
             title: text("t"),
-            backgroundShells: fields["bg"].flatMap { Int($0) } ?? 0
+            backgroundShells: fields["bg"].flatMap { Int($0) } ?? 0,
+            codexRuns: fields["cx"].flatMap { Int($0) } ?? 0,
+            codexSince: fields["cxs"].flatMap { Double($0) }.flatMap { $0.isFinite ? Date(timeIntervalSince1970: $0) : nil }
         )
     }
 

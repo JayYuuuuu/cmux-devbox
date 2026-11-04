@@ -264,6 +264,9 @@ enum DevBoxTeamPanel {
     }
 
     struct Session: Equatable {
+        /// cmux.json action id; the panel opens a session by running it, the
+        /// same path as its keyboard shortcut.
+        let actionID: String
         let title: String
         let group: String
         let command: String
@@ -283,6 +286,7 @@ enum DevBoxTeamPanel {
             let title = (definition.name ?? action.title).trimmingCharacters(in: .whitespacesAndNewlines)
             guard !title.isEmpty else { return nil }
             return Session(
+                actionID: action.id,
                 title: title,
                 group: groupName(for: title),
                 command: command,
@@ -299,6 +303,12 @@ enum DevBoxTeamPanel {
         return parts.dropLast().joined(separator: " ")
     }
 
+    /// Whether `actionID` names one of the panel's session entries; the
+    /// `devbox.session.open` socket method runs nothing else.
+    static func isSessionAction(_ actionID: String, in actions: [CmuxResolvedConfigAction]) -> Bool {
+        sessions(from: actions).contains { $0.actionID == actionID }
+    }
+
     /// Adds ``sessionsDataKey`` to a custom-sidebar data context.
     static func addSessions(
         to context: inout [String: SwiftValue],
@@ -307,6 +317,7 @@ enum DevBoxTeamPanel {
         guard CmuxDevBoxEdition.isActive else { return }
         context[sessionsDataKey] = .array(sessions(from: actions).map { session in
             .object([
+                "action": .string(session.actionID),
                 "title": .string(session.title),
                 "group": .string(session.group),
                 "command": .string(session.command),

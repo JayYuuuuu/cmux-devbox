@@ -439986,6 +439986,65 @@
         }
       }
     },
+    "socket.devbox.sessionOpen.unknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No DevBox session entry with that id."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "その ID の DevBox セッション項目はありません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有这个 ID 的 DevBox 会话入口。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein DevBox-Sitzungseintrag mit dieser ID."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune entrée de session DevBox avec cet identifiant."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا يوجد إدخال جلسة DevBox بهذا المعرّف."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay ninguna entrada de sesión de DevBox con ese id."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "沒有這個 ID 的 DevBox 工作階段入口。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "해당 ID의 DevBox 세션 항목이 없습니다."
+          }
+        }
+      }
+    },
     "socket.sidebar.custom.missing": {
       "extractionState": "manual",
       "localizations": {
