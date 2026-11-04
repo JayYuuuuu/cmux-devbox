@@ -132,6 +132,16 @@ enum DevBoxThemeSwitcher {
         Theme(name: "Everforest Dark Hard", backgroundHex: "#272e33", accentHex: "#a7c080"),
     ]
 
+    /// Light counterparts for daytime: tinted paper backgrounds (never pure
+    /// white), softened ink foregrounds (about 10-12:1) and ANSI colors kept
+    /// at 5:1 (normal) / 4:1 (bright) so syntax colors stay distinct and legible.
+    static let lightThemes: [Theme] = [
+        Theme(name: "DevBox Paper", backgroundHex: "#f4f0e6", accentHex: "#c4552a"),
+        Theme(name: "DevBox Sepia", backgroundHex: "#f1e6cf", accentHex: "#b5562b"),
+        Theme(name: "DevBox Sage", backgroundHex: "#ebeddf", accentHex: "#5f8a2e"),
+        Theme(name: "DevBox Mist", backgroundHex: "#e9edf0", accentHex: "#2f6fd6"),
+    ]
+
     private static func editableConfigURL() -> URL? {
         guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             return nil
@@ -183,13 +193,29 @@ enum DevBoxThemeSwitcher {
     }
 }
 
-/// Row of theme swatches shown above the sidebar footer buttons.
+/// Rows of theme swatches shown above the sidebar footer buttons: dark
+/// themes on the first row, light themes on the second.
 struct DevBoxThemeSwitcherRow: View {
     @State private var activeThemeName: String?
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            swatchRow(DevBoxThemeSwitcher.themes)
+            swatchRow(DevBoxThemeSwitcher.lightThemes)
+        }
+        .padding(.leading, 12)
+        .padding(.trailing, 10)
+        .onAppear { activeThemeName = DevBoxThemeSwitcher.currentThemeName() }
+        // A theme picked elsewhere (Settings, `cmux themes set`) changes the
+        // terminal background; re-read the selection then.
+        .onReceive(NotificationCenter.default.publisher(for: .ghosttyDefaultBackgroundDidChange)) { _ in
+            activeThemeName = DevBoxThemeSwitcher.currentThemeName()
+        }
+    }
+
+    private func swatchRow(_ themes: [DevBoxThemeSwitcher.Theme]) -> some View {
         HStack(spacing: 8) {
-            ForEach(DevBoxThemeSwitcher.themes) { theme in
+            ForEach(themes) { theme in
                 let isActive = theme.name == activeThemeName
                 Button {
                     DevBoxThemeSwitcher.apply(theme)
@@ -204,14 +230,6 @@ struct DevBoxThemeSwitcherRow: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.leading, 12)
-        .padding(.trailing, 10)
-        .onAppear { activeThemeName = DevBoxThemeSwitcher.currentThemeName() }
-        // A theme picked elsewhere (Settings, `cmux themes set`) changes the
-        // terminal background; re-read the selection then.
-        .onReceive(NotificationCenter.default.publisher(for: .ghosttyDefaultBackgroundDidChange)) { _ in
-            activeThemeName = DevBoxThemeSwitcher.currentThemeName()
-        }
     }
 }
 
@@ -223,10 +241,16 @@ private struct DevBoxThemeSwatch: View {
     var body: some View {
         let background = Color(nsColor: NSColor(hex: theme.backgroundHex) ?? .black)
         let accent = Color(nsColor: NSColor(hex: theme.accentHex) ?? .orange)
+        // Rim contrasts with the swatch itself, so dark and light swatches
+        // both read on either sidebar appearance.
+        let isDarkSwatch = DevBoxCardChrome.isDark(NSColor(hex: theme.backgroundHex) ?? .black)
+        let rim = isDarkSwatch
+            ? Color.white.opacity(isHovered ? 0.45 : 0.22)
+            : Color.black.opacity(isHovered ? 0.40 : 0.18)
         ZStack {
             Circle().fill(background)
             Circle()
-                .strokeBorder(Color.white.opacity(isHovered ? 0.45 : 0.22), lineWidth: 1)
+                .strokeBorder(rim, lineWidth: 1)
             Circle()
                 .fill(accent)
                 .frame(width: 7, height: 7)
@@ -253,6 +277,8 @@ enum DevBoxTeamPanel {
     static let sidebarName = "devbox"
     /// Top-level custom-sidebar data key holding the session list.
     static let sessionsDataKey = "devboxSessions"
+    /// Top-level custom-sidebar data key: "light" or "dark".
+    static let schemeDataKey = "devboxScheme"
     static let keyword = "devbox"
 
     /// The bundled panel script, used for ``sidebarName`` in the edition. It
@@ -309,12 +335,18 @@ enum DevBoxTeamPanel {
         sessions(from: actions).contains { $0.actionID == actionID }
     }
 
-    /// Adds ``sessionsDataKey`` to a custom-sidebar data context.
+    /// Adds ``sessionsDataKey`` and ``schemeDataKey`` to a custom-sidebar data context.
+    @MainActor
     static func addSessions(
         to context: inout [String: SwiftValue],
         actions: [CmuxResolvedConfigAction]
     ) {
         guard CmuxDevBoxEdition.isActive else { return }
+        // Sidebar content follows the terminal theme's light/dark scheme; the
+        // panel picks its hard-coded accents (outline, badges) from it.
+        context[schemeDataKey] = .string(
+            GhosttyApp.shared.effectiveTerminalColorSchemePreference == .light ? "light" : "dark"
+        )
         context[sessionsDataKey] = .array(sessions(from: actions).map { session in
             .object([
                 "action": .string(session.actionID),

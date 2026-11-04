@@ -1,0 +1,23 @@
+# DevBox Mist: cool milky blue-grey (Catppuccin Latte hues, deepened for legibility)
+background = #e9edf0
+foreground = #2c3542
+cursor-color = #2f6fd6
+cursor-text = #e9edf0
+selection-background = #cfd9e6
+selection-foreground = #1d2531
+palette = 0=#343d4a
+palette = 1=#bc293c
+palette = 2=#337023
+palette = 3=#89590e
+palette = 4=#205ecb
+palette = 5=#7a3fd0
+palette = 6=#126e74
+palette = 7=#606a77
+palette = 8=#707a8a
+palette = 9=#d6344d
+palette = 10=#438130
+palette = 11=#9d6813
+palette = 12=#296edd
+palette = 13=#8c52df
+palette = 14=#1a7f85
+palette = 15=#1d2531

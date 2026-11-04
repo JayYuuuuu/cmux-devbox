@@ -1,0 +1,23 @@
+# DevBox Sepia: e-reader sepia page with brown ink (Gruvbox Light hues)
+background = #f1e6cf
+foreground = #3a2e24
+cursor-color = #b5562b
+cursor-text = #f1e6cf
+selection-background = #e0cfaa
+selection-foreground = #2c2219
+palette = 0=#45372c
+palette = 1=#9d2a13
+palette = 2=#64630b
+palette = 3=#8a550d
+palette = 4=#1d6474
+palette = 5=#8f3f71
+palette = 6=#3a6b49
+palette = 7=#736453
+palette = 8=#867461
+palette = 9=#bb3d1f
+palette = 10=#747214
+palette = 11=#986417
+palette = 12=#2e7988
+palette = 13=#a65380
+palette = 14=#487956
+palette = 15=#2c2219

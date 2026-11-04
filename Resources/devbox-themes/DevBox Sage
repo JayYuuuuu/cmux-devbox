@@ -1,0 +1,23 @@
+# DevBox Sage: soft green-grey paper (Everforest Light hues, deepened for legibility)
+background = #ebeddf
+foreground = #2d3533
+cursor-color = #5f8a2e
+cursor-text = #ebeddf
+selection-background = #cfdab6
+selection-foreground = #2b3431
+palette = 0=#37403d
+palette = 1=#b4352c
+palette = 2=#506a0c
+palette = 3=#805d00
+palette = 4=#2b6892
+palette = 5=#9a4580
+palette = 6=#1f6f58
+palette = 7=#626b67
+palette = 8=#747c76
+palette = 9=#ca442d
+palette = 10=#637c16
+palette = 11=#916c00
+palette = 12=#3778a2
+palette = 13=#b54a94
+palette = 14=#298063
+palette = 15=#232c29

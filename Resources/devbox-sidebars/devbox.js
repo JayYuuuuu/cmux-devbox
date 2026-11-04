@@ -21,17 +21,26 @@
 
 const ENTRIES = () => data.devboxSessions() ?? [];
 
+// The app reports whether the terminal theme (and so this sidebar) is light
+// or dark; accents are deepened on light themes so they stay legible.
+const isLight = () => data.devboxScheme?.() === "light";
+const tone = (dark, light) => (isLight() ? light : dark);
+
 const COLORS = {
-  waiting: "#E5484D",
-  unseen: "#F5A524",
-  working: "#3E9BFF",
+  get waiting() { return tone("#E5484D", "#C62F35"); },
+  get unseen() { return tone("#F5A524", "#A86A00"); },
+  get working() { return tone("#3E9BFF", "#1F6FD1"); },
+  get ok() { return tone("#30A46C", "#2B8A57"); },
   idle: "#7f7f7f99",
   closed: "#7f7f7f44",
 };
 
-// The workspace the window is showing: a solid light outline plus a stronger
-// fill, distinct from every status color and from hover.
-const SELECTED = { border: "#ECE6DF", fill: "#7f7f7f38" };
+// The workspace the window is showing: a solid outline in the text tone plus
+// a stronger fill, distinct from every status color and from hover.
+const SELECTED = {
+  get border() { return tone("#ECE6DF", "#4A423B"); },
+  fill: "#7f7f7f38",
+};
 
 const now = () => data.clock()?.epoch ?? 0;
 const workspaces = () => data.workspaces() ?? [];
@@ -60,7 +69,7 @@ function untilReset(epoch) {
 function levelColor(pct) {
   if (pct >= 85) return COLORS.waiting;
   if (pct >= 60) return COLORS.unseen;
-  return "#30A46C";
+  return COLORS.ok;
 }
 
 // One status for a session row, from its workspace (or null when not open).
@@ -181,8 +190,20 @@ function noUsageLine(usage, text) {
 // Which agent runs in the session, the Codex runs it started ("指挥 Codex"),
 // and its other background shells. Empty when the agent exited.
 const AGENTS = {
-  claude: { label: "Claude", fg: "#F0A07E", bg: "#D977573a" },
-  codex: { label: "Codex", fg: "#6FD3B8", bg: "#10A37F3a" },
+  claude: {
+    label: "Claude",
+    get fg() { return tone("#F0A07E", "#B4532F"); },
+    get bg() { return tone("#D977573a", "#D9775726"); },
+  },
+  codex: {
+    label: "Codex",
+    get fg() { return tone("#6FD3B8", "#0E7A5F"); },
+    get bg() { return tone("#10A37F3a", "#10A37F24"); },
+  },
+};
+const SHELL_BADGE = {
+  get fg() { return tone("#C9B8FF", "#6A4FD0"); },
+  get bg() { return tone("#8E7CFF33", "#8E7CFF24"); },
 };
 
 function sessionBadges(act, nowEpoch) {
@@ -195,7 +216,7 @@ function sessionBadges(act, nowEpoch) {
     const count = codex > 1 ? " ×" + codex : "";
     const time = act.codexSince ? " " + elapsed(nowEpoch - act.codexSince) : "";
     out.push({
-      key: "codex", label: "指挥 Codex" + count + time, fg: "#6FD3B8", bg: "#10A37F3a",
+      key: "codex", label: "指挥 Codex" + count + time, fg: AGENTS.codex.fg, bg: AGENTS.codex.bg,
       help: "这个会话派出去的 Codex 还在干活，切过去在分屏里能看到进度",
     });
   }
@@ -203,7 +224,7 @@ function sessionBadges(act, nowEpoch) {
   const shells = Math.max(0, (act.bg ?? 0) - codex);
   if (shells > 0) {
     out.push({
-      key: "shell", label: "⚙ " + shells + " shell", fg: "#C9B8FF", bg: "#8E7CFF33",
+      key: "shell", label: "⚙ " + shells + " shell", fg: SHELL_BADGE.fg, bg: SHELL_BADGE.bg,
       help: "这个会话里还在后台跑的 shell",
     });
   }
@@ -268,8 +289,8 @@ function openRow(entry) {
     .cornerRadius(8)
     .background(() =>
       ws()?.selected ? SELECTED.fill
-        : status().key === "waiting" ? "#E5484D24"
-        : status().key === "unseen" ? "#F5A5241f"
+        : status().key === "waiting" ? COLORS.waiting + "24"
+        : status().key === "unseen" ? COLORS.unseen + "1f"
         : "#7f7f7f12"
     )
     .borderColor(() => (ws()?.selected ? SELECTED.border : "clear"))
@@ -343,8 +364,8 @@ function accountCard(group) {
     .background("#7f7f7f14")
     .borderColor(() => {
       const keys = openItems().map((e) => sessionStatus(workspaceFor(e)).key);
-      if (keys.includes("waiting")) return "#E5484D88";
-      if (keys.includes("unseen")) return "#F5A52477";
+      if (keys.includes("waiting")) return COLORS.waiting + "88";
+      if (keys.includes("unseen")) return COLORS.unseen + "77";
       return "#7f7f7f22";
     })
     .borderWidth(1)
@@ -377,7 +398,7 @@ function codexCard() {
     HStack({ spacing: 6 }, [
       Text("Codex").font(15).weight("semibold"),
       Text(() => plan())
-        .font(10).weight("semibold").color(AGENTS.codex.fg)
+        .font(10).weight("semibold").color(() => AGENTS.codex.fg)
         .paddingHorizontal(5).paddingVertical(2)
         .background(() => (plan() ? AGENTS.codex.bg : "clear"))
         .cornerRadius(4)
