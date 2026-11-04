@@ -281,6 +281,9 @@ func sidebarSelectedWorkspaceBackgroundNSColor(
        let parsed = NSColor(hex: hex) {
         return parsed
     }
+    if let devBoxSelection = DevBoxCardChrome.sidebarSelectionColor() {
+        return devBoxSelection
+    }
     return cmuxAccentNSColor(for: colorScheme)
 }
 

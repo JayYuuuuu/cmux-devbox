@@ -2186,18 +2186,22 @@ struct ContentView: View {
                             .allowsHitTesting(false)
                     }
 
-                    // Draggable folder icon + focused command name
-                    if let directory = focusedDirectory {
-                        DetachedFolderDragIcon(directory: directory)
-                            .frame(width: 16, height: 16)
-                            .padding(.leading, -6)
-                    }
+                    // Draggable folder icon + focused command name. The DevBox
+                    // card layout leaves the strip empty: the sidebar row and the
+                    // card's tab already name the workspace.
+                    if !devBoxCardChromeEnabled {
+                        if let directory = focusedDirectory {
+                            DetachedFolderDragIcon(directory: directory)
+                                .frame(width: 16, height: 16)
+                                .padding(.leading, -6)
+                        }
 
-                    Text(titlebarText)
-                        .cmuxFont(size: 13, weight: .bold)
-                        .foregroundColor(fakeTitlebarTextColor(appearance: appearance))
-                        .lineLimit(1)
-                        .allowsHitTesting(false)
+                        Text(titlebarText)
+                            .cmuxFont(size: 13, weight: .bold)
+                            .foregroundColor(fakeTitlebarTextColor(appearance: appearance))
+                            .lineLimit(1)
+                            .allowsHitTesting(false)
+                    }
 
                     Spacer()
 

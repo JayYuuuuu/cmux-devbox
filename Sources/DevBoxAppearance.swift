@@ -43,6 +43,20 @@ enum DevBoxCardChrome {
     }
 }
 
+extension DevBoxCardChrome {
+    /// Selected-workspace fill that follows the terminal theme while the card
+    /// layout is on and no explicit `workspaceColors.selectionColor` is set:
+    /// a lifted step of the terminal background instead of the blue accent.
+    static func sidebarSelectionColor(defaults: UserDefaults = .standard) -> NSColor? {
+        let stored = defaults.object(forKey: enabledKey) as? Bool ?? true
+        guard isEnabled(storedValue: stored) else { return nil }
+        let background = GhosttyApp.shared.defaultBackgroundColor
+        return isDark(background)
+            ? background.blended(withFraction: 0.12, of: .white)
+            : background.blended(withFraction: 0.10, of: .black)
+    }
+}
+
 /// Draws the card around the workspace content. Branchless: when disabled the
 /// insets are zero and the fills clear, so toggling never changes the identity
 /// of the (portal-anchoring) content subtree.
