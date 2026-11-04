@@ -699,6 +699,18 @@ enum TerminalSSHSessionDetector {
         return key == "sessiontype" && value == "none"
     }
 
+    /// One line describing what ``detect(forTTY:)`` sees on `ttyName`, for the
+    /// DevBox paste diagnostics log.
+    static func diagnosticSummary(forTTY ttyName: String) -> String {
+        let normalizedTTY = normalizeTTYName(ttyName)
+        let processes = processSnapshots(forTTY: normalizedTTY)
+        let described = processes.map { process -> String in
+            let foreground = isForegroundRemoteShellProcess(process, ttyName: normalizedTTY) ? "*" : ""
+            return "\(process.executableName)\(foreground)[\(process.pid) pg\(process.pgid) tpg\(process.tpgid)]"
+        }
+        return "tty=\(normalizedTTY) procs=\(described.joined(separator: ","))"
+    }
+
     private static func processSnapshots(forTTY ttyName: String) -> [ProcessSnapshot] {
         let process = Process()
         let pipe = Pipe()

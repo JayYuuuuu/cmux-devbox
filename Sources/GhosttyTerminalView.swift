@@ -9311,7 +9311,11 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
 
     func resolvedImageTransferTarget(mode: TerminalImageTransferMode) -> TerminalImageTransferTarget {
         MainActor.assumeIsolated {
-            terminalSurface?.resolvedImageTransferTarget(mode: mode) ?? .local
+            guard let terminalSurface else {
+                DevBoxPasteDiagnostics.recordLocalTarget(mode: mode, surfaceId: nil, ttyName: nil)
+                return .local
+            }
+            return terminalSurface.resolvedImageTransferTarget(mode: mode)
         }
     }
 
