@@ -248,7 +248,7 @@ function openRow(entry) {
           ),
           Spacer({ minLength: 0 }),
         ])
-          .paddingLeading(15)
+          .paddingLeading(10) // 15 minus the pill inset, so badge text lines up with the name
       ),
       ForEach({ items: detailLine, key: () => "detail" }, (line) =>
         Text(() => line())
