@@ -104,18 +104,24 @@ const counts = computed(() => {
 });
 
 function summary() {
-  const chip = (key, label) =>
-    HStack({ spacing: 4 }, [
-      Circle({ size: 6 }).fill(() => (counts()[key] ? COLORS[key] : COLORS.closed)),
-      Text(() => counts()[key] + " " + label)
-        .font(11)
-        .lineLimit(1)
-        .color(() => (counts()[key] ? "primary" : "tertiary")),
-    ]);
+  // Only the categories that have sessions, so the row never truncates.
+  const items = computed(() => {
+    const c = counts();
+    const out = [];
+    for (const [key, label] of [["waiting", "等你"], ["unseen", "干完了"], ["working", "干活中"]]) {
+      if (c[key]) out.push({ key, label: c[key] + " " + label });
+    }
+    return out.length ? out : [{ key: "idle", label: "都空闲" }];
+  });
   return HStack({ spacing: 12 }, [
-    chip("waiting", "等你"),
-    chip("unseen", "干完了"),
-    chip("working", "干活中"),
+    ForEach({ items, key: (i) => i.key, spacing: 12 }, (item) =>
+      HStack({ spacing: 4 }, [
+        Circle({ size: 6 }).fill(() => COLORS[item().key] ?? COLORS.closed),
+        Text(() => item().label)
+          .font(11)
+          .color(() => (item().key === "idle" ? "tertiary" : "primary")),
+      ])
+    ),
     Spacer(),
   ]).paddingHorizontal(10);
 }
@@ -166,86 +172,58 @@ function resetLine(usage) {
   }).font(9).color("tertiary").lineLimit(1).truncation("tail");
 }
 
-// Which agent runs in the session: a small colored tag, hidden when unknown
-// or after the agent exited.
+// Which agent runs in the session, the Codex runs it started ("指挥 Codex"),
+// and its other background shells. Empty when the agent exited.
 const AGENTS = {
   claude: { label: "Claude", fg: "#F0A07E", bg: "#D977573a" },
   codex: { label: "Codex", fg: "#6FD3B8", bg: "#10A37F3a" },
 };
 
-function agentBadge(ws) {
-  const meta = () => {
-    const act = ws()?.devbox?.activity;
-    if (!act || act.state === "ended") return null;
-    return AGENTS[act.agent] ?? null;
-  };
-  return Text(() => meta()?.label ?? "")
-    .font(9).weight("semibold")
-    .color(() => meta()?.fg ?? "clear")
-    .paddingHorizontal(() => (meta() ? 5 : 0))
-    .paddingVertical(() => (meta() ? 1 : 0))
-    .background(() => meta()?.bg ?? null)
-    .cornerRadius(4)
-    .lineLimit(1);
-}
-
-// Codex runs this Claude session started ("指挥 Codex"); the workspace shows
-// them in a split pane, so the badge doubles as "go look".
-function codexRunBadge(ws) {
-  const act = () => {
-    const a = ws()?.devbox?.activity;
-    return a && a.state !== "ended" && (a.codex ?? 0) > 0 ? a : null;
-  };
-  return Text(() => {
-    const a = act();
-    if (!a) return "";
-    const count = a.codex > 1 ? " ×" + a.codex : "";
-    const time = a.codexSince ? " " + elapsed(now() - a.codexSince) : "";
-    return "指挥 Codex" + count + time;
-  })
-    .font(9).weight("semibold")
-    .color(() => (act() ? "#6FD3B8" : "clear"))
-    .paddingHorizontal(() => (act() ? 5 : 0))
-    .paddingVertical(() => (act() ? 1 : 0))
-    .background(() => (act() ? "#10A37F3a" : null))
-    .cornerRadius(4)
-    .help("这个会话派出去的 Codex 还在干活，切过去在分屏里能看到进度")
-    .lineLimit(1);
-}
-
-// Background shells the agent still runs (DevBox .21+ reports them).
-function shellBadge(ws) {
+function sessionBadges(act, nowEpoch) {
+  if (!act || act.state === "ended") return [];
+  const out = [];
+  const agent = AGENTS[act.agent];
+  if (agent) out.push({ key: "agent", label: agent.label, fg: agent.fg, bg: agent.bg });
+  const codex = act.codex ?? 0;
+  if (codex > 0) {
+    const count = codex > 1 ? " ×" + codex : "";
+    const time = act.codexSince ? " " + elapsed(nowEpoch - act.codexSince) : "";
+    out.push({
+      key: "codex", label: "指挥 Codex" + count + time, fg: "#6FD3B8", bg: "#10A37F3a",
+      help: "这个会话派出去的 Codex 还在干活，切过去在分屏里能看到进度",
+    });
+  }
   // A Codex run lives in one of the background shells; it has its own badge.
-  const n = () => {
-    const act = ws()?.devbox?.activity;
-    return act && act.state !== "ended" ? Math.max(0, (act.bg ?? 0) - (act.codex ?? 0)) : 0;
-  };
-  return Text(() => (n() ? "⚙ " + n() + " shell" : ""))
-    .font(9).weight("semibold")
-    .color(() => (n() ? "#C9B8FF" : "clear"))
-    .paddingHorizontal(() => (n() ? 5 : 0))
-    .paddingVertical(() => (n() ? 1 : 0))
-    .background(() => (n() ? "#8E7CFF33" : null))
-    .cornerRadius(4)
-    .help("这个会话里还在后台跑的 shell")
-    .lineLimit(1);
+  const shells = Math.max(0, (act.bg ?? 0) - codex);
+  if (shells > 0) {
+    out.push({
+      key: "shell", label: "⚙ " + shells + " shell", fg: "#C9B8FF", bg: "#8E7CFF33",
+      help: "这个会话里还在后台跑的 shell",
+    });
+  }
+  return out;
 }
 
 function openRow(entry) {
   const ws = () => workspaceFor(entry());
   const status = () => sessionStatus(ws());
   const strong = () => status().key === "waiting" || status().key === "unseen";
-  return VStack({ spacing: 1 }, [
+  // Lines 2 and 3 exist only when they have content, so idle rows stay one line.
+  const badges = computed(() => sessionBadges(ws()?.devbox?.activity, now()));
+  const badgeLine = computed(() => (badges().length ? [1] : []));
+  const detailLine = computed(() => {
+    const act = ws()?.devbox?.activity;
+    return act && act.title && act.state !== "ended"
+      ? [(act.dir ? act.dir + " · " : "") + act.title] : [];
+  });
+  return VStack({ spacing: 3 }, [
       HStack({ spacing: 7 }, [
         Circle({ size: 8 }).fill(() => status().color),
         Text(() => entry().title)
           .font(12)
           .weight(() => (strong() ? "semibold" : "regular"))
           .lineLimit(1),
-        agentBadge(ws),
-        codexRunBadge(ws),
-        shellBadge(ws),
-        Spacer({ minLength: 0 }),
+        Spacer({ minLength: 4 }),
         Text(() => {
           const st = status();
           const time = st.since && st.key !== "idle" ? " " + elapsed(now() - st.since) : "";
@@ -253,15 +231,30 @@ function openRow(entry) {
         })
           .font(10)
           .color(() => (strong() || status().key === "working" ? status().color : "tertiary"))
+          .layoutPriority(2)
           .lineLimit(1),
       ]),
-      Text(() => {
-        const act = ws()?.devbox?.activity;
-        if (!act || !act.title || act.state === "ended") return "";
-        return (act.dir ? act.dir + " · " : "") + act.title;
-      })
-        .font(10).color("tertiary").lineLimit(1).truncation("tail")
-        .paddingLeading(15),
+      ForEach({ items: badgeLine, key: () => "badges" }, () =>
+        HStack({ spacing: 4 }, [
+          ForEach({ items: badges, key: (b) => b.key, spacing: 4 }, (b) =>
+            Text(() => b().label)
+              .font(9).weight("semibold")
+              .color(() => b().fg)
+              .paddingHorizontal(5).paddingVertical(1)
+              .background(() => b().bg)
+              .cornerRadius(4)
+              .help(() => b().help ?? "")
+              .lineLimit(1)
+          ),
+          Spacer({ minLength: 0 }),
+        ])
+          .paddingLeading(15)
+      ),
+      ForEach({ items: detailLine, key: () => "detail" }, (line) =>
+        Text(() => line())
+          .font(10).color("tertiary").lineLimit(1).truncation("tail")
+          .paddingLeading(15)
+      ),
   ])
     .paddingHorizontal(8).paddingVertical(5)
     .cornerRadius(7)
