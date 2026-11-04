@@ -96,7 +96,7 @@ enum DevBoxThemeSwitcher {
 
     static let themes: [Theme] = [
         Theme(name: "DevBox Charcoal", backgroundHex: "#252423", accentHex: "#e05d3a"),
-        Theme(name: "DevBox Cinder", backgroundHex: "#151011", accentHex: "#ff6b4a"),
+        Theme(name: "DevBox Cinder", backgroundHex: "#271e1f", accentHex: "#ff6b4a"),
         Theme(name: "DevBox Cobalt", backgroundHex: "#10151c", accentHex: "#4fa8ff"),
         Theme(name: "Everforest Dark Hard", backgroundHex: "#272e33", accentHex: "#a7c080"),
     ]

@@ -1,6 +1,7 @@
 import AppKit
 import CmuxAppKitSupportUI
 import CmuxFoundation
+import CmuxSettings
 import CmuxSidebar
 import CmuxSidebarProviderKit
 import CmuxUpdater
@@ -82,11 +83,17 @@ enum SidebarFooterControl: CaseIterable, Equatable {
 }
 
 enum SidebarFooterPresentationPolicy {
+    /// `keepsUpdateInMinimalMode`: the DevBox edition defaults to minimal
+    /// mode and announces new releases only through the footer update pill,
+    /// so it keeps that pill visible there.
     static func isVisible(
         _ control: SidebarFooterControl,
-        presentationMode: WorkspacePresentationModeSettings.Mode
+        presentationMode: WorkspacePresentationModeSettings.Mode,
+        keepsUpdateInMinimalMode: Bool = CmuxDevBoxEdition.isActive
     ) -> Bool {
-        presentationMode != .minimal || control == .upgrade
+        presentationMode != .minimal
+            || control == .upgrade
+            || (keepsUpdateInMinimalMode && control == .update)
     }
 }
 

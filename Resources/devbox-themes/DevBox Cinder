@@ -1,11 +1,11 @@
-# DevBox Cinder: deep warm red-brown
-background = #151011
-foreground = #ddccc6
+# DevBox Cinder: warm red-brown, softened background for long sessions
+background = #271e1f
+foreground = #d2c3bd
 cursor-color = #ff6b4a
-cursor-text = #151011
-selection-background = #45262a
+cursor-text = #271e1f
+selection-background = #4d2e32
 selection-foreground = #f2e7e3
-palette = 0=#231a1b
+palette = 0=#33282a
 palette = 1=#f25c4a
 palette = 2=#97ad72
 palette = 3=#f0a04f

@@ -46,7 +46,26 @@ public enum CmuxDevBoxEdition {
         "appearanceMode": "dark",
         "confirmQuit": "never",
         "terminal.copyOnSelect": true,
+        presentationModeKey: minimalPresentationMode,
     ] }
+
+    /// `UserDefaults` key of the workspace presentation mode (app target's
+    /// `WorkspacePresentationModeSettings.modeKey`).
+    public static let presentationModeKey = "workspacePresentationMode"
+    /// Raw value of minimal mode, the edition's default presentation.
+    public static let minimalPresentationMode = "minimal"
+    /// Marker that ``adoptMinimalModeOnce(in:)`` already ran.
+    public static let minimalModeAdoptionKey = "cmux.devbox.minimalModeDefault.v1"
+
+    /// Switches existing installs to minimal mode once, when they first run
+    /// a build that makes it the edition default. The registered default only
+    /// reaches installs that never stored a mode; this covers the ones that
+    /// did. Later choices in Settings are kept.
+    public static func adoptMinimalModeOnce(in defaults: UserDefaults) {
+        guard !defaults.bool(forKey: minimalModeAdoptionKey) else { return }
+        defaults.set(minimalPresentationMode, forKey: presentationModeKey)
+        defaults.set(true, forKey: minimalModeAdoptionKey)
+    }
 
     /// The edition's starting Ghostty config, written once when the edition has
     /// no `config.ghostty` of its own yet. The theme block is the one the
@@ -75,6 +94,7 @@ public enum CmuxDevBoxEdition {
         guard isEdition(bundleIdentifier: bundleIdentifier) else { return }
         // The registration domain is process-wide, so this is the only caller.
         defaults.register(defaults: defaultSettings)
+        adoptMinimalModeOnce(in: defaults)
         if let appSupportDirectory {
             seedGhosttyConfigIfMissing(appSupportDirectory: appSupportDirectory)
         }

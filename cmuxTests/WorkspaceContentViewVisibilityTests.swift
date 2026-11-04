@@ -467,6 +467,15 @@ final class WorkspaceContentViewVisibilityTests {
 
         #expect(minimalControls == [.upgrade])
         #expect(standardControls == SidebarFooterControl.allCases)
+
+        let devBoxMinimalControls = SidebarFooterControl.allCases.filter {
+            SidebarFooterPresentationPolicy.isVisible(
+                $0,
+                presentationMode: .minimal,
+                keepsUpdateInMinimalMode: true
+            )
+        }
+        #expect(devBoxMinimalControls == [.upgrade, .update])
     }
 
     @Test

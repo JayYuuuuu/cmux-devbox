@@ -27,7 +27,7 @@
 | 无 Cloud / 账号 / 手机 | 单一开关 `CmuxDevBoxEdition`（按 bundle id 生效）：复用 MDM 策略关掉 Cloud、远控配对、Iroh、设备发现；钉死相关远程 feature flag；登录入口、账号命令、手机通知转发、设置里的 账户/手机/Cloud/电脑/网络 页全部隐藏。 |
 | 独立身份 | bundle id `com.cmuxterm.app.staging.devbox`，名字 `cmux DevBox`，socket `/tmp/cmux-staging-devbox.sock`，会话/历史/配置按 bundle id 隔离；与官方 `cmux.app` 同时运行互不影响。 |
 | 自己的更新通道 | Sparkle 只读本仓库最新 Release 里的 `appcast.xml`，安装包必须带本版的 EdDSA 签名，官方 cmux 的更新包会被拒绝；应用用固定的自签名证书签名，更新后系统权限不丢。 |
-| 出厂设置 | `CmuxDevBoxEdition.defaultSettings` 注册为默认值（深色外观、选中即复制并提示、复制时合并硬换行、退出和关闭工作区不确认），用户改过的值和 `cmux.json` 仍优先；本版自己的 `config.ghostty` 不存在时写入一份起始终端配置（Everforest Dark Hard、方块不闪光标、不透明背景）。 |
+| 出厂设置 | `CmuxDevBoxEdition.defaultSettings` 注册为默认值（深色外观、极简模式、选中即复制并提示、复制时合并硬换行、退出和关闭工作区不确认），用户改过的值和 `cmux.json` 仍优先；已有安装第一次运行默认极简模式的版本时一次性切到极简模式（标记 `cmux.devbox.minimalModeDefault.v1`），之后用户自己切回标准模式会保留；极简模式下本版仍在侧栏底部显示「有可用更新」，否则新版本没有任何提示。本版自己的 `config.ghostty` 不存在时写入一份起始终端配置（Everforest Dark Hard、方块不闪光标、不透明背景）。 |
 | Shift+回车换行 | 终端里 Shift+回车发送 ESC CR（与 Option+回车相同），经 SSH 和未开 extended-keys 的 tmux 到远端 Claude Code 仍是换行；用户自己的 keybind 优先。 |
 | 中文界面数值标签 | 中英文相同的文案（单位、数值格式、品牌名）补上简体中文条目，设置里不再显示内部键名。 |
 | 关于窗口 | 显示 `cmux DevBox`、定制版版本号和上游基线。 |

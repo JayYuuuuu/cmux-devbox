@@ -55,4 +55,24 @@ struct CmuxDevBoxEditionDefaultsTests {
         #expect(defaults.object(forKey: "appearanceMode") == nil)
         #expect(!FileManager.default.fileExists(atPath: appSupport.path))
     }
+
+    @Test func adoptsMinimalModeOnceAndKeepsLaterChoices() throws {
+        let suiteName = "CmuxDevBoxEditionDefaultsTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        // An install that already stored standard mode moves to minimal once.
+        defaults.set("standard", forKey: CmuxDevBoxEdition.presentationModeKey)
+
+        CmuxDevBoxEdition.adoptMinimalModeOnce(in: defaults)
+        #expect(defaults.string(forKey: CmuxDevBoxEdition.presentationModeKey) == "minimal")
+
+        // Switching back later in Settings survives every following launch.
+        defaults.set("standard", forKey: CmuxDevBoxEdition.presentationModeKey)
+        CmuxDevBoxEdition.adoptMinimalModeOnce(in: defaults)
+        #expect(defaults.string(forKey: CmuxDevBoxEdition.presentationModeKey) == "standard")
+    }
+
+    @Test func minimalModeIsTheRegisteredDefault() {
+        #expect(CmuxDevBoxEdition.defaultSettings[CmuxDevBoxEdition.presentationModeKey] as? String == "minimal")
+    }
 }
