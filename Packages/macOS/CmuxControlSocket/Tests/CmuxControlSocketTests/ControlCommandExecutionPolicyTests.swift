@@ -46,7 +46,7 @@ struct ControlCommandExecutionPolicyTests {
             "agent.restore.admit", "agent.restore.release",
             "browser.download.list", "browser.download.wait", "system.top", "system.memory",
             "workspace.remote.pty_bridge", "workspace.env", "sidebar.custom.reload",
-            "sidebar.custom.open",
+            "sidebar.custom.open", "devbox.session.open",
             "debug.sidebar.simulate_drag", "debug.mobile.transport.disconnect", "debug.mobile.transport.reconnect_loop",
             "debug.window.screenshot", "mobile.attach_ticket.create",
             "mobile.terminal.set_font", "mobile.task.models.list",

@@ -194,6 +194,9 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
         "sidebar.custom.reload",
         "sidebar.custom.select",
         "sidebar.custom.open",
+        // DevBox team panel: runs a cmux.json quick entry behind one
+        // v2MainSync hop, like the custom-sidebar commands above.
+        "devbox.session.open",
         // Window screenshot capture waits for ScreenCaptureKit's async
         // compositor before falling back to AppKit. Keep that wait on the
         // socket worker so WebKit-backed panels can render on the main actor.
