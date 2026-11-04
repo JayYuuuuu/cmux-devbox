@@ -1,0 +1,23 @@
+# DevBox Charcoal: warm charcoal, softened background for long sessions
+background = #252423
+foreground = #cfcac2
+cursor-color = #e05d3a
+cursor-text = #252423
+selection-background = #403e3b
+selection-foreground = #efece7
+palette = 0=#302e2c
+palette = 1=#d96a4d
+palette = 2=#9aab84
+palette = 3=#cfae7a
+palette = 4=#8aa0b4
+palette = 5=#b193a8
+palette = 6=#8fafa8
+palette = 7=#b5b1ab
+palette = 8=#5f5c58
+palette = 9=#e8886e
+palette = 10=#b3c39d
+palette = 11=#e0c493
+palette = 12=#a4b9cc
+palette = 13=#c8adc0
+palette = 14=#a8c7c0
+palette = 15=#efece7

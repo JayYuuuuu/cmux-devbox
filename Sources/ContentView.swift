@@ -881,6 +881,8 @@ struct ContentView: View {
     @Environment(\.minimalModeInvalidationProbe) private var minimalModeInvalidationProbe
 #endif
     @AppStorage(TitlebarControlsStyle.storageKey) private var titlebarControlsStyleRawValue = TitlebarControlsStyle.defaultRawValue
+    @AppStorage(DevBoxCardChrome.enabledKey) private var devBoxCardChromeSetting = true
+    private var devBoxCardChromeEnabled: Bool { DevBoxCardChrome.isEnabled(storedValue: devBoxCardChromeSetting) }
     @AppStorage(RightSidebarWidthSettings.maxWidthKey) private var rightSidebarMaxWidthSetting = RightSidebarWidthSettings.noOverrideValue
     @AppStorage(SessionPersistencePolicy.sidebarMinimumWidthKey) private var sidebarMinimumWidthSetting = SessionPersistencePolicy.defaultMinimumSidebarWidth
     @AppStorage(MinimalModeTitlebarDebugSettings.leftControlsLeadingInsetKey) private var titlebarLeftControlsLeadingInset = MinimalModeTitlebarDebugSettings.defaultLeftControlsLeadingInset
@@ -1897,11 +1899,21 @@ struct ContentView: View {
             .allowsHitTesting(sidebarSelectionState.selection == .tabs)
             .accessibilityHidden(sidebarSelectionState.selection != .tabs)
         }
+        .modifier(DevBoxCardChromeModifier(
+            isEnabled: devBoxCardChromeEnabled,
+            cardColor: appearance.resolvedChromeBackgroundColor
+        ))
         .modifier(WorkspacePresentationModeContentTopPaddingModifier(
             isFullScreen: isFullScreen,
             titlebarPadding: titlebarPadding,
             hostingSafeAreaTop: hostingSafeAreaTop
         ))
+        // The canvas also fills the titlebar strip above the card.
+        .background(
+            devBoxCardChromeEnabled
+                ? Color(nsColor: DevBoxCardChrome.canvasColor(forCard: appearance.resolvedChromeBackgroundColor))
+                : .clear
+        )
     }
 
     private func terminalContentWithSidebarDropOverlay(appearance: WindowAppearanceSnapshot) -> some View {
@@ -2213,6 +2225,8 @@ struct ContentView: View {
                     backgroundColor: appearance.resolvedChromeBackgroundColor
                 )
                     .padding(.leading, sidebarState.isVisible ? width : 0)
+                    // The DevBox card's own outline replaces this separator.
+                    .opacity(devBoxCardChromeEnabled ? 0 : 1)
             }
         }
     }
@@ -15268,10 +15282,15 @@ private struct SidebarFooter: View {
 #if DEBUG
         SidebarDevFooter(updateViewModel: updateViewModel, fileExplorerState: fileExplorerState, modifierKeyMonitor: modifierKeyMonitor, onSendFeedback: onSendFeedback)
 #else
-        SidebarFooterButtons(updateViewModel: updateViewModel, fileExplorerState: fileExplorerState, modifierKeyMonitor: modifierKeyMonitor, onSendFeedback: onSendFeedback)
-            .padding(.leading, 6)
-            .padding(.trailing, 10)
-            .padding(.bottom, 6)
+        VStack(alignment: .leading, spacing: 6) {
+            if CmuxDevBoxEdition.isActive {
+                DevBoxThemeSwitcherRow()
+            }
+            SidebarFooterButtons(updateViewModel: updateViewModel, fileExplorerState: fileExplorerState, modifierKeyMonitor: modifierKeyMonitor, onSendFeedback: onSendFeedback)
+                .padding(.leading, 6)
+                .padding(.trailing, 10)
+        }
+        .padding(.bottom, 6)
 #endif
     }
 }

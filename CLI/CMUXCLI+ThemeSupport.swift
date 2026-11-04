@@ -251,15 +251,10 @@ extension CMUXCLI {
         try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true, attributes: nil)
 
         let existingContents = try readOptionalThemeOverrideContents(at: configURL) ?? ""
-        let strippedContents = removingManagedThemeOverride(from: existingContents)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let block = """
-        \(Self.cmuxThemesBlockStart)
-        theme = \(rawThemeValue)
-        \(Self.cmuxThemesBlockEnd)
-        """
-
-        let nextContents = strippedContents.isEmpty ? "\(block)\n" : "\(strippedContents)\n\n\(block)\n"
+        let nextContents = CmuxGhosttyManagedThemeBlock().applying(
+            rawThemeValue: rawThemeValue,
+            to: existingContents
+        )
         try nextContents.write(to: configURL, atomically: true, encoding: .utf8)
         return configURL
     }
@@ -313,12 +308,7 @@ extension CMUXCLI {
     }
 
     private func removingManagedThemeOverride(from contents: String) -> String {
-        let pattern = #"(?ms)\n?# cmux themes start\n.*?\n# cmux themes end\n?"#
-        guard let regex = try? NSRegularExpression(pattern: pattern) else {
-            return contents
-        }
-        let fullRange = NSRange(contents.startIndex..<contents.endIndex, in: contents)
-        return regex.stringByReplacingMatches(in: contents, options: [], range: fullRange, withTemplate: "")
+        CmuxGhosttyManagedThemeBlock().removing(from: contents)
     }
 
     func reloadThemesIfPossible(

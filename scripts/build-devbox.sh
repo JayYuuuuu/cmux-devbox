@@ -145,6 +145,10 @@ ditto "$BUILT_APP" "$APP_PATH"
 # Incremental builds keep icons from earlier icon settings; ship only AppIcon.
 rm -f "$APP_PATH"/Contents/Resources/AppIcon-{Nightly,Debug,RC}.icns
 
+# Edition color themes ship with the bundle so the sidebar theme switcher works
+# on every Mac without per-user theme files.
+ditto Resources/devbox-themes "$APP_PATH/Contents/Resources/ghostty/themes"
+
 PLIST="$APP_PATH/Contents/Info.plist"
 pb() { /usr/libexec/PlistBuddy -c "$1" "$PLIST"; }
 pb_set() { # key type value
