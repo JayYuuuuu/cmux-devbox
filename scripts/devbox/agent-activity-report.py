@@ -214,6 +214,11 @@ def main():
     if not mapped:
         return
     state, title = mapped
+    # A Codex run that Claude Code started (`codex exec` from a Bash tool
+    # call) shares Claude's terminal; reporting it would overwrite the Claude
+    # session's own status with the helper's.
+    if agent != "claude" and find_agent_pid("claude"):
+        return
     tty = find_terminal()
     if not tty:
         return
