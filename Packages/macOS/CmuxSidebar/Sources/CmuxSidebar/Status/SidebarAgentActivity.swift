@@ -5,7 +5,7 @@ public import Foundation
 ///
 /// Transport: the same OSC 777 channel as ``SidebarClaudeUsage`` (title
 /// ``SidebarClaudeUsage/notificationTitle``), with a body of the form
-/// `v1 ev=agent st=<state> at=<epoch> agent=<kind> who=<name> d=<dir> t=<title>`
+/// `v1 ev=agent st=<state> at=<epoch> agent=<kind> who=<name> bg=<n> d=<dir> t=<title>`
 /// where `d` and `t` are percent-encoded. Reusing the title keeps older DevBox
 /// builds quiet: they consume every report with that title and drop bodies
 /// that are not usage reports, so this never surfaces as a notification. The
@@ -39,14 +39,25 @@ public struct SidebarAgentActivity: Equatable, Sendable {
     public let directory: String
     /// The prompt that started the current turn, possibly empty.
     public let title: String
+    /// Background shells the agent still has running (0 when not reported).
+    public let backgroundShells: Int
 
-    public init(state: State, since: Date, agent: String, who: String, directory: String, title: String) {
+    public init(
+        state: State,
+        since: Date,
+        agent: String,
+        who: String,
+        directory: String,
+        title: String,
+        backgroundShells: Int = 0
+    ) {
         self.state = state
         self.since = Date(timeIntervalSince1970: max(0, since.timeIntervalSince1970.rounded(.down)))
         self.agent = Self.sanitizedName(agent)
         self.who = Self.sanitizedName(who)
         self.directory = Self.sanitizedText(directory)
         self.title = Self.sanitizedText(title)
+        self.backgroundShells = min(99, max(0, backgroundShells))
     }
 
     /// Canonical body; parsing it round-trips.
@@ -54,6 +65,7 @@ public struct SidebarAgentActivity: Equatable, Sendable {
         var parts = ["v1", "ev=agent", "st=\(state.rawValue)", "at=\(Int(since.timeIntervalSince1970))"]
         if !agent.isEmpty { parts.append("agent=\(agent)") }
         if !who.isEmpty { parts.append("who=\(who)") }
+        if backgroundShells > 0 { parts.append("bg=\(backgroundShells)") }
         if !directory.isEmpty { parts.append("d=\(Self.percentEncoded(directory))") }
         if !title.isEmpty { parts.append("t=\(Self.percentEncoded(title))") }
         return parts.joined(separator: " ")
@@ -83,7 +95,8 @@ public struct SidebarAgentActivity: Equatable, Sendable {
             agent: fields["agent"] ?? "",
             who: fields["who"] ?? "",
             directory: text("d"),
-            title: text("t")
+            title: text("t"),
+            backgroundShells: fields["bg"].flatMap { Int($0) } ?? 0
         )
     }
 

@@ -32,7 +32,7 @@
 | 中文界面数值标签 | 中英文相同的文案（单位、数值格式、品牌名）补上简体中文条目，设置里不再显示内部键名。 |
 | 关于窗口 | 显示 `cmux DevBox`、定制版版本号和上游基线。 |
 | 侧边栏 Claude 用量徽章 | 远端 Claude Code 状态栏把 5 小时 / 每周用量（`rate_limits`，长期 token 登录也有）写成 OSC 777 通知，标题 `cmux-devbox-claude-usage`；本版拦下它不弹通知，存成该工作区的状态项 `devbox.claude_usage`，画成「账号名 + 两个环形用量 + 距重置时间」徽章，悬停看具体重置时刻。远端配置见下方「Claude 用量徽章」。 |
-| 远端 agent 状态给自定义侧边栏 | 远端 Claude Code / Codex 的钩子在「提交提示词 / 等权限 / 干完 / 退出」时，用同一条 OSC 777 通道（标题仍是 `cmux-devbox-claude-usage`，正文 `v1 ev=agent st=… at=… agent=… who=… d=… t=…`，`d`/`t` 百分号编码）报告当前状态；本版存成状态项 `devbox.agent_activity`（不在侧栏显示成文字行），并和用量报告一起作为 `workspaces[i].devbox`（`usage`: who/h5/h5Reset/d7/d7Reset/at，`activity`: state/since/agent/who/dir/title）交给自定义侧边栏。正文不是用量报告，.15~.19 收到会静默丢弃，不弹通知。Ghostty 原本整个软件每秒只放行一条通知，同一秒内的第二条会被丢掉（Codex 提问时会话开始和开始干活两条同时发，几个会话同时报也会互吞）；DevBox 的 Ghostty 分支让这个保留标题的报告绕过限流、也不占限流名额。终端把通知正文限制在 255 字节内，上报脚本会先截短提示词；解析时遇到被截断的半截编码会丢掉残缺部分。重启恢复会话时保留用量报告（自带重置时间），丢掉 agent 状态（关软件期间结束的回合会一直显示「干活中」）。远端配置见下方「agent 状态钩子」。 |
+| 远端 agent 状态给自定义侧边栏 | 远端 Claude Code / Codex 的钩子在「提交提示词 / 等权限 / 干完 / 退出」时，用同一条 OSC 777 通道（标题仍是 `cmux-devbox-claude-usage`，正文 `v1 ev=agent st=… at=… agent=… who=… d=… t=…`，`d`/`t` 百分号编码）报告当前状态；本版存成状态项 `devbox.agent_activity`（不在侧栏显示成文字行），并和用量报告一起作为 `workspaces[i].devbox`（`usage`: who/h5/h5Reset/d7/d7Reset/at，`activity`: state/since/agent/who/dir/title/bg，`bg` 是 Claude Code 还在跑的后台 shell 数）交给自定义侧边栏。正文不是用量报告，.15~.19 收到会静默丢弃，不弹通知。Ghostty 原本整个软件每秒只放行一条通知，同一秒内的第二条会被丢掉（Codex 提问时会话开始和开始干活两条同时发，几个会话同时报也会互吞）；DevBox 的 Ghostty 分支让这个保留标题的报告绕过限流、也不占限流名额。终端把通知正文限制在 255 字节内，上报脚本会先截短提示词；解析时遇到被截断的半截编码会丢掉残缺部分。重启恢复会话时保留用量报告（自带重置时间），丢掉 agent 状态（关软件期间结束的回合会一直显示「干活中」）。远端配置见下方「agent 状态钩子」。 |
 | 卡片外观 | 工作区内容画成一张圆角卡片（四周留 8pt、内收 4pt、圆角 10pt、细描边），卡片外和标题栏一条用比终端底色深一档的底色；标题栏不再重复显示工作区名和文件夹图标。卡片内收量大于圆角切掉的部分，所以浮在上层的终端不会盖住圆角和描边。没有显式设置 `workspaceColors.selectionColor` 时，侧栏选中行用比终端底色亮一档的颜色，跟着主题变。极简模式下由整张卡片升进标题栏那一条（离窗口顶边仍留 8pt），卡片里的工作区不再单独忽略顶部安全区，避免标签栏和顶边被推出窗口。`defaults write com.cmuxterm.app.staging.devbox devbox.cardChrome -bool false` 关闭。 |
 | 侧栏主题按钮 | 侧栏底部一排色点，一键切换 DevBox Charcoal / Cinder / Cobalt 和 Everforest Dark Hard；当前主题带彩色外圈。三套 DevBox 主题放在 `Resources/devbox-themes`，由 `build-devbox.sh` 打进包内 Ghostty 主题目录。按钮与 `cmux themes set` 写同一个托管主题块（`CmuxGhosttyManagedThemeBlock`），再发同一条重载通知。侧栏要跟主题变色，`sidebarAppearance.matchTerminalBackground` 需为 true。 |
 
@@ -57,9 +57,10 @@
 
 1. 远端放 `scripts/devbox/agent-activity-report.py`，在 Claude Code 的 `UserPromptSubmit`、`PostToolUse`、`PermissionRequest`、`Notification`、`Stop`、`SessionStart`、`SessionEnd` 钩子里执行 `python3 agent-activity-report.py claude`（Codex 同名事件传 `codex`）。钩子 JSON 从标准输入读，任何错误都不会让钩子失败。
 2. 和用量徽章一样直接写到 agent 所在的终端，tmux 里需要 `allow-passthrough on`；账号名取 `CLAUDE_AS_NAME`，没有就用 `CMUX_DEVBOX_WHO`、`USER`。
-3. 状态或提示词变了才发，否则最多 10 分钟重发一次；一次执行约 10 毫秒。
-4. 这些序列在非 DevBox 终端（官方 cmux、DevBox .14 及更早）会显示成通知，只在大家都用 DevBox .15+ 的环境里打开。
-5. 自定义侧边栏读法：`data.workspaces()` 每一项的 `devbox?.activity?.state`（`working` / `waiting` / `done` / `ended`）与 `devbox?.usage?.h5`。
+3. 每次钩子触发时数一下 Claude Code 进程下仍在运行的后台 shell（Bash 工具的 `shell-snapshots` 子进程；钩子触发时没有前台工具在跑），随报告带上 `bg=<n>`；后台任务结束时 Claude 会注入一条 `<task-notification>` 提示词，触发重新计数，这条不会替换任务标题。
+4. 状态、提示词或后台 shell 数变了才发，否则最多 10 分钟重发一次；一次执行约 10 毫秒。
+5. 这些序列在非 DevBox 终端（官方 cmux、DevBox .14 及更早）会显示成通知，只在大家都用 DevBox .15+ 的环境里打开。
+6. 自定义侧边栏读法：`data.workspaces()` 每一项的 `devbox?.activity?.state`（`working` / `waiting` / `done` / `ended`）与 `devbox?.usage?.h5`。
 
 Computer Use 等需要系统权限的功能：ad-hoc 签名每次重建都会变，权限要重新授权。
 

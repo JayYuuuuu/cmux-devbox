@@ -44,6 +44,17 @@ struct SidebarAgentActivityTests {
         #expect(activity?.title == "钩")
     }
 
+    @Test("background shell count round-trips and defaults to zero")
+    func backgroundShells() throws {
+        let parsed = try #require(SidebarAgentActivity.parse("v1 ev=agent st=done at=5 agent=claude bg=2 t=x"))
+        #expect(parsed.backgroundShells == 2)
+        #expect(SidebarAgentActivity.parse(parsed.encoded) == parsed)
+        #expect(SidebarAgentActivity.parse("v1 ev=agent st=done at=5")?.backgroundShells == 0)
+        #expect(SidebarAgentActivity.parse("v1 ev=agent st=done at=5 bg=-4")?.backgroundShells == 0)
+        let none = SidebarAgentActivity(state: .done, since: Date(timeIntervalSince1970: 5), agent: "", who: "", directory: "", title: "")
+        #expect(!none.encoded.contains("bg="))
+    }
+
     @Test("rejects bodies that are not agent reports")
     func rejectsOtherBodies() {
         #expect(SidebarAgentActivity.parse("v1 who=dev h5=3 d7=7") == nil)

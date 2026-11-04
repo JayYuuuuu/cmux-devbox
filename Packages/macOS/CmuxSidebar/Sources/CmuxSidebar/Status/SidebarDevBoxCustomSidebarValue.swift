@@ -9,7 +9,7 @@ public import Foundation
 ///
 ///     devbox: {
 ///       usage:    { who, h5, h5Reset, d7, d7Reset, at },
-///       activity: { state, since, agent, who, dir, title }
+///       activity: { state, since, agent, who, dir, title, bg }
 ///     }
 ///
 /// `h5`/`d7` are already zeroed when their window has reset by `now`; times are
@@ -55,6 +55,7 @@ public enum SidebarDevBoxCustomSidebarValue {
             if !activity.who.isEmpty { activityFields["who"] = .string(activity.who) }
             if !activity.directory.isEmpty { activityFields["dir"] = .string(activity.directory) }
             if !activity.title.isEmpty { activityFields["title"] = .string(activity.title) }
+            activityFields["bg"] = .int(activity.backgroundShells)
             fields["activity"] = .object(activityFields)
         }
         return fields.isEmpty ? nil : .object(fields)
