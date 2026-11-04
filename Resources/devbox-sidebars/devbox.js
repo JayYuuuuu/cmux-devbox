@@ -380,10 +380,11 @@ function codexCard() {
         .font(10).weight("semibold").color(AGENTS.codex.fg)
         .paddingHorizontal(5).paddingVertical(2)
         .background(() => (plan() ? AGENTS.codex.bg : "clear"))
-        .cornerRadius(4),
+        .cornerRadius(4)
+        .lineLimit(1)
+        .layoutPriority(1),
       Spacer({ minLength: 0 }),
-      Text("各账号共用").font(11).color("tertiary"),
-    ]),
+    ]).help("一个 Codex 账号，所有会话共用这份额度"),
     ForEach({ items: fiveHour, key: () => "h5" }, () =>
       quota("5小时", () => codexUsage()?.h5 ?? null, () => codexUsage()?.h5Reset)
     ),
