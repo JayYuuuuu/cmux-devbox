@@ -113,8 +113,7 @@ enum DevBoxThemeSwitcher {
     }
 
     /// Selects `theme` for both appearances through the same managed block as
-    /// `cmux themes set`, then reloads like the CLI's final-phase reload.
-    @MainActor
+    /// `cmux themes set`, then requests the same reload the CLI does.
     static func apply(_ theme: Theme) {
         guard let url = editableConfigURL() else { return }
         do {
@@ -126,8 +125,15 @@ enum DevBoxThemeSwitcher {
             NSSound.beep()
             return
         }
-        AppDelegate.shared?.reloadGhosttyConfigurationForCmuxThemeSource(
-            GhosttySurfaceConfigurationRefresh.cmuxThemeReloadSource(phase: "final")
+        // Same reload request `cmux themes set` sends; the app's observer
+        // filters on the bundle id and runs the final-phase reload.
+        DistributedNotificationCenter.default().post(
+            name: Notification.Name("com.cmuxterm.themes.reload-config"),
+            object: nil,
+            userInfo: [
+                "bundleIdentifier": Bundle.main.bundleIdentifier ?? "",
+                "phase": "final",
+            ]
         )
     }
 }
