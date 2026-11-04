@@ -59,7 +59,7 @@
 1. 远端放 `scripts/devbox/agent-activity-report.py`，在 Claude Code 的 `UserPromptSubmit`、`PostToolUse`、`PermissionRequest`、`Notification`、`Stop`、`SessionStart`、`SessionEnd` 钩子里执行 `python3 agent-activity-report.py claude`（Codex 同名事件传 `codex`）。钩子 JSON 从标准输入读，任何错误都不会让钩子失败。
 2. 和用量徽章一样直接写到 agent 所在的终端，tmux 里需要 `allow-passthrough on`；账号名取 `CLAUDE_AS_NAME`，没有就用 `CMUX_DEVBOX_WHO`、`USER`。
 3. 每次钩子触发时数一下 Claude Code 进程下仍在运行的后台 shell（Bash 工具的 `shell-snapshots` 子进程；钩子触发时没有前台工具在跑），随报告带上 `bg=<n>`；后台任务结束时 Claude 会注入一条 `<task-notification>` 提示词，触发重新计数，这条不会替换任务标题。
-4. Claude Code 自己用 Bash 调起的 `codex exec`（「指挥 Codex」）和 Claude 共用同一个终端，它的钩子不上报（否则会把 Claude 那一行改成 Codex 的状态，跑完还会变成「已退出」）；改由 Claude 的报告带上 `cx=<n> cxs=<开始时间>`，按 Claude 进程下最外层的 `codex` 进程计数。
+4. Claude Code 自己用 Bash 调起的 `codex exec`（「指挥 Codex」）和 Claude 共用同一个终端，它的钩子不上报（否则会把 Claude 那一行改成 Codex 的状态，跑完还会变成「已退出」）；改由 Claude 的报告带上 `cx=<n> cxs=<开始时间>`，按 Claude 进程下最外层的 `codex` 进程计数；用 `nohup`/`setsid` 脱离出去的（父进程变成 init）靠进程环境里的 `CLAUDE_PID` 认回来。
 5. 状态、提示词、后台 shell 数或 Codex 个数变了才发，否则最多 10 分钟重发一次；一次执行约 10 毫秒。
 6. 这些序列在非 DevBox 终端（官方 cmux、DevBox .14 及更早）会显示成通知，只在大家都用 DevBox .15+ 的环境里打开。
 7. 自定义侧边栏读法：`data.workspaces()` 每一项的 `devbox?.activity?.state`（`working` / `waiting` / `done` / `ended`）与 `devbox?.usage?.h5`。

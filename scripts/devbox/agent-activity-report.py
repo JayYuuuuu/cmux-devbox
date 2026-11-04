@@ -196,26 +196,42 @@ def _proc_table():
     return table
 
 
+def _claude_pid_env(pid):
+    """CLAUDE_PID from a process environment (Claude Code exports it to every
+    Bash call), or 0. Detached runs (`nohup … &`, `setsid`) are re-parented to
+    init, so this is the only link back to the Claude that started them."""
+    try:
+        with open(f"/proc/{pid}/environ", "rb") as handle:
+            for item in handle.read().split(b"\0"):
+                if item.startswith(b"CLAUDE_PID="):
+                    return int(item[11:] or 0)
+    except (OSError, ValueError):
+        pass
+    return 0
+
+
 def count_codex_runs(agent_pid):
     """Codex runs Claude Code started (`codex exec` from a Bash call): the
-    outermost `codex` processes below the Claude process. Returns the count
-    and the earliest start time (epoch seconds, 0 when none)."""
+    outermost `codex` processes below the Claude process, or detached ones
+    whose environment names it. Returns the count and the earliest start time
+    (epoch seconds, 0 when none)."""
     if not agent_pid:
         return 0, 0
     table = _proc_table()
     count, earliest = 0, 0
-    for pid, (_ppid, comm, started) in table.items():
-        if comm != "codex":
+    for pid, (ppid, comm, started) in table.items():
+        if comm != "codex" or table.get(ppid, (0, ""))[1] == "codex":
             continue
-        cursor, outermost = table[pid][0], True
+        cursor = ppid
         for _ in range(32):
             if cursor == agent_pid or cursor <= 1 or cursor not in table:
                 break
             if table[cursor][1] == "codex":
-                outermost = False
                 break
             cursor = table[cursor][0]
-        if outermost and cursor == agent_pid:
+        if cursor in table and table[cursor][1] == "codex":
+            continue  # nested below another Codex
+        if cursor == agent_pid or _claude_pid_env(pid) == agent_pid:
             count += 1
             earliest = started if not earliest else min(earliest, started)
     return count, earliest
