@@ -2,7 +2,8 @@
 """cmux DevBox: report what a coding agent is doing to the cmux sidebar.
 
 Install as a Claude Code / Codex hook for UserPromptSubmit, PostToolUse,
-PermissionRequest, Notification, Stop, SessionStart and SessionEnd. The hook
+PermissionRequest, Notification, Stop, StopFailure, SessionStart and
+SessionEnd. The hook
 JSON arrives on stdin; the optional first argument names the agent
 (`claude`, `codex`).
 
@@ -49,7 +50,7 @@ def state_for(event, payload):
         if kind in PERMISSION_NOTIFICATIONS or (not kind and "permission" in message):
             return "waiting", None
         return None
-    if event == "Stop":
+    if event in ("Stop", "StopFailure"):
         return "done", None
     if event == "SessionStart":
         return "done", ""
