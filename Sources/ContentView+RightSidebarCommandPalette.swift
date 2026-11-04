@@ -281,7 +281,9 @@ extension ContentView {
             totalUnreadCount: sidebarUnread.totalUnreadCount,
             now: now
         )
-        return CustomSidebarDataContextBuilder().dataContext(for: snapshot)
+        var context = CustomSidebarDataContextBuilder().dataContext(for: snapshot)
+        DevBoxTeamPanel.addSessions(to: &context, actions: cmuxConfigStore.loadedActions)
+        return context
     }
 
 }

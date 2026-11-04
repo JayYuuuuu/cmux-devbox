@@ -1,6 +1,7 @@
 import AppKit
 import CmuxFoundation
 import CmuxSettings
+import CmuxSwiftRender
 import SwiftUI
 
 // DevBox edition appearance: the terminal area drawn as an inset rounded card
@@ -239,5 +240,77 @@ private struct DevBoxThemeSwatch: View {
         )
         .contentShape(Circle())
         .onHover { isHovered = $0 }
+    }
+}
+
+/// The DevBox team panel ships inside the app (`Resources/devbox-sidebars`)
+/// instead of being installed per Mac, so it must not carry any machine
+/// specifics. It reads the session list from the user's own `cmux.json`
+/// quick-entry actions instead: every workspace action tagged with the
+/// `devbox` keyword whose layout is a single terminal command.
+enum DevBoxTeamPanel {
+    /// Custom-sidebar name; the provider id is `cmux.sidebar.custom.devbox`.
+    static let sidebarName = "devbox"
+    /// Top-level custom-sidebar data key holding the session list.
+    static let sessionsDataKey = "devboxSessions"
+    static let keyword = "devbox"
+
+    /// The bundled panel script, used for ``sidebarName`` in the edition. It
+    /// takes precedence over a same-named user file: older installs wrote a
+    /// per-machine copy there, which would otherwise shadow app updates.
+    static var bundledScriptURL: URL? {
+        guard CmuxDevBoxEdition.isActive else { return nil }
+        return Bundle.main.url(forResource: sidebarName, withExtension: "js", subdirectory: "devbox-sidebars")
+    }
+
+    struct Session: Equatable {
+        let title: String
+        let group: String
+        let command: String
+        let order: String
+    }
+
+    /// Sessions in shortcut order (⌃⌥1, ⌃⌥2, …), then title order.
+    static func sessions(from actions: [CmuxResolvedConfigAction]) -> [Session] {
+        actions.compactMap { action -> Session? in
+            guard action.keywords.contains(keyword),
+                  case let .workspace(definition, _) = action.action,
+                  case let .pane(pane)? = definition.layout,
+                  pane.surfaces.count == 1,
+                  pane.surfaces[0].type == .terminal,
+                  let command = pane.surfaces[0].command?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !command.isEmpty else { return nil }
+            let title = (definition.name ?? action.title).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !title.isEmpty else { return nil }
+            return Session(
+                title: title,
+                group: groupName(for: title),
+                command: command,
+                order: action.shortcut.map { "0" + $0.key } ?? "1" + title
+            )
+        }
+        .sorted { ($0.order, $0.title) < ($1.order, $1.title) }
+    }
+
+    /// "主号 2" → "主号"; a title without a trailing number is its own group.
+    static func groupName(for title: String) -> String {
+        let parts = title.split(separator: " ")
+        guard parts.count > 1, let last = parts.last, last.allSatisfy(\.isNumber) else { return title }
+        return parts.dropLast().joined(separator: " ")
+    }
+
+    /// Adds ``sessionsDataKey`` to a custom-sidebar data context.
+    static func addSessions(
+        to context: inout [String: SwiftValue],
+        actions: [CmuxResolvedConfigAction]
+    ) {
+        guard CmuxDevBoxEdition.isActive else { return }
+        context[sessionsDataKey] = .array(sessions(from: actions).map { session in
+            .object([
+                "title": .string(session.title),
+                "group": .string(session.group),
+                "command": .string(session.command),
+            ])
+        })
     }
 }

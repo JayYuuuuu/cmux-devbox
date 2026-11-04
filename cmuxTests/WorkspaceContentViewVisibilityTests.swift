@@ -720,3 +720,59 @@ final class WorkspaceContentViewVisibilityTests {
         )
     }
 }
+
+@Suite("DevBox team panel sessions")
+struct DevBoxTeamPanelSessionTests {
+    private func action(
+        id: String,
+        title: String,
+        keywords: [String] = ["devbox"],
+        key: String?,
+        layout: CmuxLayoutNode?
+    ) -> CmuxResolvedConfigAction {
+        CmuxResolvedConfigAction(
+            id: id,
+            title: title,
+            subtitle: nil,
+            keywords: keywords,
+            palette: true,
+            shortcut: key.map { StoredShortcut(key: $0, command: false, shift: false, option: true, control: true) },
+            icon: nil,
+            tooltip: nil,
+            action: .workspace(CmuxWorkspaceDefinition(name: title, layout: layout), restart: nil),
+            confirm: nil,
+            terminalCommandTarget: nil,
+            actionSourcePath: nil,
+            iconSourcePath: nil,
+            newWorkspaceMenu: nil
+        )
+    }
+
+    private func terminal(_ command: String?) -> CmuxLayoutNode {
+        .pane(CmuxPaneDefinition(surfaces: [CmuxSurfaceDefinition(type: .terminal, command: command)]))
+    }
+
+    @Test
+    func sessionsComeFromTaggedSingleTerminalEntriesInShortcutOrder() {
+        let actions = [
+            action(id: "b-1", title: "dev 1", key: "4", layout: terminal("ssh -o X=dev-1 host")),
+            action(id: "a-1", title: "主号 1", key: "1", layout: terminal("ssh -o X=1 host")),
+            action(id: "a-2", title: "主号 2", key: "2", layout: terminal("ssh -o X=2 host")),
+            action(id: "other", title: "notes", keywords: [], key: "3", layout: terminal("vim")),
+            action(id: "empty", title: "empty", key: nil, layout: terminal("  ")),
+            action(id: "none", title: "none", key: nil, layout: nil),
+        ]
+        let sessions = DevBoxTeamPanel.sessions(from: actions)
+        #expect(sessions.map(\.title) == ["主号 1", "主号 2", "dev 1"])
+        #expect(sessions.map(\.group) == ["主号", "主号", "dev"])
+        #expect(sessions.first?.command == "ssh -o X=1 host")
+    }
+
+    @Test
+    func groupNameDropsOnlyATrailingNumber() {
+        #expect(DevBoxTeamPanel.groupName(for: "air13 2") == "air13")
+        #expect(DevBoxTeamPanel.groupName(for: "big box 10") == "big box")
+        #expect(DevBoxTeamPanel.groupName(for: "solo") == "solo")
+        #expect(DevBoxTeamPanel.groupName(for: "v 2b") == "v 2b")
+    }
+}

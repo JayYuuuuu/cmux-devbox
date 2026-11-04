@@ -10829,10 +10829,10 @@ enum CmuxExtensionSidebarSelection {
     /// file's base name.
     static var customSidebarDescriptors: [CmuxSidebarProviderDescriptor] {
         guard !ManagedDevicePolicy().isEnforced(.disableCustomSidebars) else { return [] }
-        guard let entries = try? FileManager.default.contentsOfDirectory(
+        let entries = (try? FileManager.default.contentsOfDirectory(
             at: customSidebarsDirectory,
             includingPropertiesForKeys: nil
-        ) else { return [] }
+        )) ?? []
         // Priority when several extensions share a base name: js > swift > json.
         func priority(_ ext: String?) -> Int {
             switch ext {
@@ -10849,6 +10849,9 @@ enum CmuxExtensionSidebarSelection {
             let name = url.deletingPathExtension().lastPathComponent
             if priority(extensionByName[name]) >= priority(ext) { continue }
             extensionByName[name] = ext
+        }
+        if DevBoxTeamPanel.bundledScriptURL != nil {
+            extensionByName[DevBoxTeamPanel.sidebarName] = "js"
         }
         return extensionByName.keys.sorted().map { name in
             CmuxSidebarProviderDescriptor(
@@ -10874,6 +10877,9 @@ enum CmuxExtensionSidebarSelection {
         guard providerId.hasPrefix(customSidebarProviderPrefix) else { return nil }
         let name = String(providerId.dropFirst(customSidebarProviderPrefix.count))
         guard isValidCustomSidebarFileBaseName(name) else { return nil }
+        if name == DevBoxTeamPanel.sidebarName, let bundled = DevBoxTeamPanel.bundledScriptURL {
+            return bundled
+        }
         for ext in ["js", "swift", "json"] {
             let url = sidebarsDirectory.appendingPathComponent("\(name).\(ext)", isDirectory: false)
             if FileManager.default.fileExists(atPath: url.path) { return url }
@@ -11343,7 +11349,9 @@ struct VerticalTabsSidebar: View, Equatable {
             totalUnreadCount: unreadSnapshot.totalUnreadCount,
             now: now
         )
-        return CustomSidebarDataContextBuilder().dataContext(for: snapshot)
+        var context = CustomSidebarDataContextBuilder().dataContext(for: snapshot)
+        DevBoxTeamPanel.addSessions(to: &context, actions: cmuxConfigStore.loadedActions)
+        return context
     }
 
     @AppStorage("sidebarMatchTerminalBackground")

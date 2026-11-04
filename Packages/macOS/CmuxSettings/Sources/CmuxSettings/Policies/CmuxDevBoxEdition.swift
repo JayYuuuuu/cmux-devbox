@@ -47,7 +47,15 @@ public enum CmuxDevBoxEdition {
         "confirmQuit": "never",
         "terminal.copyOnSelect": true,
         presentationModeKey: minimalPresentationMode,
+        // The bundled team panel (app target `DevBoxTeamPanel`) in the left sidebar.
+        sidebarProviderKey: teamPanelProviderId,
     ] }
+
+    /// `UserDefaults` key of the left sidebar view (app target's
+    /// `CmuxExtensionSidebarSelection.defaultsKey`).
+    public static let sidebarProviderKey = "cmuxExtensionSidebar.providerId"
+    /// Provider id of the bundled DevBox team panel.
+    public static let teamPanelProviderId = "cmux.sidebar.custom.devbox"
 
     /// `UserDefaults` key of the workspace presentation mode (app target's
     /// `WorkspacePresentationModeSettings.modeKey`).

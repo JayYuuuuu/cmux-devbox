@@ -1,0 +1,355 @@
+// cmux DevBox team panel: the edition's built-in left sidebar (provider
+// `cmux.sidebar.custom.devbox`). Shipped inside the app; edit it here, not in
+// ~/.config/cmux/sidebars (a user file with this name is ignored).
+//
+// What it answers at a glance:
+//   - which remote sessions need me (permission prompt, or a finished turn I
+//     have not looked at), which are working and for how long, and which
+//     agent (Claude Code / Codex) runs there with how many background shells;
+//   - how much five-hour / weekly Claude quota each account has left;
+//   - one click to jump to a session, or to open it if it is not open yet.
+//
+// Data:
+//   - `data.devboxSessions()`: the user's cmux.json quick-entry actions tagged
+//     with the `devbox` keyword, as [{ title, group, command }] in shortcut
+//     order; `group` is the title without its trailing number.
+//   - `workspaces[i].devbox.activity` from the agent hooks and
+//     `.devbox.usage` from the statusline usage reporter (both sent by the
+//     remote scripts in scripts/devbox/, see docs/devbox-edition.md).
+
+const ENTRIES = () => data.devboxSessions() ?? [];
+
+const COLORS = {
+  waiting: "#E5484D",
+  unseen: "#F5A524",
+  working: "#3E9BFF",
+  idle: "#7f7f7f99",
+  closed: "#7f7f7f44",
+};
+
+const now = () => data.clock()?.epoch ?? 0;
+const workspaces = () => data.workspaces() ?? [];
+
+function elapsed(secs) {
+  const s = Math.max(0, Math.floor(secs));
+  if (s < 60) return s + "秒";
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + "分";
+  const h = Math.floor(m / 60);
+  return h < 24 ? h + "小时" + (m % 60 ? (m % 60) + "分" : "") : Math.floor(h / 24) + "天";
+}
+
+function untilReset(epoch) {
+  if (!epoch) return "";
+  const s = epoch - now();
+  if (s <= 0) return "";
+  const m = Math.ceil(s / 60);
+  if (m < 60) return m + "分后重置";
+  const h = Math.floor(m / 60);
+  if (h < 48) return h + "小时后重置";
+  return Math.floor(h / 24) + "天后重置";
+}
+
+function levelColor(pct) {
+  if (pct >= 85) return COLORS.waiting;
+  if (pct >= 60) return COLORS.unseen;
+  return "#30A46C";
+}
+
+// One status for a session row, from its workspace (or null when not open).
+function sessionStatus(ws) {
+  if (!ws) return { key: "closed", label: "未打开", color: COLORS.closed, since: 0 };
+  const act = ws.devbox?.activity;
+  const unread = (ws.unread ?? 0) > 0;
+  if (act?.state === "waiting") {
+    return { key: "waiting", label: "等你批准", color: COLORS.waiting, since: act.since };
+  }
+  if (act?.state === "working") {
+    return { key: "working", label: "干活中", color: COLORS.working, since: act.since };
+  }
+  if (unread) {
+    return { key: "unseen", label: act?.state === "done" ? "干完了" : "有新消息", color: COLORS.unseen, since: act?.since ?? 0 };
+  }
+  if (act?.state === "ended") return { key: "idle", label: "已退出", color: COLORS.idle, since: 0 };
+  return { key: "idle", label: "空闲", color: COLORS.idle, since: 0 };
+}
+
+const workspaceFor = (entry) => workspaces().find((w) => w.title === entry.title) ?? null;
+
+function open(entry) {
+  const ws = workspaceFor(entry);
+  if (ws) {
+    cmux("workspace.select", { workspace_id: ws.id });
+  } else {
+    cmux("workspace.create", { title: entry.title, initial_command: entry.command });
+  }
+}
+
+// ---------------------------------------------------------------- summary
+
+const counts = computed(() => {
+  const out = { waiting: 0, unseen: 0, working: 0 };
+  for (const entry of ENTRIES()) {
+    const key = sessionStatus(workspaceFor(entry)).key;
+    if (key in out) out[key] += 1;
+  }
+  return out;
+});
+
+function summary() {
+  const chip = (key, label) =>
+    HStack({ spacing: 4 }, [
+      Circle({ size: 6 }).fill(() => (counts()[key] ? COLORS[key] : COLORS.closed)),
+      Text(() => counts()[key] + " " + label)
+        .font(11)
+        .lineLimit(1)
+        .color(() => (counts()[key] ? "primary" : "tertiary")),
+    ]);
+  return HStack({ spacing: 12 }, [
+    chip("waiting", "等你"),
+    chip("unseen", "干完了"),
+    chip("working", "干活中"),
+    Spacer(),
+  ]).paddingHorizontal(10);
+}
+
+// ---------------------------------------------------------------- accounts
+
+// Latest usage report per account label, from whichever workspace sent it last.
+const usageByWho = computed(() => {
+  const latest = {};
+  for (const w of workspaces()) {
+    const u = w.devbox?.usage;
+    if (!u || !u.who) continue;
+    if (!latest[u.who] || (u.at ?? 0) > (latest[u.who].at ?? 0)) latest[u.who] = u;
+  }
+  return latest;
+});
+
+const BAR = 100;
+
+function gauge(label, pct) {
+  // pct() is null when the account has not reported yet.
+  const has = () => pct() !== null && pct() !== undefined;
+  return HStack({ spacing: 8 }, [
+    Text(label).font(10).color("secondary").frame({ width: 30, alignment: "leading" }),
+    ZStack({ alignment: "leading" }, [
+      Capsule({ width: BAR, height: 7 }).fill("#7f7f7f2e"),
+      Capsule({ width: () => (has() ? Math.max(7, Math.round((BAR * Math.min(100, pct())) / 100)) : 0), height: 7 })
+        .fill(() => (has() ? levelColor(pct()) : "clear")),
+    ]),
+    Text(() => (has() ? pct() + "%" : "—"))
+      .font(13).weight("semibold").monospaced()
+      .color(() => (has() && pct() >= 60 ? levelColor(pct()) : "primary"))
+      .frame({ width: 40, alignment: "trailing" }),
+    Spacer({ minLength: 0 }),
+  ]);
+}
+
+function resetLine(usage) {
+  return Text(() => {
+    const u = usage();
+    if (!u) return "还没收到用量：在这个账号的会话里用一次 Claude 就有";
+    const parts = [];
+    const h5 = untilReset(u.h5Reset);
+    const d7 = untilReset(u.d7Reset);
+    if (h5) parts.push("5小时额度" + h5);
+    if (d7) parts.push("本周" + d7);
+    return parts.join(" · ");
+  }).font(9).color("tertiary").lineLimit(1).truncation("tail");
+}
+
+// Which agent runs in the session: a small colored tag, hidden when unknown
+// or after the agent exited.
+const AGENTS = {
+  claude: { label: "Claude", fg: "#F0A07E", bg: "#D977573a" },
+  codex: { label: "Codex", fg: "#6FD3B8", bg: "#10A37F3a" },
+};
+
+function agentBadge(ws) {
+  const meta = () => {
+    const act = ws()?.devbox?.activity;
+    if (!act || act.state === "ended") return null;
+    return AGENTS[act.agent] ?? null;
+  };
+  return Text(() => meta()?.label ?? "")
+    .font(9).weight("semibold")
+    .color(() => meta()?.fg ?? "clear")
+    .paddingHorizontal(() => (meta() ? 5 : 0))
+    .paddingVertical(() => (meta() ? 1 : 0))
+    .background(() => meta()?.bg ?? null)
+    .cornerRadius(4)
+    .lineLimit(1);
+}
+
+// Background shells the agent still runs (DevBox .21+ reports them).
+function shellBadge(ws) {
+  const n = () => {
+    const act = ws()?.devbox?.activity;
+    return act && act.state !== "ended" ? act.bg ?? 0 : 0;
+  };
+  return Text(() => (n() ? "⚙ " + n() + " shell" : ""))
+    .font(9).weight("semibold")
+    .color(() => (n() ? "#C9B8FF" : "clear"))
+    .paddingHorizontal(() => (n() ? 5 : 0))
+    .paddingVertical(() => (n() ? 1 : 0))
+    .background(() => (n() ? "#8E7CFF33" : null))
+    .cornerRadius(4)
+    .help("这个会话里还在后台跑的 shell")
+    .lineLimit(1);
+}
+
+function openRow(entry) {
+  const ws = () => workspaceFor(entry());
+  const status = () => sessionStatus(ws());
+  const strong = () => status().key === "waiting" || status().key === "unseen";
+  return VStack({ spacing: 1 }, [
+      HStack({ spacing: 7 }, [
+        Circle({ size: 8 }).fill(() => status().color),
+        Text(() => entry().title)
+          .font(12)
+          .weight(() => (strong() ? "semibold" : "regular"))
+          .lineLimit(1),
+        agentBadge(ws),
+        shellBadge(ws),
+        Spacer({ minLength: 0 }),
+        Text(() => {
+          const st = status();
+          const time = st.since && st.key !== "idle" ? " " + elapsed(now() - st.since) : "";
+          return st.label + time;
+        })
+          .font(10)
+          .color(() => (strong() || status().key === "working" ? status().color : "tertiary"))
+          .lineLimit(1),
+      ]),
+      Text(() => {
+        const act = ws()?.devbox?.activity;
+        if (!act || !act.title || act.state === "ended") return "";
+        return (act.dir ? act.dir + " · " : "") + act.title;
+      })
+        .font(10).color("tertiary").lineLimit(1).truncation("tail")
+        .paddingLeading(15),
+  ])
+    .paddingHorizontal(8).paddingVertical(5)
+    .cornerRadius(7)
+    .background(() => (status().key === "waiting" ? "#E5484D24" : status().key === "unseen" ? "#F5A5241f" : "#7f7f7f12"))
+    .hoverBackground("#7f7f7f2a")
+    .frame({ maxWidth: "infinity" })
+    .onTap(() => open(entry()))
+    .contextMenu([
+      Button("切过去", () => open(entry())),
+      Button("标为已读", () => {
+        const w = workspaceFor(entry());
+        if (w) cmux("workspace.action", { workspace_id: w.id, action: "mark_read" });
+      }),
+    ]);
+}
+
+function closedChip(entry) {
+  return HStack({ spacing: 3 }, [
+    Image("plus").font(8).color("secondary"),
+    Text(() => entry().title).font(10).color("secondary").lineLimit(1),
+  ])
+    .paddingHorizontal(7).paddingVertical(3)
+    .cornerRadius(10)
+    .borderColor("#7f7f7f40").borderWidth(1)
+    .hoverBackground("#7f7f7f24")
+    .help("点一下打开这个 devbox 会话")
+    .onTap(() => open(entry()));
+}
+
+function accountCard(group) {
+  const items = () => ENTRIES().filter((e) => (e.group || "会话") === group);
+  // The account label the group's sessions report (the newest one wins).
+  const who = () => {
+    let best = null;
+    for (const e of items()) {
+      const d = workspaceFor(e)?.devbox;
+      for (const r of [d?.usage, d?.activity]) {
+        const at = r?.at ?? r?.since ?? 0;
+        if (r?.who && (!best || at > best.at)) best = { who: r.who, at };
+      }
+    }
+    return best?.who ?? "";
+  };
+  const usage = () => usageByWho()[who()] ?? null;
+  const openItems = () => items().filter((e) => workspaceFor(e));
+  const closedItems = () => items().filter((e) => !workspaceFor(e));
+  return VStack({ spacing: 7 }, [
+    HStack({ spacing: 6 }, [
+      Text(group).font(14).weight("semibold"),
+      Text(() => (who() && who() !== group ? who() : "")).font(10).color("tertiary"),
+      Spacer({ minLength: 0 }),
+      Text(() => {
+        const n = openItems().length;
+        return n ? n + " 个开着" : "都没开";
+      }).font(10).color("tertiary"),
+    ]),
+    gauge("5小时", () => usage()?.h5 ?? null),
+    gauge("本周", () => usage()?.d7 ?? null),
+    resetLine(usage),
+    ForEach({ items: openItems, key: (e) => e.title }, (entry) => openRow(entry)),
+    HStack({ spacing: 5 }, [
+      ForEach({ items: closedItems, key: (e) => e.title }, (entry) => closedChip(entry)),
+      Spacer({ minLength: 0 }),
+    ]),
+  ])
+    .padding(10)
+    .cornerRadius(11)
+    .background("#7f7f7f14")
+    .borderColor(() => {
+      const keys = openItems().map((e) => sessionStatus(workspaceFor(e)).key);
+      if (keys.includes("waiting")) return "#E5484D88";
+      if (keys.includes("unseen")) return "#F5A52477";
+      return "#7f7f7f22";
+    })
+    .borderWidth(1)
+    .frame({ maxWidth: "infinity" });
+}
+
+const GROUPS = computed(() => [...new Set(ENTRIES().map((e) => e.group || "会话"))]);
+
+// Open workspaces that are not one of the entries (local shells and such).
+const others = computed(() => {
+  const known = new Set(ENTRIES().map((e) => e.title));
+  return workspaces().filter((w) => !known.has(w.title));
+});
+
+// Shown until cmux.json has quick entries tagged "devbox".
+function hint() {
+  return Text(() =>
+    ENTRIES().length
+      ? ""
+      : "在 cmux.json 里给常用会话加带 devbox 关键词的快捷入口，这里就会按账号列出来"
+  )
+    .font(10).color("tertiary").paddingHorizontal(10);
+}
+
+function otherSection() {
+  return VStack({ spacing: 1 }, [
+    Text(() => (others().length ? "其他窗口" : ""))
+      .font(10).weight("semibold").color("secondary").paddingHorizontal(10),
+    ForEach({ items: others, key: (w) => w.id }, (w) =>
+      HStack({ spacing: 8 }, [
+        Circle({ size: 6 }).fill(() => ((w().unread ?? 0) > 0 ? COLORS.unseen : COLORS.closed)),
+        Text(() => w().title).font(11).color("secondary").lineLimit(1).truncation("tail"),
+        Spacer({ minLength: 0 }),
+      ])
+        .paddingHorizontal(10).paddingVertical(3)
+        .cornerRadius(6)
+        .hoverBackground("#7f7f7f24")
+        .frame({ maxWidth: "infinity" })
+        .onTap(() => cmux("workspace.select", { workspace_id: w().id }))
+    ),
+  ]);
+}
+
+sidebar(() =>
+  VStack({ spacing: 10 }, [
+    summary(),
+    ForEach({ items: GROUPS, key: (g) => g, spacing: 10 }, (_g, key) => accountCard(key)),
+    hint(),
+    otherSection(),
+    Spacer(),
+  ]).paddingHorizontal(6).paddingVertical(8)
+);

@@ -149,6 +149,9 @@ rm -f "$APP_PATH"/Contents/Resources/AppIcon-{Nightly,Debug,RC}.icns
 # on every Mac without per-user theme files.
 ditto Resources/devbox-themes "$APP_PATH/Contents/Resources/ghostty/themes"
 
+# The team panel is the edition's built-in left sidebar (DevBoxTeamPanel).
+ditto Resources/devbox-sidebars "$APP_PATH/Contents/Resources/devbox-sidebars"
+
 PLIST="$APP_PATH/Contents/Info.plist"
 pb() { /usr/libexec/PlistBuddy -c "$1" "$PLIST"; }
 pb_set() { # key type value

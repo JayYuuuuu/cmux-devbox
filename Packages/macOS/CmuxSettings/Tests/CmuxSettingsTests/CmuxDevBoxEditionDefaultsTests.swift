@@ -74,5 +74,6 @@ struct CmuxDevBoxEditionDefaultsTests {
 
     @Test func minimalModeIsTheRegisteredDefault() {
         #expect(CmuxDevBoxEdition.defaultSettings[CmuxDevBoxEdition.presentationModeKey] as? String == "minimal")
+        #expect(CmuxDevBoxEdition.defaultSettings[CmuxDevBoxEdition.sidebarProviderKey] as? String == "cmux.sidebar.custom.devbox")
     }
 }
