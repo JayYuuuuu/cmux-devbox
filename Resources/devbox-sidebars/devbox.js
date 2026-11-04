@@ -121,7 +121,7 @@ function summary() {
           .font(11)
           .color(() => (item().key === "idle" ? "tertiary" : "primary")),
       ])
-    ),
+    ).layoutPriority(1),
     Spacer(),
   ]).paddingHorizontal(10);
 }
@@ -245,7 +245,9 @@ function openRow(entry) {
               .cornerRadius(4)
               .help(() => b().help ?? "")
               .lineLimit(1)
-          ),
+          // The list renders as one view; without priority it splits the
+          // row with the Spacer and truncates badges at half the width.
+          ).layoutPriority(1),
           Spacer({ minLength: 0 }),
         ])
           .paddingLeading(10) // 15 minus the pill inset, so badge text lines up with the name
