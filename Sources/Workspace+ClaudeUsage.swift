@@ -23,6 +23,21 @@ extension Workspace {
         )
     }
 
+    /// The latest Codex usage report delivered through this workspace, if any.
+    var codexUsage: SidebarCodexUsage? {
+        statusEntries[SidebarCodexUsage.statusKey].flatMap { SidebarCodexUsage.parse($0.value) }
+    }
+
+    /// Records a Codex usage report; identical repeats are dropped.
+    func applyCodexUsageReport(_ usage: SidebarCodexUsage) {
+        let encoded = usage.encoded
+        guard statusEntries[SidebarCodexUsage.statusKey]?.value != encoded else { return }
+        statusEntries[SidebarCodexUsage.statusKey] = SidebarStatusEntry(
+            key: SidebarCodexUsage.statusKey,
+            value: encoded
+        )
+    }
+
     /// The latest remote agent activity report, if any.
     var agentActivity: SidebarAgentActivity? {
         statusEntries[SidebarAgentActivity.statusKey].flatMap { SidebarAgentActivity.parse($0.value) }
@@ -46,6 +61,8 @@ extension Workspace {
                 usage: claudeUsage,
                 usageReportedAt: statusEntries[SidebarClaudeUsage.statusKey]?.timestamp,
                 activity: agentActivity,
+                codexUsage: codexUsage,
+                codexUsageReportedAt: statusEntries[SidebarCodexUsage.statusKey]?.timestamp,
                 now: now
               ) else {
             return [:]
@@ -54,7 +71,7 @@ extension Workspace {
     }
 
     /// DevBox: the remote report entries a session restore brings back. Usage
-    /// carries its own reset times, so it stays meaningful across a restart;
+    /// (Claude and Codex) carries its own reset times, so it stays meaningful across a restart;
     /// agent activity is dropped because a turn that ended while the app was
     /// closed would otherwise show as working forever. Nothing outside the
     /// edition.
@@ -63,9 +80,9 @@ extension Workspace {
     ) -> [String: SidebarStatusEntry] {
         guard CmuxDevBoxEdition.isActive else { return [:] }
         var kept: [String: SidebarStatusEntry] = [:]
-        // Only the usage report survives; see above.
+        // Only the usage reports survive; see above.
         for snapshot in snapshots
-        where snapshot.key == SidebarClaudeUsage.statusKey {
+        where snapshot.key == SidebarClaudeUsage.statusKey || snapshot.key == SidebarCodexUsage.statusKey {
             kept[snapshot.key] = SidebarStatusEntry(
                 key: snapshot.key,
                 value: snapshot.value,

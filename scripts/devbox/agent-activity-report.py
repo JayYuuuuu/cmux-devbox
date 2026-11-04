@@ -17,6 +17,15 @@ DevBox report channel) straight to the terminal the agent is drawing on:
 `cx` counts the Codex runs Claude started and `cxs` is when the earliest
 began (both omitted at 0).
 
+Every hook run (from either agent) also forwards the Codex account's quota,
+read from the newest Codex session log, on the same channel:
+
+    cx1 plan=<plan> h5=<pct> h5r=<epoch> d7=<pct> d7r=<epoch> ob=<epoch>
+
+Codex says how long each window is: 300 minutes maps to `h5`, a week to `d7`
+(Pro plans only have the weekly one). DevBox 0.64.25-devbox.29+ shows it;
+older builds drop it silently.
+
 cmux DevBox 0.64.25-devbox.20+ stores it for custom sidebars; older DevBox
 builds drop it silently. Other terminals would show it as a notification, so
 only enable this where everyone runs DevBox.
@@ -26,6 +35,7 @@ The account label is $CLAUDE_AS_NAME, falling back to $CMUX_DEVBOX_WHO, then
 $USER. A report is written only when the state or prompt changes, or every
 RESEND_SECONDS, so tool-heavy turns stay quiet. Never fails the hook.
 """
+import calendar
 import json
 import os
 import re
@@ -237,6 +247,139 @@ def count_codex_runs(agent_pid):
     return count, earliest
 
 
+CODEX_WINDOWS = {300: "h5", 10080: "d7"}
+CODEX_TAIL_BYTES = 256 * 1024
+
+
+def newest_codex_log(root):
+    """Newest rollout log in the two latest day folders of ~/.codex/sessions."""
+    days = []
+    try:
+        for year in sorted(os.listdir(root), reverse=True):
+            for month in sorted(os.listdir(os.path.join(root, year)), reverse=True):
+                for day in sorted(os.listdir(os.path.join(root, year, month)), reverse=True):
+                    days.append(os.path.join(root, year, month, day))
+                    if len(days) >= 2:
+                        raise StopIteration
+    except StopIteration:
+        pass
+    except OSError:
+        return None
+    best = None
+    for folder in days:
+        try:
+            names = os.listdir(folder)
+        except OSError:
+            continue
+        for name in names:
+            if not name.endswith(".jsonl"):
+                continue
+            full = os.path.join(folder, name)
+            try:
+                mtime = os.path.getmtime(full)
+            except OSError:
+                continue
+            if best is None or mtime > best[0]:
+                best = (mtime, full)
+    return best[1] if best else None
+
+
+def codex_usage_body(rate_limits, observed):
+    """`cx1` report from a Codex `rate_limits` object, or None without windows."""
+    if not isinstance(rate_limits, dict):
+        return None
+    windows = {}
+    for slot in ("primary", "secondary"):
+        win = rate_limits.get(slot)
+        if not isinstance(win, dict):
+            continue
+        key = CODEX_WINDOWS.get(win.get("window_minutes"))
+        pct = win.get("used_percent")
+        if not key or not isinstance(pct, (int, float)) or key in windows:
+            continue
+        windows[key] = (max(0, min(100, round(pct))), win.get("resets_at"))
+    if not windows:
+        return None
+    parts = ["cx1"]
+    plan = re.sub(r"[^A-Za-z0-9_-]", "", str(rate_limits.get("plan_type") or ""))[:16]
+    if plan:
+        parts.append(f"plan={plan}")
+    for key in ("h5", "d7"):
+        if key in windows:
+            pct, reset = windows[key]
+            parts.append(f"{key}={pct}")
+            if isinstance(reset, (int, float)) and reset > 0:
+                parts.append(f"{key}r={int(reset)}")
+    if observed:
+        parts.append(f"ob={int(observed)}")
+    return " ".join(parts)
+
+
+def latest_codex_usage(path):
+    """(rate_limits, observed epoch) from the last quota line of a rollout log."""
+    try:
+        with open(path, "rb") as handle:
+            handle.seek(0, os.SEEK_END)
+            size = handle.tell()
+            handle.seek(max(0, size - CODEX_TAIL_BYTES))
+            chunk = handle.read().decode("utf-8", "replace")
+    except OSError:
+        return None
+    lines = chunk.splitlines()
+    if size > CODEX_TAIL_BYTES:
+        lines = lines[1:]  # the first line is cut
+    for line in reversed(lines):
+        if '"rate_limits"' not in line:
+            continue
+        try:
+            entry = json.loads(line)
+        except ValueError:
+            continue
+        limits = (entry.get("payload") or {}).get("rate_limits")
+        if not isinstance(limits, dict) or not (limits.get("primary") or limits.get("secondary")):
+            continue
+        observed = 0
+        stamp = str(entry.get("timestamp") or "")
+        try:
+            observed = calendar.timegm(time.strptime(stamp[:19], "%Y-%m-%dT%H:%M:%S"))
+        except ValueError:
+            observed = int(os.path.getmtime(path))
+        return limits, observed
+    return None
+
+
+def report_codex_usage(tty, base):
+    """Forwards the Codex quota when it changed, or every RESEND_SECONDS."""
+    root = os.path.join(os.environ.get("CODEX_HOME") or os.path.expanduser("~/.codex"), "sessions")
+    log = newest_codex_log(root)
+    found = latest_codex_usage(log) if log else None
+    body = codex_usage_body(*found) if found else None
+    if not body:
+        return
+    path = os.path.join(base, "codex-usage-" + (re.sub(r"[^A-Za-z0-9_.-]", "_", tty) or "default"))
+    now = int(time.time())
+    # Compare without the observed time, which moves on every Codex turn.
+    stable = re.sub(r" ob=\d+", "", body)
+    try:
+        with open(path, encoding="utf-8") as handle:
+            sent_at, previous = handle.read().split("\n", 1)
+        if previous == stable and now - int(sent_at) < RESEND_SECONDS:
+            return
+    except (OSError, ValueError):
+        pass
+    try:
+        with open(tty, "a", encoding="utf-8") as handle:
+            handle.write(build_sequence(body, bool(os.environ.get("TMUX"))))
+    except OSError:
+        return
+    try:
+        os.makedirs(base, mode=0o700, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(f"{now}\n{stable}")
+    except OSError:
+        pass
+
+
 def ancestors():
     out = set()
     pid = os.getpid()
@@ -287,16 +430,19 @@ def main():
     if not mapped:
         return
     state, title = mapped
+    tty = find_terminal()
+    if not tty:
+        return
+    base, path = state_path(tty, payload.get("session_id") or "")
+    try:
+        report_codex_usage(tty, base)
+    except Exception:  # the activity report below must still go out
+        pass
     # A Codex run that Claude Code started (`codex exec` from a Bash tool
     # call) shares Claude's terminal; reporting it would overwrite the Claude
     # session's own status with the helper's.
     if agent != "claude" and find_agent_pid("claude"):
         return
-    tty = find_terminal()
-    if not tty:
-        return
-
-    base, path = state_path(tty, payload.get("session_id") or "")
     now = int(time.time())
     previous = {}
     try:

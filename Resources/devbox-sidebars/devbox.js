@@ -6,7 +6,8 @@
 //   - which remote sessions need me (permission prompt, or a finished turn I
 //     have not looked at), which are working and for how long, and which
 //     agent (Claude Code / Codex) runs there with how many background shells;
-//   - how much five-hour / weekly Claude quota each account has left;
+//   - how much five-hour / weekly Claude quota each account has left, and
+//     the shared Codex account's quota (Pro: weekly only; Plus: both);
 //   - one click to jump to a session, or to open it if it is not open yet.
 //
 // Data:
@@ -14,8 +15,9 @@
 //     with the `devbox` keyword, as [{ action, title, group, command }] in shortcut
 //     order; `group` is the title without its trailing number.
 //   - `workspaces[i].devbox.activity` from the agent hooks and
-//     `.devbox.usage` from the statusline usage reporter (both sent by the
-//     remote scripts in scripts/devbox/, see docs/devbox-edition.md).
+//     `.devbox.usage` from the statusline usage reporter, `.devbox.codexUsage`
+//     from the agent hooks (all sent by the remote scripts in scripts/devbox/,
+//     see docs/devbox-edition.md).
 
 const ENTRIES = () => data.devboxSessions() ?? [];
 
@@ -43,6 +45,7 @@ function elapsed(secs) {
   return h < 24 ? h + "小时" + (m % 60 ? (m % 60) + "分" : "") : Math.floor(h / 24) + "天";
 }
 
+// "35分后重置", "1小时10分后重置", "5天10小时后重置".
 function untilReset(epoch) {
   if (!epoch) return "";
   const s = epoch - now();
@@ -50,8 +53,8 @@ function untilReset(epoch) {
   const m = Math.ceil(s / 60);
   if (m < 60) return m + "分后重置";
   const h = Math.floor(m / 60);
-  if (h < 48) return h + "小时后重置";
-  return Math.floor(h / 24) + "天后重置";
+  if (h < 24) return h + "小时" + (m % 60 ? (m % 60) + "分" : "") + "后重置";
+  return Math.floor(h / 24) + "天" + (h % 24 ? (h % 24) + "小时" : "") + "后重置";
 }
 
 function levelColor(pct) {
@@ -118,7 +121,7 @@ function summary() {
       HStack({ spacing: 4 }, [
         Circle({ size: 6 }).fill(() => COLORS[item().key] ?? COLORS.closed),
         Text(() => item().label)
-          .font(11)
+          .font(12)
           .color(() => (item().key === "idle" ? "tertiary" : "primary")),
       ])
     ).layoutPriority(1),
@@ -139,37 +142,40 @@ const usageByWho = computed(() => {
   return latest;
 });
 
-const BAR = 100;
+// A quota window as two lines: name, reset countdown and percent on top, a
+// full-width meter of 20 cells (5% each) below. Cells share the row width
+// equally, so the meter stretches with the sidebar without measuring it.
+const CELLS = 20;
+const CELL_INDEX = [...Array(CELLS).keys()];
 
-function gauge(label, pct) {
+function quota(label, pct, reset) {
   // pct() is null when the account has not reported yet.
   const has = () => pct() !== null && pct() !== undefined;
-  return HStack({ spacing: 8 }, [
-    Text(label).font(10).color("secondary").frame({ width: 30, alignment: "leading" }),
-    ZStack({ alignment: "leading" }, [
-      Capsule({ width: BAR, height: 7 }).fill("#7f7f7f2e"),
-      Capsule({ width: () => (has() ? Math.max(7, Math.round((BAR * Math.min(100, pct())) / 100)) : 0), height: 7 })
-        .fill(() => (has() ? levelColor(pct()) : "clear")),
+  const lit = () => (has() && pct() > 0 ? Math.max(1, Math.round(pct() / (100 / CELLS))) : 0);
+  return VStack({ spacing: 5 }, [
+    HStack({ spacing: 6 }, [
+      Text(label).font(11).color("secondary").lineLimit(1),
+      Text(() => (has() ? untilReset(reset()) : "")).font(10).color("tertiary").lineLimit(1),
+      Spacer({ minLength: 4 }),
+      Text(() => (has() ? pct() + "%" : "—"))
+        .font(14).weight("semibold").monospaced()
+        .color(() => (has() && pct() >= 60 ? levelColor(pct()) : "primary"))
+        .layoutPriority(2),
     ]),
-    Text(() => (has() ? pct() + "%" : "—"))
-      .font(13).weight("semibold").monospaced()
-      .color(() => (has() && pct() >= 60 ? levelColor(pct()) : "primary"))
-      .frame({ width: 40, alignment: "trailing" }),
-    Spacer({ minLength: 0 }),
+    HStack({ spacing: 2 }, CELL_INDEX.map((i) =>
+      RoundedRectangle({ cornerRadius: 1.5 })
+        .fill(() => (i < lit() ? levelColor(pct()) : "#7f7f7f2e"))
+        .frame({ maxWidth: "infinity", height: 6 })
+    )),
   ]);
 }
 
-function resetLine(usage) {
-  return Text(() => {
-    const u = usage();
-    if (!u) return "还没收到用量：在这个账号的会话里用一次 Claude 就有";
-    const parts = [];
-    const h5 = untilReset(u.h5Reset);
-    const d7 = untilReset(u.d7Reset);
-    if (h5) parts.push("5小时额度" + h5);
-    if (d7) parts.push("本周" + d7);
-    return parts.join(" · ");
-  }).font(9).color("tertiary").lineLimit(1).truncation("tail");
+// Shown in place of the reset times until an account has reported.
+function noUsageLine(usage, text) {
+  const line = computed(() => (usage() ? [] : [text]));
+  return ForEach({ items: line, key: () => "no-usage" }, (t) =>
+    Text(() => t()).font(10).color("tertiary").lineLimit(2)
+  );
 }
 
 // Which agent runs in the session, the Codex runs it started ("指挥 Codex"),
@@ -216,11 +222,11 @@ function openRow(entry) {
     return act && act.title && act.state !== "ended"
       ? [(act.dir ? act.dir + " · " : "") + act.title] : [];
   });
-  return VStack({ spacing: 3 }, [
+  return VStack({ spacing: 4 }, [
       HStack({ spacing: 7 }, [
         Circle({ size: 8 }).fill(() => status().color),
         Text(() => entry().title)
-          .font(12)
+          .font(13)
           .weight(() => (strong() ? "semibold" : "regular"))
           .lineLimit(1),
         Spacer({ minLength: 4 }),
@@ -229,7 +235,7 @@ function openRow(entry) {
           const time = st.since && st.key !== "idle" ? " " + elapsed(now() - st.since) : "";
           return st.label + time;
         })
-          .font(10)
+          .font(11)
           .color(() => (strong() || status().key === "working" ? status().color : "tertiary"))
           .layoutPriority(2)
           .lineLimit(1),
@@ -238,9 +244,9 @@ function openRow(entry) {
         HStack({ spacing: 4 }, [
           ForEach({ items: badges, key: (b) => b.key, spacing: 4 }, (b) =>
             Text(() => b().label)
-              .font(9).weight("semibold")
+              .font(10).weight("semibold")
               .color(() => b().fg)
-              .paddingHorizontal(5).paddingVertical(1)
+              .paddingHorizontal(5).paddingVertical(2)
               .background(() => b().bg)
               .cornerRadius(4)
               .help(() => b().help ?? "")
@@ -254,12 +260,12 @@ function openRow(entry) {
       ),
       ForEach({ items: detailLine, key: () => "detail" }, (line) =>
         Text(() => line())
-          .font(10).color("tertiary").lineLimit(1).truncation("tail")
+          .font(11).color("tertiary").lineLimit(1).truncation("tail")
           .paddingLeading(15)
       ),
   ])
-    .paddingHorizontal(8).paddingVertical(5)
-    .cornerRadius(7)
+    .paddingHorizontal(9).paddingVertical(7)
+    .cornerRadius(8)
     .background(() =>
       ws()?.selected ? SELECTED.fill
         : status().key === "waiting" ? "#E5484D24"
@@ -282,11 +288,11 @@ function openRow(entry) {
 
 function closedChip(entry) {
   return HStack({ spacing: 3 }, [
-    Image("plus").font(8).color("secondary"),
-    Text(() => entry().title).font(10).color("secondary").lineLimit(1),
+    Image("plus").font(9).color("secondary"),
+    Text(() => entry().title).font(11).color("secondary").lineLimit(1),
   ])
-    .paddingHorizontal(7).paddingVertical(3)
-    .cornerRadius(10)
+    .paddingHorizontal(8).paddingVertical(4)
+    .cornerRadius(11)
     .borderColor("#7f7f7f40").borderWidth(1)
     .hoverBackground("#7f7f7f24")
     .help("点一下打开这个 devbox 会话")
@@ -313,27 +319,27 @@ function accountCard(group) {
   const usage = () => usageByWho()[who()] ?? null;
   const openItems = () => items().filter((e) => workspaceFor(e));
   const closedItems = () => items().filter((e) => !workspaceFor(e));
-  return VStack({ spacing: 7 }, [
+  return VStack({ spacing: 9 }, [
     HStack({ spacing: 6 }, [
-      Text(group).font(14).weight("semibold"),
-      Text(() => (who() && who() !== group ? who() : "")).font(10).color("tertiary"),
+      Text(group).font(15).weight("semibold"),
+      Text(() => (who() && who() !== group ? who() : "")).font(11).color("tertiary"),
       Spacer({ minLength: 0 }),
       Text(() => {
         const n = openItems().length;
         return n ? n + " 个开着" : "都没开";
-      }).font(10).color("tertiary"),
+      }).font(11).color("tertiary"),
     ]),
-    gauge("5小时", () => usage()?.h5 ?? null),
-    gauge("本周", () => usage()?.d7 ?? null),
-    resetLine(usage),
+    quota("5小时", () => usage()?.h5 ?? null, () => usage()?.h5Reset),
+    quota("本周", () => usage()?.d7 ?? null, () => usage()?.d7Reset),
+    noUsageLine(usage, "还没收到用量：在这个账号的会话里用一次 Claude 就有"),
     ForEach({ items: openItems, key: (e) => e.title }, (entry) => openRow(entry)),
     HStack({ spacing: 5 }, [
       ForEach({ items: closedItems, key: (e) => e.title }, (entry) => closedChip(entry)),
       Spacer({ minLength: 0 }),
     ]),
   ])
-    .padding(10)
-    .cornerRadius(11)
+    .padding(12)
+    .cornerRadius(12)
     .background("#7f7f7f14")
     .borderColor(() => {
       const keys = openItems().map((e) => sessionStatus(workspaceFor(e)).key);
@@ -341,6 +347,53 @@ function accountCard(group) {
       if (keys.includes("unseen")) return "#F5A52477";
       return "#7f7f7f22";
     })
+    .borderWidth(1)
+    .frame({ maxWidth: "infinity" });
+}
+
+// ---------------------------------------------------------------- codex
+
+// One Codex account serves every session; the report Codex observed last wins,
+// whichever workspace carried it.
+const codexUsage = computed(() => {
+  let best = null;
+  for (const w of workspaces()) {
+    const u = w.devbox?.codexUsage;
+    if (u && (!best || (u.at ?? 0) > (best.at ?? 0))) best = u;
+  }
+  return best;
+});
+
+const PLAN_NAMES = { pro: "Pro", prolite: "Pro Lite", plus: "Plus", team: "Team", business: "Business", enterprise: "Enterprise" };
+
+function codexCard() {
+  const plan = () => {
+    const id = codexUsage()?.plan ?? "";
+    return PLAN_NAMES[id] ?? (id ? id[0].toUpperCase() + id.slice(1) : "");
+  };
+  // Pro has no five-hour window; show it only when Codex reports one.
+  const fiveHour = computed(() => (codexUsage()?.h5 !== undefined ? [1] : []));
+  return VStack({ spacing: 9 }, [
+    HStack({ spacing: 6 }, [
+      Text("Codex").font(15).weight("semibold"),
+      Text(() => plan())
+        .font(10).weight("semibold").color(AGENTS.codex.fg)
+        .paddingHorizontal(5).paddingVertical(2)
+        .background(() => (plan() ? AGENTS.codex.bg : "clear"))
+        .cornerRadius(4),
+      Spacer({ minLength: 0 }),
+      Text("各账号共用").font(11).color("tertiary"),
+    ]),
+    ForEach({ items: fiveHour, key: () => "h5" }, () =>
+      quota("5小时", () => codexUsage()?.h5 ?? null, () => codexUsage()?.h5Reset)
+    ),
+    quota("本周", () => codexUsage()?.d7 ?? null, () => codexUsage()?.d7Reset),
+    noUsageLine(codexUsage, "还没收到用量：在任一会话里用一次 Codex 就有"),
+  ])
+    .padding(12)
+    .cornerRadius(12)
+    .background("#7f7f7f14")
+    .borderColor("#7f7f7f22")
     .borderWidth(1)
     .frame({ maxWidth: "infinity" });
 }
@@ -386,9 +439,10 @@ function otherSection() {
 }
 
 sidebar(() =>
-  VStack({ spacing: 10 }, [
+  VStack({ spacing: 12 }, [
     summary(),
-    ForEach({ items: GROUPS, key: (g) => g, spacing: 10 }, (_g, key) => accountCard(key)),
+    ForEach({ items: GROUPS, key: (g) => g, spacing: 12 }, (_g, key) => accountCard(key)),
+    codexCard(),
     hint(),
     otherSection(),
     Spacer(),

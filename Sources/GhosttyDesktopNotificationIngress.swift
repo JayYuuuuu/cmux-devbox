@@ -86,10 +86,13 @@ final class GhosttyDesktopNotificationIngress: Sendable {
               let workspace = manager.workspacesById[request.tabId] else {
             return
         }
-        // The same channel carries usage reports (statusline) and agent
-        // activity reports (agent hooks); anything else is dropped silently.
+        // The same channel carries Claude usage reports (statusline), Codex
+        // usage and agent activity reports (agent hooks); anything else is
+        // dropped silently.
         if let usage = SidebarClaudeUsage.parse(request.body) {
             workspace.applyClaudeUsageReport(usage)
+        } else if let usage = SidebarCodexUsage.parse(request.body) {
+            workspace.applyCodexUsageReport(usage)
         } else if let activity = SidebarAgentActivity.parse(request.body) {
             workspace.applyAgentActivityReport(activity)
         }
