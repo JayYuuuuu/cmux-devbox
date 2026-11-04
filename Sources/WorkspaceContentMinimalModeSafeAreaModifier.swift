@@ -10,7 +10,13 @@ struct WorkspaceContentMinimalModeSafeAreaModifier: ViewModifier {
         WorkspacePresentationModeSettings.mode(for: workspacePresentationMode) == .minimal
     }
 
+    @AppStorage(DevBoxCardChrome.enabledKey) private var devBoxCardChromeSetting = true
+
     func body(content: Content) -> some View {
-        content.ignoresSafeArea(.container, edges: (isMinimalMode && !isFullScreen) ? .top : [])
+        // With the DevBox card the card itself rises into the titlebar band
+        // (WorkspacePresentationModeContentTopPaddingModifier); the workspace
+        // inside must stay within the card.
+        let insideCard = DevBoxCardChrome.isEnabled(storedValue: devBoxCardChromeSetting)
+        content.ignoresSafeArea(.container, edges: (isMinimalMode && !isFullScreen && !insideCard) ? .top : [])
     }
 }
