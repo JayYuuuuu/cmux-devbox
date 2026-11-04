@@ -32,7 +32,7 @@
 | 中文界面数值标签 | 中英文相同的文案（单位、数值格式、品牌名）补上简体中文条目，设置里不再显示内部键名。 |
 | 关于窗口 | 显示 `cmux DevBox`、定制版版本号和上游基线。 |
 | 侧边栏 Claude 用量徽章 | 远端 Claude Code 状态栏把 5 小时 / 每周用量（`rate_limits`，长期 token 登录也有）写成 OSC 777 通知，标题 `cmux-devbox-claude-usage`；本版拦下它不弹通知，存成该工作区的状态项 `devbox.claude_usage`，画成「账号名 + 两个环形用量 + 距重置时间」徽章，悬停看具体重置时刻。远端配置见下方「Claude 用量徽章」。 |
-| 卡片外观 | 工作区内容画成一张圆角卡片（四周留 8pt、内收 4pt、圆角 10pt、细描边），卡片外和标题栏一条用比终端底色深一档的底色；标题栏不再重复显示工作区名和文件夹图标。卡片内收量大于圆角切掉的部分，所以浮在上层的终端不会盖住圆角和描边。没有显式设置 `workspaceColors.selectionColor` 时，侧栏选中行用比终端底色亮一档的颜色，跟着主题变。`defaults write com.cmuxterm.app.staging.devbox devbox.cardChrome -bool false` 关闭。 |
+| 卡片外观 | 工作区内容画成一张圆角卡片（四周留 8pt、内收 4pt、圆角 10pt、细描边），卡片外和标题栏一条用比终端底色深一档的底色；标题栏不再重复显示工作区名和文件夹图标。卡片内收量大于圆角切掉的部分，所以浮在上层的终端不会盖住圆角和描边。没有显式设置 `workspaceColors.selectionColor` 时，侧栏选中行用比终端底色亮一档的颜色，跟着主题变。极简模式下由整张卡片升进标题栏那一条（离窗口顶边仍留 8pt），卡片里的工作区不再单独忽略顶部安全区，避免标签栏和顶边被推出窗口。`defaults write com.cmuxterm.app.staging.devbox devbox.cardChrome -bool false` 关闭。 |
 | 侧栏主题按钮 | 侧栏底部一排色点，一键切换 DevBox Charcoal / Cinder / Cobalt 和 Everforest Dark Hard；当前主题带彩色外圈。三套 DevBox 主题放在 `Resources/devbox-themes`，由 `build-devbox.sh` 打进包内 Ghostty 主题目录。按钮与 `cmux themes set` 写同一个托管主题块（`CmuxGhosttyManagedThemeBlock`），再发同一条重载通知。侧栏要跟主题变色，`sidebarAppearance.matchTerminalBackground` 需为 true。 |
 
 仍与所有 cmux 渠道共享（上游设计如此）：`~/.config/cmux/` 下的设置文件、`~/Library/Application Support/cmux/` 下的搜索库等少量全局文件。
