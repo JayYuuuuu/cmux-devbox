@@ -32,6 +32,9 @@ import urllib.parse
 TITLE = "cmux-devbox-claude-usage"
 RESEND_SECONDS = 600
 MAX_TEXT = 120
+# Ghostty hands notification bodies to the app in a 255-byte buffer and cuts
+# the rest; a cut percent-escape would not decode, so stay under it.
+MAX_BODY_BYTES = 250
 
 PERMISSION_NOTIFICATIONS = {"permission_prompt", "elicitation_dialog"}
 
@@ -70,6 +73,22 @@ def clean_name(raw):
 
 
 def build_body(state, at, agent, who, directory, title):
+    """Body that fits MAX_BODY_BYTES: the prompt is shortened first, then the directory."""
+    title = clean(title)
+    directory = clean(directory)
+    while True:
+        body = _body(state, at, agent, who, directory, title)
+        if len(body.encode("utf-8")) <= MAX_BODY_BYTES:
+            return body
+        if title:
+            title = title[:-1]
+        elif directory:
+            directory = directory[:-1]
+        else:
+            return body
+
+
+def _body(state, at, agent, who, directory, title):
     parts = ["v1", "ev=agent", f"st={state}", f"at={int(at)}"]
     if clean_name(agent):
         parts.append(f"agent={clean_name(agent)}")

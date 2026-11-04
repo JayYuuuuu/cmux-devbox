@@ -342,7 +342,9 @@ extension Workspace {
         // Status entries and agent PIDs are ephemeral runtime state tied to running
         // processes (e.g. claude_code "Running"). Don't restore them across app
         // restarts because the processes that set them are gone.
+        // DevBox: the remote usage report stays valid across a restart.
         statusEntries.removeAll()
+        statusEntries.merge(devBoxStatusEntriesSurvivingRestore(snapshot.statusEntries)) { _, restored in restored }
         clearAllAgentPIDs(refreshPorts: false)
         clearAllAgentLifecycleStates()
         agentListeningPorts.removeAll()

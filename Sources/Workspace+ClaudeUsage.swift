@@ -52,4 +52,26 @@ extension Workspace {
         }
         return [SidebarDevBoxCustomSidebarValue.key: value]
     }
+
+    /// DevBox: the remote report entries a session restore brings back. Usage
+    /// carries its own reset times, so it stays meaningful across a restart;
+    /// agent activity is dropped because a turn that ended while the app was
+    /// closed would otherwise show as working forever. Nothing outside the
+    /// edition.
+    func devBoxStatusEntriesSurvivingRestore(
+        _ snapshots: [SessionStatusEntrySnapshot]
+    ) -> [String: SidebarStatusEntry] {
+        guard CmuxDevBoxEdition.isActive else { return [:] }
+        var kept: [String: SidebarStatusEntry] = [:]
+        // Only the usage report survives; see above.
+        for snapshot in snapshots
+        where snapshot.key == SidebarClaudeUsage.statusKey {
+            kept[snapshot.key] = SidebarStatusEntry(
+                key: snapshot.key,
+                value: snapshot.value,
+                timestamp: Date(timeIntervalSince1970: snapshot.timestamp)
+            )
+        }
+        return kept
+    }
 }

@@ -75,7 +75,7 @@ public struct SidebarAgentActivity: Equatable, Sendable {
         }
         func text(_ key: String) -> String {
             guard let raw = fields[key] else { return "" }
-            return raw.removingPercentEncoding ?? raw
+            return decodedText(raw)
         }
         return SidebarAgentActivity(
             state: state,
@@ -85,6 +85,19 @@ public struct SidebarAgentActivity: Equatable, Sendable {
             directory: text("d"),
             title: text("t")
         )
+    }
+
+    /// Percent-decodes `raw`. A body cut by the terminal's notification size
+    /// limit can end in a partial escape or a partial UTF-8 sequence; drop the
+    /// incomplete tail instead of showing the raw escapes.
+    static func decodedText(_ raw: String) -> String {
+        var candidate = Substring(raw)
+        for _ in 0..<12 {
+            if let decoded = String(candidate).removingPercentEncoding { return decoded }
+            guard !candidate.isEmpty else { break }
+            candidate = candidate.dropLast()
+        }
+        return ""
     }
 
     private static func percentEncoded(_ text: String) -> String {

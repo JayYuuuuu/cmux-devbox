@@ -33,6 +33,17 @@ struct SidebarAgentActivityTests {
         }
     }
 
+    @Test("a body cut mid-escape keeps the decodable prefix")
+    func decodesTruncatedText() {
+        // "钩子" is %E9%92%A9 %E5%AD%90; cut inside the second character.
+        #expect(SidebarAgentActivity.decodedText("%E9%92%A9%E5%AD") == "钩")
+        #expect(SidebarAgentActivity.decodedText("%E9%92%A9%E5%A") == "钩")
+        #expect(SidebarAgentActivity.decodedText("ab%2") == "ab")
+        #expect(SidebarAgentActivity.decodedText("%E9%92%A9") == "钩")
+        let activity = SidebarAgentActivity.parse("v1 ev=agent st=working at=5 t=%E9%92%A9%E5%AD")
+        #expect(activity?.title == "钩")
+    }
+
     @Test("rejects bodies that are not agent reports")
     func rejectsOtherBodies() {
         #expect(SidebarAgentActivity.parse("v1 who=dev h5=3 d7=7") == nil)
