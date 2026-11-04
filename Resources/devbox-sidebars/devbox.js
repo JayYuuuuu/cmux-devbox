@@ -27,6 +27,10 @@ const COLORS = {
   closed: "#7f7f7f44",
 };
 
+// The workspace the window is showing: a solid light outline plus a stronger
+// fill, distinct from every status color and from hover.
+const SELECTED = { border: "#ECE6DF", fill: "#7f7f7f38" };
+
 const now = () => data.clock()?.epoch ?? 0;
 const workspaces = () => data.workspaces() ?? [];
 
@@ -232,8 +236,15 @@ function openRow(entry) {
   ])
     .paddingHorizontal(8).paddingVertical(5)
     .cornerRadius(7)
-    .background(() => (status().key === "waiting" ? "#E5484D24" : status().key === "unseen" ? "#F5A5241f" : "#7f7f7f12"))
-    .hoverBackground("#7f7f7f2a")
+    .background(() =>
+      ws()?.selected ? SELECTED.fill
+        : status().key === "waiting" ? "#E5484D24"
+        : status().key === "unseen" ? "#F5A5241f"
+        : "#7f7f7f12"
+    )
+    .borderColor(() => (ws()?.selected ? SELECTED.border : "clear"))
+    .borderWidth(1.5)
+    .hoverBackground(() => (ws()?.selected ? SELECTED.fill : "#7f7f7f2a"))
     .frame({ maxWidth: "infinity" })
     .onTap(() => open(entry()))
     .contextMenu([
@@ -265,7 +276,10 @@ function accountCard(group) {
     let best = null;
     for (const e of items()) {
       const d = workspaceFor(e)?.devbox;
-      for (const r of [d?.usage, d?.activity]) {
+      // Codex sessions have no account label of their own (the reporter
+      // falls back to the login user), so only usage and Claude reports count.
+      const act = d?.activity?.agent === "claude" ? d.activity : null;
+      for (const r of [d?.usage, act]) {
         const at = r?.at ?? r?.since ?? 0;
         if (r?.who && (!best || at > best.at)) best = { who: r.who, at };
       }
@@ -337,7 +351,10 @@ function otherSection() {
       ])
         .paddingHorizontal(10).paddingVertical(3)
         .cornerRadius(6)
-        .hoverBackground("#7f7f7f24")
+        .background(() => (w().selected ? SELECTED.fill : null))
+        .borderColor(() => (w().selected ? SELECTED.border : "clear"))
+        .borderWidth(1.5)
+        .hoverBackground(() => (w().selected ? SELECTED.fill : "#7f7f7f24"))
         .frame({ maxWidth: "infinity" })
         .onTap(() => cmux("workspace.select", { workspace_id: w().id }))
     ),
