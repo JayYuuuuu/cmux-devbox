@@ -1,6 +1,7 @@
 # Compatibility name for DevBox Mocha; keep this palette identical.
 # DevBox Mocha, adapted from https://github.com/catppuccin/ghostty/blob/b0b03ccee7ae8f16b13bd4fdfe267616defdb2b7/themes/catppuccin-mocha.conf
-# Modified: ANSI 0 is a lifted panel background; ANSI 8 has >=4.5:1 text contrast.
+# Modified: ANSI 0 is a lifted panel background; ANSI 8 has >=4.5:1 text contrast;
+# foreground and selection-foreground use DevBox Forest's #d3c6aa text color.
 # License and attribution: THIRD_PARTY_LICENSES.md.
 palette = 0=#313244
 palette = 1=#f38ba8
@@ -19,8 +20,8 @@ palette = 13=#f5c2e7
 palette = 14=#94e2d5
 palette = 15=#bac2de
 background = 1e1e2e
-foreground = cdd6f4
+foreground = d3c6aa
 cursor-color = f5e0dc
 cursor-text = 11111b
 selection-background = 353749
-selection-foreground = cdd6f4
+selection-foreground = d3c6aa

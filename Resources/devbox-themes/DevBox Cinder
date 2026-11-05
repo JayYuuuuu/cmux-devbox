@@ -1,6 +1,7 @@
 # Compatibility name for DevBox Tokyo Night; keep this palette identical.
 # DevBox Tokyo Night, adapted from https://github.com/folke/tokyonight.nvim/blob/cdc07ac78467a233fd62c493de29a17e0cf2b2b6/extras/ghostty/tokyonight_night
-# Modified: ANSI 0 is a lifted panel background; ANSI 8 has >=4.5:1 text contrast.
+# Modified: ANSI 0 is a lifted panel background; ANSI 8 has >=4.5:1 text contrast;
+# foreground and selection-foreground use DevBox Forest's #d3c6aa text color.
 # License and attribution: THIRD_PARTY_LICENSES.md.
 palette = 0=#24283b
 palette = 1=#f7768e
@@ -20,7 +21,7 @@ palette = 14=#a4daff
 palette = 15=#c0caf5
 
 background = #1a1b26
-foreground = #c0caf5
+foreground = #d3c6aa
 cursor-color = #c0caf5
 selection-background = #283457
-selection-foreground = #c0caf5
+selection-foreground = #d3c6aa

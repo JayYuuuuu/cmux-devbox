@@ -1,6 +1,7 @@
 # Compatibility name for DevBox Dracula; keep this palette identical.
 # DevBox Dracula, adapted from https://github.com/dracula/ghostty/blob/b0e64590232331d9837c82cc1c5138e11ea39f76/dracula
-# Modified: ANSI 0 is a lifted panel background; ANSI 8 has >=4.5:1 text contrast.
+# Modified: ANSI 0 is a lifted panel background; ANSI 8 has >=4.5:1 text contrast;
+# foreground and selection-foreground use DevBox Forest's #d3c6aa text color.
 # License and attribution: THIRD_PARTY_LICENSES.md.
 palette = 0=#343746
 palette = 1=#ff5555
@@ -19,8 +20,8 @@ palette = 13=#ff92df
 palette = 14=#a4ffff
 palette = 15=#ffffff
 background = #282a36
-foreground = #f8f8f2
+foreground = #d3c6aa
 cursor-color = #f8f8f2
 cursor-text = #282a36
-selection-foreground = #f8f8f2
+selection-foreground = #d3c6aa
 selection-background = #44475a
