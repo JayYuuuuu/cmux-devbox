@@ -126,9 +126,9 @@ enum DevBoxThemeSwitcher {
     }
 
     static let themes: [Theme] = [
-        Theme(name: "DevBox Charcoal", backgroundHex: "#252423", accentHex: "#e05d3a"),
-        Theme(name: "DevBox Cinder", backgroundHex: "#271e1f", accentHex: "#ff6b4a"),
-        Theme(name: "DevBox Cobalt", backgroundHex: "#10151c", accentHex: "#4fa8ff"),
+        Theme(name: "DevBox Mocha", backgroundHex: "#1e1e2e", accentHex: "#cba6f7"),
+        Theme(name: "DevBox Tokyo Night", backgroundHex: "#1a1b26", accentHex: "#7aa2f7"),
+        Theme(name: "DevBox Dracula", backgroundHex: "#282a36", accentHex: "#ff79c6"),
         Theme(name: "DevBox Forest", backgroundHex: "#1e2326", accentHex: "#a7c080"),
     ]
 
@@ -140,6 +140,15 @@ enum DevBoxThemeSwitcher {
         Theme(name: "DevBox Sepia", backgroundHex: "#f1e6cf", accentHex: "#b5562b"),
         Theme(name: "DevBox Sage", backgroundHex: "#ebeddf", accentHex: "#5f8a2e"),
         Theme(name: "DevBox Mist", backgroundHex: "#e9edf0", accentHex: "#2f6fd6"),
+    ]
+
+    // Old theme resources contain the replacement palettes too, so existing
+    // configurations update without rewriting a user's config on launch.
+    // Normalize their names here to keep the selected swatch accurate.
+    private static let legacyThemeNames: [String: String] = [
+        "DevBox Charcoal": "DevBox Mocha",
+        "DevBox Cinder": "DevBox Tokyo Night",
+        "DevBox Cobalt": "DevBox Dracula",
     ]
 
     private static func editableConfigURL() -> URL? {
@@ -162,9 +171,11 @@ enum DevBoxThemeSwitcher {
         }
         let parts = raw.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
         if let dark = parts.first(where: { $0.hasPrefix("dark:") }) {
-            return String(dark.dropFirst("dark:".count))
+            let name = String(dark.dropFirst("dark:".count))
+            return legacyThemeNames[name] ?? name
         }
-        return parts.count == 1 && !raw.contains(":") ? raw : nil
+        guard parts.count == 1 && !raw.contains(":") else { return nil }
+        return legacyThemeNames[raw] ?? raw
     }
 
     /// Selects `theme` for both appearances through the same managed block as

@@ -3106,5 +3106,20 @@
       "es": "The standard pixel unit abbreviation px is invariant; the localized entry preserves the numeric placeholder.",
       "ja": "The standard pixel unit abbreviation px is invariant; the localized entry preserves the numeric placeholder."
     }
+  },
+  "devbox.theme.mocha.name": {
+    "source": "DevBox Mocha",
+    "class": "technical",
+    "reason": "Exact Ghostty theme resource identifier, shown verbatim in Sources/DevBoxAppearance.swift tooltips and accessibility labels; must match configuration and CLI names in every locale."
+  },
+  "devbox.theme.tokyoNight.name": {
+    "source": "DevBox Tokyo Night",
+    "class": "technical",
+    "reason": "Exact Ghostty theme resource identifier, shown verbatim in Sources/DevBoxAppearance.swift tooltips and accessibility labels; must match configuration and CLI names in every locale."
+  },
+  "devbox.theme.dracula.name": {
+    "source": "DevBox Dracula",
+    "class": "technical",
+    "reason": "Exact Ghostty theme resource identifier, shown verbatim in Sources/DevBoxAppearance.swift tooltips and accessibility labels; must match configuration and CLI names in every locale."
   }
 }

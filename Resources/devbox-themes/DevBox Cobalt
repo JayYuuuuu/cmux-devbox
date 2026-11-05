@@ -1,23 +1,26 @@
-# DevBox Cobalt: deep navy
-background = #10151c
-foreground = #c2cedb
-cursor-color = #4fa8ff
-cursor-text = #10151c
-selection-background = #1f3a5c
-selection-foreground = #e2eaf2
-palette = 0=#1a2129
-palette = 1=#e57373
-palette = 2=#81b366
-palette = 3=#d4a95f
-palette = 4=#4f95e0
-palette = 5=#9d85cf
-palette = 6=#56b3c4
-palette = 7=#a2b0be
-palette = 8=#56626f
-palette = 9=#ef8f8f
-palette = 10=#9cc983
-palette = 11=#e5c07e
-palette = 12=#74aeec
-palette = 13=#b5a0e0
-palette = 14=#78cbda
-palette = 15=#e2eaf2
+# Compatibility name for DevBox Dracula; keep this palette identical.
+# DevBox Dracula, adapted from https://github.com/dracula/ghostty/blob/b0e64590232331d9837c82cc1c5138e11ea39f76/dracula
+# Modified: ANSI 0 is a lifted panel background; ANSI 8 has >=4.5:1 text contrast.
+# License and attribution: THIRD_PARTY_LICENSES.md.
+palette = 0=#343746
+palette = 1=#ff5555
+palette = 2=#50fa7b
+palette = 3=#f1fa8c
+palette = 4=#bd93f9
+palette = 5=#ff79c6
+palette = 6=#8be9fd
+palette = 7=#f8f8f2
+palette = 8=#8390b7
+palette = 9=#ff6e6e
+palette = 10=#69ff94
+palette = 11=#ffffa5
+palette = 12=#d6acff
+palette = 13=#ff92df
+palette = 14=#a4ffff
+palette = 15=#ffffff
+background = #282a36
+foreground = #f8f8f2
+cursor-color = #f8f8f2
+cursor-text = #282a36
+selection-foreground = #f8f8f2
+selection-background = #44475a
