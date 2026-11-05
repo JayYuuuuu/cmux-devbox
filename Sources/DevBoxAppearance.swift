@@ -129,14 +129,14 @@ enum DevBoxThemeSwitcher {
         Theme(name: "DevBox Charcoal", backgroundHex: "#252423", accentHex: "#e05d3a"),
         Theme(name: "DevBox Cinder", backgroundHex: "#271e1f", accentHex: "#ff6b4a"),
         Theme(name: "DevBox Cobalt", backgroundHex: "#10151c", accentHex: "#4fa8ff"),
-        Theme(name: "Everforest Dark Hard", backgroundHex: "#272e33", accentHex: "#a7c080"),
+        Theme(name: "DevBox Forest", backgroundHex: "#1e2326", accentHex: "#a7c080"),
     ]
 
     /// Light counterparts for daytime: tinted paper backgrounds (never pure
     /// white), softened ink foregrounds (about 10-12:1) and ANSI colors kept
     /// at 5:1 (normal) / 4:1 (bright) so syntax colors stay distinct and legible.
     static let lightThemes: [Theme] = [
-        Theme(name: "DevBox Paper", backgroundHex: "#f4f0e6", accentHex: "#c4552a"),
+        Theme(name: "DevBox Paper", backgroundHex: "#f3ede1", accentHex: "#c15627"),
         Theme(name: "DevBox Sepia", backgroundHex: "#f1e6cf", accentHex: "#b5562b"),
         Theme(name: "DevBox Sage", backgroundHex: "#ebeddf", accentHex: "#5f8a2e"),
         Theme(name: "DevBox Mist", backgroundHex: "#e9edf0", accentHex: "#2f6fd6"),
@@ -193,15 +193,23 @@ enum DevBoxThemeSwitcher {
     }
 }
 
-/// Rows of theme swatches shown above the sidebar footer buttons: dark
-/// themes on the first row, light themes on the second.
+/// Theme swatches shown above the sidebar footer buttons: dark themes, a
+/// wider gap, then light themes on one row; two rows when the sidebar is too
+/// narrow for one.
 struct DevBoxThemeSwitcherRow: View {
     @State private var activeThemeName: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            swatchRow(DevBoxThemeSwitcher.themes)
-            swatchRow(DevBoxThemeSwitcher.lightThemes)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 14) {
+                swatchRow(DevBoxThemeSwitcher.themes).fixedSize()
+                swatchRow(DevBoxThemeSwitcher.lightThemes).fixedSize()
+                Spacer(minLength: 0)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                swatchRow(DevBoxThemeSwitcher.themes)
+                swatchRow(DevBoxThemeSwitcher.lightThemes)
+            }
         }
         .padding(.leading, 12)
         .padding(.trailing, 10)
@@ -228,7 +236,6 @@ struct DevBoxThemeSwitcherRow: View {
                 .accessibilityLabel(Text(verbatim: theme.name))
                 .accessibilityAddTraits(isActive ? .isSelected : [])
             }
-            Spacer(minLength: 0)
         }
     }
 }
