@@ -17,7 +17,7 @@
 # sends #f0f0f0 inside tmux when CLAUDE_CODE_TMUX_TRUECOLOR=1 (otherwise it
 # falls back to 256-colour index 255).
 #
-# codex-derived-panel.patch: Codex reads the terminal background once at
+# codex-theme-colours.patch: Codex reads the terminal background once at
 # startup and fills its composer and the user's messages with that colour
 # blended a few percent towards black (light page) or white (dark page), as a
 # fixed RGB. It never re-reads it, so after a light/dark switch the panel keeps
@@ -26,7 +26,12 @@
 # matches such a blend as a new theme colour, "themepanel", which every client
 # resolves for its own current light or dark (options light-theme-panel,
 # default colour7, and dark-theme-panel, default colour0: the DevBox themes
-# define those as a shade one step off the page).
+# define those as a shade one step off the page). Codex's diff colours are
+# also picked once from the startup background (GitHub-style light or dark
+# line and line-number backgrounds, near-black number text on light); they are
+# stored as theme colours too (themediffadd, themediffdelete and the -number
+# variants, defaulting to Codex's own light and dark values) so each client
+# draws the set for its current theme.
 #
 # Usage: build-tmux.sh <prefix>     (needs libevent-dev, libncurses-dev, bison)
 # Then install <prefix>/bin/tmux and restart the tmux server (kill-server);
@@ -45,7 +50,7 @@ tar xzf tmux.tar.gz
 cd "tmux-$VERSION"
 patch -p1 < "$HERE/follow-latest-client-theme.patch"
 patch -p1 < "$HERE/light-panel-tint.patch"
-patch -p1 < "$HERE/codex-derived-panel.patch"
+patch -p1 < "$HERE/codex-theme-colours.patch"
 ./configure --prefix="$PREFIX"
 make -j"$(nproc)"
 make install

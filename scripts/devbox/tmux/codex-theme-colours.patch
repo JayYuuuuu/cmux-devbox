@@ -1,8 +1,8 @@
 diff --git colour.c colour.c
-index 411d779..ef5e072 100644
+index 411d779..74b1873 100644
 --- a/colour.c
 +++ b/colour.c
-@@ -82,6 +82,11 @@ static const struct {
+@@ -82,6 +82,31 @@ static const struct {
  	  "dark-theme-magenta",
  	  "light-theme-magenta",
  	  5
@@ -11,11 +11,31 @@ index 411d779..ef5e072 100644
 +	  "dark-theme-panel",
 +	  "light-theme-panel",
 +	  8
++	},
++	{ "themediffadd",
++	  "dark-theme-diff-add",
++	  "light-theme-diff-add",
++	  8
++	},
++	{ "themediffdelete",
++	  "dark-theme-diff-delete",
++	  "light-theme-diff-delete",
++	  8
++	},
++	{ "themediffaddnumber",
++	  "dark-theme-diff-add-number",
++	  "light-theme-diff-add-number",
++	  8
++	},
++	{ "themediffdeletenumber",
++	  "dark-theme-diff-delete-number",
++	  "light-theme-diff-delete-number",
++	  8
  	}
  };
  
 diff --git input.c input.c
-index a2faaa1..8c04c0c 100644
+index a2faaa1..c7d7b28 100644
 --- a/input.c
 +++ b/input.c
 @@ -137,6 +137,14 @@ struct input_ctx {
@@ -45,7 +65,7 @@ index a2faaa1..8c04c0c 100644
  	ictx->wp = wp;
  	ictx->event = bev;
  	ictx->palette = palette;
-@@ -2252,6 +2263,78 @@ input_csi_dispatch_sgr_256(struct input_ctx *ictx, int fgbg, u_int *i)
+@@ -2252,6 +2263,104 @@ input_csi_dispatch_sgr_256(struct input_ctx *ictx, int fgbg, u_int *i)
  		(*i)++;
  }
  
@@ -121,10 +141,51 @@ index a2faaa1..8c04c0c 100644
 +	return (0);
 +}
 +
++/*
++ * Codex also picks its diff colours (GitHub-style light or dark line and
++ * line-number backgrounds, and a near-black line-number foreground on light)
++ * once at startup from the terminal background. Store them as theme colours
++ * so each client draws the light or dark set for its own current theme.
++ */
++static int
++input_codex_diff_bg(int r, int g, int b)
++{
++	int	c = (r << 16) | (g << 8) | b;
++
++	switch (c) {
++	case 0x213a2b:	/* dark added line */
++	case 0xdafbe1:	/* light added line */
++		return (COLOUR_THEME_DIFF_ADD|COLOUR_FLAG_THEME);
++	case 0x4a221d:	/* dark deleted line */
++	case 0xffebe9:	/* light deleted line */
++		return (COLOUR_THEME_DIFF_DELETE|COLOUR_FLAG_THEME);
++	case 0xaceebb:	/* light added line number */
++		return (COLOUR_THEME_DIFF_ADD_NUMBER|COLOUR_FLAG_THEME);
++	case 0xffcecb:	/* light deleted line number */
++		return (COLOUR_THEME_DIFF_DELETE_NUMBER|COLOUR_FLAG_THEME);
++	}
++	return (-1);
++}
++
  /* Helper for RGB colour SGR. */
  static int
  input_csi_dispatch_sgr_rgb_do(struct input_ctx *ictx, int fgbg, int r, int g,
-@@ -2278,7 +2361,9 @@ input_csi_dispatch_sgr_rgb_do(struct input_ctx *ictx, int fgbg, int r, int g,
+@@ -2266,8 +2375,13 @@ input_csi_dispatch_sgr_rgb_do(struct input_ctx *ictx, int fgbg, int r, int g,
+ 	if (b == -1 || b > 255)
+ 		return (0);
+ 
+-	if (fgbg == 38)
++	if (fgbg == 38 && r == 31 && g == 35 && b == 40) {
++		/* Codex's light-theme diff line-number text: use the default. */
++		gc->fg = 8;
++	} else if (fgbg == 38)
+ 		gc->fg = colour_join_rgb(r, g, b);
++	else if (fgbg == 48 && input_codex_diff_bg(r, g, b) != -1)
++		gc->bg = input_codex_diff_bg(r, g, b);
+ 	else if (fgbg == 48 && r == 240 && g == 240 && b == 240) {
+ 		/*
+ 		 * #f0f0f0 is the fixed panel grey of light application themes
+@@ -2278,7 +2392,9 @@ input_csi_dispatch_sgr_rgb_do(struct input_ctx *ictx, int fgbg, int r, int g,
  		 * define as a tint one step darker than the page.
  		 */
  		gc->bg = 7;
@@ -135,7 +196,7 @@ index a2faaa1..8c04c0c 100644
  		gc->bg = colour_join_rgb(r, g, b);
  	else if (fgbg == 58)
  		gc->us = colour_join_rgb(r, g, b);
-@@ -3138,6 +3223,7 @@ input_osc_11(struct input_ctx *ictx, const char *p)
+@@ -3138,6 +3254,7 @@ input_osc_11(struct input_ctx *ictx, const char *p)
  			return;
  		c = window_pane_get_bg(wp);
  		input_osc_colour_reply(ictx, 1, 11, 0, c, ictx->input_end);
@@ -144,10 +205,10 @@ index a2faaa1..8c04c0c 100644
  	}
  
 diff --git options-table.c options-table.c
-index c7b1671..f05484d 100644
+index c7b1671..d921d3f 100644
 --- a/options-table.c
 +++ b/options-table.c
-@@ -651,6 +651,15 @@ const struct options_table_entry options_table[] = {
+@@ -651,6 +651,47 @@ const struct options_table_entry options_table[] = {
  	  .text = "Dark theme colour for magenta."
  	},
  
@@ -160,10 +221,42 @@ index c7b1671..f05484d 100644
 +		  "step off the page)."
 +	},
 +
++	{ .name = "dark-theme-diff-add",
++	  .type = OPTIONS_TABLE_STRING,
++	  .scope = OPTIONS_TABLE_SERVER,
++	  .flags = OPTIONS_TABLE_IS_COLOUR,
++	  .default_str = "#213a2b",
++	  .text = "Dark theme background for added diff lines."
++	},
++
++	{ .name = "dark-theme-diff-add-number",
++	  .type = OPTIONS_TABLE_STRING,
++	  .scope = OPTIONS_TABLE_SERVER,
++	  .flags = OPTIONS_TABLE_IS_COLOUR,
++	  .default_str = "#213a2b",
++	  .text = "Dark theme background for added diff line numbers."
++	},
++
++	{ .name = "dark-theme-diff-delete",
++	  .type = OPTIONS_TABLE_STRING,
++	  .scope = OPTIONS_TABLE_SERVER,
++	  .flags = OPTIONS_TABLE_IS_COLOUR,
++	  .default_str = "#4a221d",
++	  .text = "Dark theme background for deleted diff lines."
++	},
++
++	{ .name = "dark-theme-diff-delete-number",
++	  .type = OPTIONS_TABLE_STRING,
++	  .scope = OPTIONS_TABLE_SERVER,
++	  .flags = OPTIONS_TABLE_IS_COLOUR,
++	  .default_str = "#4a221d",
++	  .text = "Dark theme background for deleted diff line numbers."
++	},
++
  	{ .name = "light-theme-black",
  	  .type = OPTIONS_TABLE_STRING,
  	  .scope = OPTIONS_TABLE_SERVER,
-@@ -731,6 +740,15 @@ const struct options_table_entry options_table[] = {
+@@ -731,6 +772,47 @@ const struct options_table_entry options_table[] = {
  	  .text = "Light theme colour for magenta."
  	},
  
@@ -176,23 +269,59 @@ index c7b1671..f05484d 100644
 +		  "step off the page)."
 +	},
 +
++	{ .name = "light-theme-diff-add",
++	  .type = OPTIONS_TABLE_STRING,
++	  .scope = OPTIONS_TABLE_SERVER,
++	  .flags = OPTIONS_TABLE_IS_COLOUR,
++	  .default_str = "#dafbe1",
++	  .text = "Light theme background for added diff lines."
++	},
++
++	{ .name = "light-theme-diff-add-number",
++	  .type = OPTIONS_TABLE_STRING,
++	  .scope = OPTIONS_TABLE_SERVER,
++	  .flags = OPTIONS_TABLE_IS_COLOUR,
++	  .default_str = "#aceebb",
++	  .text = "Light theme background for added diff line numbers."
++	},
++
++	{ .name = "light-theme-diff-delete",
++	  .type = OPTIONS_TABLE_STRING,
++	  .scope = OPTIONS_TABLE_SERVER,
++	  .flags = OPTIONS_TABLE_IS_COLOUR,
++	  .default_str = "#ffebe9",
++	  .text = "Light theme background for deleted diff lines."
++	},
++
++	{ .name = "light-theme-diff-delete-number",
++	  .type = OPTIONS_TABLE_STRING,
++	  .scope = OPTIONS_TABLE_SERVER,
++	  .flags = OPTIONS_TABLE_IS_COLOUR,
++	  .default_str = "#ffcecb",
++	  .text = "Light theme background for deleted diff line numbers."
++	},
++
  	{ .name = "user-keys",
  	  .type = OPTIONS_TABLE_STRING,
  	  .scope = OPTIONS_TABLE_SERVER,
 diff --git tmux.h tmux.h
-index b53dae8..9720da4 100644
+index b53dae8..472abc5 100644
 --- a/tmux.h
 +++ b/tmux.h
-@@ -760,9 +760,10 @@ enum colour_theme {
+@@ -760,9 +760,14 @@ enum colour_theme {
  	COLOUR_THEME_RED,
  	COLOUR_THEME_BLUE,
  	COLOUR_THEME_CYAN,
 -	COLOUR_THEME_MAGENTA
 +	COLOUR_THEME_MAGENTA,
-+	COLOUR_THEME_PANEL
++	COLOUR_THEME_PANEL,
++	COLOUR_THEME_DIFF_ADD,
++	COLOUR_THEME_DIFF_DELETE,
++	COLOUR_THEME_DIFF_ADD_NUMBER,
++	COLOUR_THEME_DIFF_DELETE_NUMBER
  };
 -#define COLOUR_THEME_COUNT 10
-+#define COLOUR_THEME_COUNT 11
++#define COLOUR_THEME_COUNT 15
  
  /* Replacement palette. */
  struct colour_palette {
