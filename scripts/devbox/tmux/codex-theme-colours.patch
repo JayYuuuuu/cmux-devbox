@@ -1,5 +1,5 @@
 diff --git colour.c colour.c
-index 411d779..74b1873 100644
+index 411d779..2906128 100644
 --- a/colour.c
 +++ b/colour.c
 @@ -82,6 +82,31 @@ static const struct {
@@ -34,8 +34,105 @@ index 411d779..74b1873 100644
  	}
  };
  
+@@ -1321,3 +1346,96 @@ colour_palette_from_option(struct colour_palette *p, struct options *oo)
+ 		}
+ 	}
+ }
++
++/* sRGB channel to linear and back. */
++static float
++colour_srgb_to_linear(u_char v)
++{
++	float	c = v / 255.0f;
++
++	if (c <= 0.04045f)
++		return (c / 12.92f);
++	return (powf((c + 0.055f) / 1.055f, 2.4f));
++}
++
++static u_char
++colour_linear_to_srgb(float c)
++{
++	if (c <= 0.0f)
++		return (0);
++	if (c >= 1.0f)
++		return (255);
++	if (c <= 0.0031308f)
++		c *= 12.92f;
++	else
++		c = 1.055f * powf(c, 1.0f / 2.4f) - 0.055f;
++	return ((u_char)lroundf(c * 255.0f));
++}
++
++/*
++ * Draw an RGB colour chosen for a dark (or light) page on a terminal of the
++ * given theme. If the kinds match, or the colour carries no kind, it is used
++ * as is. Otherwise its OKLab lightness is mirrored so it keeps the same
++ * distance from the page (pages taken as L 0.22 dark and 0.95 light), with
++ * hue and chroma kept: pale text for a dark page becomes dark text on a light
++ * one, and the other way round. The result has no kind flags.
++ */
++int
++colour_for_theme(int c, enum client_theme theme, int is_bg)
++{
++	static int	 last_in = -1, last_out;
++	static enum client_theme last_theme;
++	static int	 last_is_bg;
++	const float	 dark_page = 0.22f, light_page = 0.95f;
++	u_char		 r, g, b;
++	float		 lr, lg, lb, l, m, s, L, A, B, from, to;
++	int		 kind;
++
++	kind = c & COLOUR_FLAG_FOR_THEME;
++	c &= ~COLOUR_FLAG_FOR_THEME;
++	if (kind == 0 || (~c & COLOUR_FLAG_RGB) || theme == THEME_UNKNOWN)
++		return (c);
++	if ((kind == COLOUR_FLAG_FOR_DARK && theme == THEME_DARK) ||
++	    (kind == COLOUR_FLAG_FOR_LIGHT && theme == THEME_LIGHT))
++		return (c);
++	if (c == last_in && theme == last_theme && is_bg == last_is_bg)
++		return (last_out);
++
++	colour_split_rgb(c, &r, &g, &b);
++	lr = colour_srgb_to_linear(r);
++	lg = colour_srgb_to_linear(g);
++	lb = colour_srgb_to_linear(b);
++	l = cbrtf(0.4122214708f * lr + 0.5363325363f * lg + 0.0514459929f * lb);
++	m = cbrtf(0.2119034982f * lr + 0.6806995451f * lg + 0.1073969566f * lb);
++	s = cbrtf(0.0883024619f * lr + 0.2817188376f * lg + 0.6299787005f * lb);
++	L = 0.2104542553f * l + 0.7936177850f * m - 0.0040720468f * s;
++	A = 1.9779984951f * l - 2.4285922050f * m + 0.4505937099f * s;
++	B = 0.0259040371f * l + 0.7827717662f * m - 0.8086757660f * s;
++
++	from = (kind == COLOUR_FLAG_FOR_DARK) ? dark_page : light_page;
++	to = (theme == THEME_DARK) ? dark_page : light_page;
++	L = to + (from - L);
++	if (L < 0.0f)
++		L = 0.0f;
++	if (L > 1.0f)
++		L = 1.0f;
++
++	l = L + 0.3963377774f * A + 0.2158037573f * B;
++	m = L - 0.1055613458f * A - 0.0638541728f * B;
++	s = L - 0.0894841775f * A - 1.2914855480f * B;
++	l = l * l * l;
++	m = m * m * m;
++	s = s * s * s;
++	r = colour_linear_to_srgb(4.0767416621f * l - 3.3077115913f * m +
++	    0.2309699292f * s);
++	g = colour_linear_to_srgb(-1.2684380046f * l + 2.6097574011f * m -
++	    0.3413193965f * s);
++	b = colour_linear_to_srgb(-0.0041960863f * l - 0.7034186147f * m +
++	    1.7076147010f * s);
++
++	last_in = c;
++	last_theme = theme;
++	last_is_bg = is_bg;
++	last_out = colour_join_rgb(r, g, b);
++	return (last_out);
++}
 diff --git input.c input.c
-index a2faaa1..c7d7b28 100644
+index a2faaa1..a2de1da 100644
 --- a/input.c
 +++ b/input.c
 @@ -137,6 +137,14 @@ struct input_ctx {
@@ -170,7 +267,7 @@ index a2faaa1..c7d7b28 100644
  /* Helper for RGB colour SGR. */
  static int
  input_csi_dispatch_sgr_rgb_do(struct input_ctx *ictx, int fgbg, int r, int g,
-@@ -2266,8 +2375,13 @@ input_csi_dispatch_sgr_rgb_do(struct input_ctx *ictx, int fgbg, int r, int g,
+@@ -2266,8 +2375,24 @@ input_csi_dispatch_sgr_rgb_do(struct input_ctx *ictx, int fgbg, int r, int g,
  	if (b == -1 || b > 255)
  		return (0);
  
@@ -178,14 +275,25 @@ index a2faaa1..c7d7b28 100644
 +	if (fgbg == 38 && r == 31 && g == 35 && b == 40) {
 +		/* Codex's light-theme diff line-number text: use the default. */
 +		gc->fg = 8;
-+	} else if (fgbg == 38)
++	} else if (fgbg == 38) {
  		gc->fg = colour_join_rgb(r, g, b);
++		/*
++		 * Remember whether the application chose this colour for a
++		 * dark or a light page: many read the background once and
++		 * never again, so after the terminal switches the colour is
++		 * drawn mirrored (see colour_for_theme).
++		 */
++		if (ictx->wp != NULL && ictx->wp->told_theme == THEME_DARK)
++			gc->fg |= COLOUR_FLAG_FOR_DARK;
++		else if (ictx->wp != NULL && ictx->wp->told_theme == THEME_LIGHT)
++			gc->fg |= COLOUR_FLAG_FOR_LIGHT;
++	}
 +	else if (fgbg == 48 && input_codex_diff_bg(r, g, b) != -1)
 +		gc->bg = input_codex_diff_bg(r, g, b);
  	else if (fgbg == 48 && r == 240 && g == 240 && b == 240) {
  		/*
  		 * #f0f0f0 is the fixed panel grey of light application themes
-@@ -2278,7 +2392,9 @@ input_csi_dispatch_sgr_rgb_do(struct input_ctx *ictx, int fgbg, int r, int g,
+@@ -2278,7 +2403,9 @@ input_csi_dispatch_sgr_rgb_do(struct input_ctx *ictx, int fgbg, int r, int g,
  		 * define as a tint one step darker than the page.
  		 */
  		gc->bg = 7;
@@ -196,14 +304,25 @@ index a2faaa1..c7d7b28 100644
  		gc->bg = colour_join_rgb(r, g, b);
  	else if (fgbg == 58)
  		gc->us = colour_join_rgb(r, g, b);
-@@ -3138,6 +3254,7 @@ input_osc_11(struct input_ctx *ictx, const char *p)
+@@ -3138,6 +3265,9 @@ input_osc_11(struct input_ctx *ictx, const char *p)
  			return;
  		c = window_pane_get_bg(wp);
  		input_osc_colour_reply(ictx, 1, 11, 0, c, ictx->input_end);
 +		input_remember_reported_bg(ictx, c);
++		if (colour_totheme(c) != THEME_UNKNOWN)
++			wp->told_theme = colour_totheme(c);
  		return;
  	}
  
+@@ -3736,6 +3866,8 @@ input_report_current_theme(struct input_ctx *ictx)
+ 
+ 	if (wp != NULL) {
+ 		wp->last_theme = window_pane_get_theme(wp);
++		if (wp->last_theme != THEME_UNKNOWN)
++			wp->told_theme = wp->last_theme;
+ 		wp->flags &= ~PANE_THEMECHANGED;
+ 
+ 		switch (wp->last_theme) {
 diff --git options-table.c options-table.c
 index c7b1671..d921d3f 100644
 --- a/options-table.c
@@ -305,10 +424,24 @@ index c7b1671..d921d3f 100644
  	  .type = OPTIONS_TABLE_STRING,
  	  .scope = OPTIONS_TABLE_SERVER,
 diff --git tmux.h tmux.h
-index b53dae8..472abc5 100644
+index b53dae8..5da3692 100644
 --- a/tmux.h
 +++ b/tmux.h
-@@ -760,9 +760,14 @@ enum colour_theme {
+@@ -745,6 +745,13 @@ enum hanguljamo_state {
+ #define COLOUR_FLAG_256 0x01000000
+ #define COLOUR_FLAG_RGB 0x02000000
+ #define COLOUR_FLAG_THEME 0x04000000
++/*
++ * RGB colour written while the pane had been told its terminal is dark or
++ * light; drawn with its lightness mirrored on a terminal of the other kind.
++ */
++#define COLOUR_FLAG_FOR_DARK 0x08000000
++#define COLOUR_FLAG_FOR_LIGHT 0x10000000
++#define COLOUR_FLAG_FOR_THEME (COLOUR_FLAG_FOR_DARK|COLOUR_FLAG_FOR_LIGHT)
+ 
+ /* Special colours. */
+ #define COLOUR_DEFAULT(c) ((c) == 8 || (c) == 9)
+@@ -760,9 +767,14 @@ enum colour_theme {
  	COLOUR_THEME_RED,
  	COLOUR_THEME_BLUE,
  	COLOUR_THEME_CYAN,
@@ -325,3 +458,65 @@ index b53dae8..472abc5 100644
  
  /* Replacement palette. */
  struct colour_palette {
+@@ -1389,6 +1401,7 @@ struct window_pane {
+ 	u_int		 cached_active_dim;
+ 	struct colour_palette palette;
+ 	enum client_theme last_theme;
++	enum client_theme told_theme; /* last light/dark told to the pane */
+ 	struct style_line_entry border_status_line;
+ 
+ 	int		 pipe_fd;
+@@ -3464,6 +3477,7 @@ int	 colour_find_rgb(u_char, u_char, u_char);
+ int	 colour_join_rgb(u_char, u_char, u_char);
+ void	 colour_split_rgb(int, u_char *, u_char *, u_char *);
+ int	 colour_force_rgb(int);
++int	 colour_for_theme(int, enum client_theme, int);
+ int	 colour_dim(int, u_int);
+ const char *colour_tostring(int);
+ const char *colour_toescape(struct client *, int, int);
+diff --git tty.c tty.c
+index c630e8c..11428ce 100644
+--- a/tty.c
++++ b/tty.c
+@@ -2816,6 +2816,19 @@ tty_colours(struct tty *tty, const struct grid_cell *gc)
+ 		tty_colours_us(tty, gc);
+ }
+ 
++/* Light or dark of the terminal this tty draws on. */
++static enum client_theme
++tty_client_theme(struct tty *tty)
++{
++	struct client	*c;
++
++	if (tty == NULL || (c = tty->client) == NULL)
++		return (THEME_UNKNOWN);
++	if (c->theme != THEME_UNKNOWN)
++		return (c->theme);
++	return (colour_totheme(c->tty.bg));
++}
++
+ static int
+ tty_map_theme_colour(struct tty *tty, int colour)
+ {
+@@ -2861,6 +2874,8 @@ tty_check_fg(struct tty *tty, struct colour_palette *palette,
+ 			gc->fg = c;
+ 	}
+ 	gc->fg = tty_map_theme_colour(tty, gc->fg);
++	if (gc->fg & COLOUR_FLAG_FOR_THEME)
++		gc->fg = colour_for_theme(gc->fg, tty_client_theme(tty), 0);
+ 
+ 	/* Is this a 24-bit colour? */
+ 	if (gc->fg & COLOUR_FLAG_RGB) {
+diff --git window.c window.c
+index 2e1a33d..58515d0 100644
+--- a/window.c
++++ b/window.c
+@@ -2881,6 +2881,8 @@ window_pane_send_theme_update(struct window_pane *wp)
+ 	if (theme == wp->last_theme)
+ 		return;
+ 	wp->last_theme = theme;
++	if (theme != THEME_UNKNOWN)
++		wp->told_theme = theme;
+ 	wp->flags &= ~PANE_THEMECHANGED;
+ 
+ 	switch (theme) {

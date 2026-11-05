@@ -31,7 +31,13 @@
 # line and line-number backgrounds, near-black number text on light); they are
 # stored as theme colours too (themediffadd, themediffdelete and the -number
 # variants, defaulting to Codex's own light and dark values) so each client
-# draws the set for its current theme.
+# draws the set for its current theme. Finally, every RGB text colour is
+# tagged with the light or dark that tmux had last told the pane (OSC 11 reply
+# or mode 2031 report); a client of the other kind draws it with its OKLab
+# lightness mirrored (same distance from the page, hue and chroma kept), so
+# text an application picked for a dark page stays readable on a light one
+# and the other way round. Applications that repaint after a 2031 update are
+# tagged with the new kind and drawn unchanged.
 #
 # Usage: build-tmux.sh <prefix>     (needs libevent-dev, libncurses-dev, bison)
 # Then install <prefix>/bin/tmux and restart the tmux server (kill-server);
