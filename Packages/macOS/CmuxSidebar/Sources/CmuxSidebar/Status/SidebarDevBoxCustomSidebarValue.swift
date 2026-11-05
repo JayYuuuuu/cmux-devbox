@@ -9,13 +9,16 @@ public import Foundation
 ///
 ///     devbox: {
 ///       usage:      { who, h5, h5Reset, d7, d7Reset, at },
-///       codexUsage: { plan, h5, h5Reset, d7, d7Reset, at },
+///       codexUsage: { plan, h5, h5Reset, d7, d7Reset, at, resets, resetExpiries },
 ///       activity:   { state, since, agent, who, dir, title, bg, codex, codexSince }
 ///     }
 ///
 /// `h5`/`d7` are already zeroed when their window has reset by `now`; times are
 /// epoch seconds. `codexUsage.at` is when Codex observed the numbers (falling
 /// back to when the report arrived), so the newest one wins across workspaces.
+/// `resets` counts the Codex usage limit resets still usable at `now` and
+/// `resetExpiries` lists when those expire, earliest first; both are omitted
+/// when the reporter could not ask.
 public enum SidebarDevBoxCustomSidebarValue {
     /// Key under `workspaces[i]`.
     public static let key = "devbox"
@@ -43,6 +46,12 @@ public enum SidebarDevBoxCustomSidebarValue {
             if !codexUsage.plan.isEmpty { codexFields["plan"] = .string(codexUsage.plan) }
             if let at = codexUsage.observedAt ?? codexUsageReportedAt {
                 codexFields["at"] = .int(Int(at.timeIntervalSince1970))
+            }
+            if let credits = codexUsage.resetCredits {
+                codexFields["resets"] = .int(credits.available(now: now))
+                codexFields["resetExpiries"] = .array(
+                    credits.expiries.filter { $0 > now }.map { .int(Int($0.timeIntervalSince1970)) }
+                )
             }
             fields["codexUsage"] = .object(codexFields)
         }

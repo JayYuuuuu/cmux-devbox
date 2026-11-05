@@ -7,7 +7,8 @@
 //     have not looked at), which are working and for how long, and which
 //     agent (Claude Code / Codex) runs there with how many background shells;
 //   - how much five-hour / weekly Claude quota each account has left, and
-//     the shared Codex account's quota (Pro: weekly only; Plus: both);
+//     the shared Codex account's quota (Pro: weekly only; Plus: both) and
+//     its reset cards with the earliest expiry;
 //   - one click to jump to a session, or to open it if it is not open yet.
 //
 // Data:
@@ -410,6 +411,7 @@ function codexCard() {
       quota("5小时", () => codexUsage()?.h5 ?? null, () => codexUsage()?.h5Reset)
     ),
     quota("本周", () => codexUsage()?.d7 ?? null, () => codexUsage()?.d7Reset),
+    resetCardLine(),
     noUsageLine(codexUsage, "还没收到用量：在任一会话里用一次 Codex 就有"),
   ])
     .padding(12)
@@ -418,6 +420,56 @@ function codexCard() {
     .borderColor("#7f7f7f22")
     .borderWidth(1)
     .frame({ maxWidth: "infinity" });
+}
+
+// "1天15小时", "3小时20分", "40分": how long until a reset card expires.
+function untilExpiry(epoch) {
+  const m = Math.ceil(Math.max(0, epoch - now()) / 60);
+  if (m < 60) return m + "分";
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + "小时" + (m % 60 ? (m % 60) + "分" : "");
+  return Math.floor(h / 24) + "天" + (h % 24 ? (h % 24) + "小时" : "");
+}
+
+// Usage limit resets ("reset cards") the Codex account holds: one line under
+// the weekly meter, shown once the reporter has asked. The count drops a card
+// as soon as it expires; the note turns amber within a day of the earliest
+// expiry and red within three hours, since an unused card is simply lost.
+function resetCardLine() {
+  const known = computed(() => (codexUsage()?.resets !== undefined ? [1] : []));
+  const count = () => codexUsage()?.resets ?? 0;
+  const next = () => (codexUsage()?.resetExpiries ?? []).find((e) => e > now());
+  const urgency = () => {
+    const e = next();
+    if (!e || count() === 0) return "tertiary";
+    const left = e - now();
+    if (left <= 3 * 3600) return COLORS.waiting;
+    if (left <= 24 * 3600) return COLORS.unseen;
+    return "tertiary";
+  };
+  const note = () => {
+    if (count() === 0) return "";
+    const e = next();
+    if (!e) return "";
+    return (count() > 1 ? "最早一张 " : "") + untilExpiry(e) + "后过期";
+  };
+  const tip = () => {
+    const list = (codexUsage()?.resetExpiries ?? []).filter((e) => e > now());
+    if (count() === 0) return "没有可用的重置卡";
+    const each = list.length ? "，分别 " + list.map(untilExpiry).join(" / ") + " 后过期" : "";
+    return "Codex 重置卡 " + count() + " 张" + each + "。用一张会把额度重置满，过期不用就作废；在 Codex 的用量菜单里使用";
+  };
+  return ForEach({ items: known, key: () => "resets" }, () =>
+    HStack({ spacing: 6 }, [
+      Text("重置卡").font(11).color("secondary").lineLimit(1),
+      Text(() => note()).font(10).color(() => urgency()).lineLimit(1),
+      Spacer({ minLength: 4 }),
+      Text(() => count() + " 张")
+        .font(14).weight("semibold").monospaced()
+        .color(() => (count() > 0 ? "primary" : "tertiary"))
+        .layoutPriority(2),
+    ]).help(() => tip())
+  );
 }
 
 const GROUPS = computed(() => [...new Set(ENTRIES().map((e) => e.group || "会话"))]);

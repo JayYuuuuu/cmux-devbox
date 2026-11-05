@@ -26,6 +26,13 @@ Codex says how long each window is: 300 minutes maps to `h5`, a week to `d7`
 (Pro plans only have the weekly one). DevBox 0.64.25-devbox.29+ shows it;
 older builds drop it silently.
 
+The same report carries the account's usage limit resets ("reset cards"):
+`rs=<n> rx=<expiry epoch>,...`. The session log does not record them, so a
+detached child asks Codex's own app-server (`account/rateLimits/read`, the
+same read-only call as Codex's usage menu) at most every RESETS_REFRESH
+seconds and caches the answer; the hook itself never waits for it.
+DevBox 0.64.25-devbox.34+ shows them; older builds ignore the fields.
+
 cmux DevBox 0.64.25-devbox.20+ stores it for custom sidebars; older DevBox
 builds drop it silently. Other terminals would show it as a notification, so
 only enable this where everyone runs DevBox.
@@ -39,6 +46,7 @@ import calendar
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 import urllib.parse
@@ -249,6 +257,11 @@ def count_codex_runs(agent_pid):
 
 CODEX_WINDOWS = {300: "h5", 10080: "d7"}
 CODEX_TAIL_BYTES = 256 * 1024
+RESETS_REFRESH = 1800        # ask for reset cards at most this often
+RESETS_RETRY = 300           # after a failed ask
+RESETS_MAX_AGE = 12 * 3600   # older answers are not forwarded
+RESETS_TIMEOUT = 20
+RESETS_MAX = 16
 
 
 def newest_codex_log(root):
@@ -348,6 +361,139 @@ def latest_codex_usage(path):
     return None
 
 
+def codex_binary():
+    """The vendor Codex CLI (wrappers pass `app-server` straight through)."""
+    for name in (os.environ.get("CMUX_DEVBOX_CODEX"), os.path.expanduser("~/.npm-global/bin/codex"),
+                 os.path.expanduser("~/.local/bin/codex"), "/usr/local/bin/codex", "/usr/bin/codex"):
+        if name and os.access(name, os.X_OK):
+            return name
+    return None
+
+
+def parse_reset_credits(result):
+    """(count, sorted expiries) from an `account/rateLimits/read` result, or None."""
+    if not isinstance(result, dict):
+        return None
+    credits = result.get("rateLimitResetCredits")
+    if not isinstance(credits, dict):
+        return None
+    listed = [c for c in credits.get("credits") or [] if isinstance(c, dict)]
+    usable = [c for c in listed if c.get("status") in (None, "available")]
+    count = credits.get("availableCount")
+    if not isinstance(count, int) or count < 0:
+        count = len(usable)
+    expiries = sorted(int(c["expiresAt"]) for c in usable
+                      if isinstance(c.get("expiresAt"), (int, float)) and c["expiresAt"] > 0)
+    count = min(count, RESETS_MAX)
+    return count, expiries[:count]
+
+
+def ask_reset_credits():
+    """Runs `codex app-server` once and returns parse_reset_credits() of its answer."""
+    binary = codex_binary()
+    if not binary:
+        return None
+    requests = [
+        {"jsonrpc": "2.0", "id": 1, "method": "initialize",
+         "params": {"clientInfo": {"name": "cmux-devbox-panel", "version": "1"}}},
+        {"jsonrpc": "2.0", "method": "initialized"},
+        {"jsonrpc": "2.0", "id": 2, "method": "account/rateLimits/read"},
+    ]
+    proc = subprocess.Popen([binary, "app-server"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                            stderr=subprocess.DEVNULL, cwd="/tmp")
+    try:
+        proc.stdin.write("".join(json.dumps(r) + "\n" for r in requests).encode())
+        proc.stdin.flush()
+        deadline = time.time() + RESETS_TIMEOUT
+        while time.time() < deadline:
+            line = proc.stdout.readline()
+            if not line:
+                return None
+            try:
+                message = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(message, dict) and message.get("id") == 2:
+                return parse_reset_credits(message.get("result"))
+        return None
+    finally:
+        try:
+            proc.kill()
+            proc.wait(timeout=5)
+        except Exception:
+            pass
+
+
+def refresh_reset_credits(base):
+    """Child entry point: asks once and caches the answer; keeps the last good one on failure."""
+    path = os.path.join(base, "codex-resets.json")
+    cached = {}
+    try:
+        with open(path, encoding="utf-8") as handle:
+            cached = json.load(handle)
+    except (OSError, ValueError):
+        pass
+    now = int(time.time())
+    found = None
+    try:
+        found = ask_reset_credits()
+    except Exception:
+        found = None
+    if found:
+        cached = {"asked": now, "ok": now, "count": found[0], "expiries": found[1]}
+    else:
+        cached["asked"] = now
+        cached["failed"] = True
+    os.makedirs(base, mode=0o700, exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as handle:
+        json.dump(cached, handle)
+    os.replace(tmp, path)
+
+
+def cached_reset_credits(base):
+    """The cached reset cards (count, expiries), starting a refresh in the background when due."""
+    path = os.path.join(base, "codex-resets.json")
+    cached = {}
+    try:
+        with open(path, encoding="utf-8") as handle:
+            cached = json.load(handle)
+    except (OSError, ValueError):
+        pass
+    now = int(time.time())
+    asked = int(cached.get("asked") or 0)
+    due = now - asked >= (RESETS_RETRY if cached.get("failed") else RESETS_REFRESH)
+    if due:
+        lock = os.path.join(base, "codex-resets.lock")
+        try:
+            os.makedirs(base, mode=0o700, exist_ok=True)
+            if os.path.exists(lock) and now - os.path.getmtime(lock) > RESETS_TIMEOUT * 3:
+                os.unlink(lock)  # a child that died without cleaning up
+            fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+            os.close(fd)
+            subprocess.Popen([sys.executable, "-I", "-S", os.path.abspath(__file__), "--refresh-resets"],
+                             stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                             stderr=subprocess.DEVNULL, start_new_session=True, close_fds=True)
+        except OSError:
+            pass
+    ok = int(cached.get("ok") or 0)
+    if not ok or now - ok > RESETS_MAX_AGE or not isinstance(cached.get("count"), int):
+        return None
+    expiries = [int(e) for e in cached.get("expiries") or [] if isinstance(e, (int, float)) and e > now]
+    gone = len([e for e in cached.get("expiries") or [] if isinstance(e, (int, float)) and 0 < e <= now])
+    return max(0, cached["count"] - gone), expiries
+
+
+def reset_credits_fields(credits):
+    if not credits:
+        return ""
+    count, expiries = credits
+    out = f" rs={count}"
+    if expiries:
+        out += " rx=" + ",".join(str(e) for e in expiries[:count])
+    return out
+
+
 def report_codex_usage(tty, base):
     """Forwards the Codex quota when it changed, or every RESEND_SECONDS."""
     root = os.path.join(os.environ.get("CODEX_HOME") or os.path.expanduser("~/.codex"), "sessions")
@@ -356,6 +502,7 @@ def report_codex_usage(tty, base):
     body = codex_usage_body(*found) if found else None
     if not body:
         return
+    body += reset_credits_fields(cached_reset_credits(base))
     path = os.path.join(base, "codex-usage-" + (re.sub(r"[^A-Za-z0-9_.-]", "_", tty) or "default"))
     now = int(time.time())
     # Compare without the observed time, which moves on every Codex turn.
@@ -480,6 +627,16 @@ def main():
 
 
 if __name__ == "__main__":
+    if sys.argv[1:] == ["--refresh-resets"]:
+        base = os.path.join("/tmp", f"cmux-agent-activity-{os.getuid()}")
+        try:
+            refresh_reset_credits(base)
+        finally:
+            try:
+                os.unlink(os.path.join(base, "codex-resets.lock"))
+            except OSError:
+                pass
+        sys.exit(0)
     try:
         main()
     except Exception:  # a hook must never break the agent

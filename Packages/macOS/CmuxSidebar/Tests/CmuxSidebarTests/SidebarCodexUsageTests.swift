@@ -63,4 +63,51 @@ struct SidebarCodexUsageTests {
         #expect(codexFields["d7Reset"] == .int(1_793_856_400))
         #expect(codexFields["at"] == .int(1_793_769_940))
     }
+
+    @Test("parses reset cards and round-trips them")
+    func parsesResetCredits() throws {
+        let usage = try #require(SidebarCodexUsage.parse(
+            "cx1 plan=prolite d7=15 d7r=1794378986 ob=1793800000 rs=3 rx=1796070344,1794006022,1796165670"
+        ))
+        let credits = try #require(usage.resetCredits)
+        #expect(credits.count == 3)
+        #expect(credits.expiries.map(\.timeIntervalSince1970) == [1_794_006_022, 1_796_070_344, 1_796_165_670])
+        #expect(SidebarCodexUsage.parse(usage.encoded) == usage)
+    }
+
+    @Test("reset cards: absent stays unknown, zero is zero, garbage is dropped")
+    func resetCreditEdges() throws {
+        #expect(try #require(SidebarCodexUsage.parse("cx1 d7=1")).resetCredits == nil)
+        #expect(try #require(SidebarCodexUsage.parse("cx1 d7=1 rs=x")).resetCredits == nil)
+        let zero = try #require(SidebarCodexUsage.parse("cx1 d7=1 rs=0"))
+        #expect(zero.resetCredits == .init(count: 0, expiries: []))
+        #expect(!zero.encoded.contains("rx="))
+        let messy = try #require(SidebarCodexUsage.parse("cx1 d7=1 rs=2 rx=abc,0,-5,1794006022,1796070344,1796165670"))
+        #expect(messy.resetCredits?.expiries.map(\.timeIntervalSince1970) == [1_794_006_022, 1_796_070_344])
+    }
+
+    @Test("custom-sidebar value drops expired reset cards")
+    func customSidebarResetCredits() throws {
+        let now = Date(timeIntervalSince1970: 1_795_000_000)
+        let codex = SidebarCodexUsage(
+            plan: "prolite",
+            fiveHour: nil,
+            sevenDay: .init(usedPercent: 15, resetsAt: nil),
+            observedAt: now,
+            resetCredits: .init(count: 4, expiries: [
+                Date(timeIntervalSince1970: 1_796_070_344),
+                Date(timeIntervalSince1970: 1_794_006_022),
+            ])
+        )
+        let value = try #require(SidebarDevBoxCustomSidebarValue.value(
+            usage: nil, usageReportedAt: nil, activity: nil,
+            codexUsage: codex, codexUsageReportedAt: now, now: now
+        ))
+        guard case let .object(fields) = value, case let .object(codexFields)? = fields["codexUsage"] else {
+            Issue.record("unexpected shape \(value)")
+            return
+        }
+        #expect(codexFields["resets"] == .int(3))
+        #expect(codexFields["resetExpiries"] == .array([.int(1_796_070_344)]))
+    }
 }
