@@ -1,0 +1,183 @@
+--- a/server-client.c
++++ b/server-client.c
+@@ -1428,6 +1428,35 @@
+ }
+ 
+ /*
++ * When terminals attached to the same session disagree about light and dark,
++ * panes follow the most recently used one (see window_latest_client); mark the
++ * session's panes so they are re-evaluated once this client becomes the most
++ * recent.
++ */
++static void
++server_client_theme_follow(struct client *c)
++{
++	struct session		*s = c->session;
++	struct client		*loop;
++	int			 differ = 0;
++
++	if (s == NULL || c->theme == THEME_UNKNOWN)
++		return;
++	TAILQ_FOREACH(loop, &clients, entry) {
++		if (loop == c || loop->session != s ||
++		    (loop->flags & CLIENT_UNATTACHEDFLAGS) ||
++		    loop->theme == THEME_UNKNOWN)
++			continue;
++		if (loop->theme != c->theme) {
++			differ = 1;
++			break;
++		}
++	}
++	if (differ)
++		session_theme_changed(s);
++}
++
++/*
+  * Handle data key input from client. This owns and can modify the key event it
+  * is given and is responsible for freeing it.
+  */
+@@ -1467,6 +1496,7 @@
+ 	if (gettimeofday(&c->activity_time, NULL) != 0)
+ 		fatal("gettimeofday failed");
+ 	session_update_activity(s, &c->activity_time);
++	server_client_theme_follow(c);
+ 
+ 	/* Check for mouse keys. */
+ 	m->valid = 0;
+@@ -3302,6 +3332,18 @@
+ 	 * client.
+ 	 */
+ 	if (c->theme != old) {
++		/*
++		 * A terminal switching between light and dark is being used:
++		 * count it as activity so panes shared with other terminals
++		 * follow it (see window_latest_client). The first report after
++		 * attaching is not a switch.
++		 */
++		if (old != THEME_UNKNOWN) {
++			memcpy(&c->last_activity_time, &c->activity_time,
++			    sizeof c->last_activity_time);
++			if (gettimeofday(&c->activity_time, NULL) != 0)
++				fatal("gettimeofday failed");
++		}
+ 		server_client_update_theme_colours(c);
+ 		if (c->tty.flags & TTY_OPENED)
+ 			tty_invalidate(&c->tty);
+--- a/window.c
++++ b/window.c
+@@ -2712,23 +2712,46 @@
+ 	return (c);
+ }
+ 
+-/* Get a client with a background for the pane. */
+-int
+-window_get_bg_client(struct window_pane *wp)
++/*
++ * Get the attached client showing this window that was used most recently,
++ * optionally only among clients with a known background, foreground or
++ * theme. When several terminals share a session their colours can differ;
++ * the one being typed in is the one the pane should match.
++ */
++#define WINDOW_LATEST_BG 0x1
++#define WINDOW_LATEST_FG 0x2
++#define WINDOW_LATEST_THEME 0x4
++static struct client *
++window_latest_client(struct window *w, int need)
+ {
+-	struct window	*w = wp->window;
+-	struct client	*loop;
++	struct client	*loop, *found = NULL;
+ 
+ 	TAILQ_FOREACH(loop, &clients, entry) {
+ 		if (loop->flags & CLIENT_UNATTACHEDFLAGS)
+ 			continue;
+ 		if (loop->session == NULL || !session_has(loop->session, w))
+ 			continue;
+-		if (loop->tty.bg == -1)
++		if ((need & WINDOW_LATEST_BG) && loop->tty.bg == -1)
++			continue;
++		if ((need & WINDOW_LATEST_FG) && loop->tty.fg == -1)
+ 			continue;
+-		return (loop->tty.bg);
++		if ((need & WINDOW_LATEST_THEME) && loop->theme == THEME_UNKNOWN)
++			continue;
++		if (found == NULL ||
++		    timercmp(&loop->activity_time, &found->activity_time, >))
++			found = loop;
+ 	}
+-	return (-1);
++	return (found);
++}
++
++/* Get a client with a background for the pane. */
++int
++window_get_bg_client(struct window_pane *wp)
++{
++	struct client	*c;
++
++	c = window_latest_client(wp->window, WINDOW_LATEST_BG);
++	return (c == NULL ? -1 : c->tty.bg);
+ }
+ 
+ /*
+@@ -2757,19 +2780,10 @@
+ int
+ window_pane_get_fg(struct window_pane *wp)
+ {
+-	struct window	*w = wp->window;
+-	struct client	*loop;
++	struct client	*c;
+ 
+-	TAILQ_FOREACH(loop, &clients, entry) {
+-		if (loop->flags & CLIENT_UNATTACHEDFLAGS)
+-			continue;
+-		if (loop->session == NULL || !session_has(loop->session, w))
+-			continue;
+-		if (loop->tty.fg == -1)
+-			continue;
+-		return (loop->tty.fg);
+-	}
+-	return (-1);
++	c = window_latest_client(wp->window, WINDOW_LATEST_FG);
++	return (c == NULL ? -1 : c->tty.fg);
+ }
+ 
+ /*
+@@ -2826,6 +2840,12 @@
+ 		return (THEME_DARK);
+ 	if (found_light && !found_dark)
+ 		return (THEME_LIGHT);
++	if (found_light && found_dark) {
++		/* Terminals disagree: follow the one used most recently. */
++		loop = window_latest_client(w, WINDOW_LATEST_THEME);
++		if (loop != NULL)
++			return (loop->theme);
++	}
+ 
+ 	/*
+ 	 * Otherwise guess from the pane background colour, for terminals which
+@@ -2837,6 +2857,7 @@
+ void
+ window_pane_send_theme_update(struct window_pane *wp)
+ {
++	struct client		*c;
+ 	enum client_theme	theme;
+ 
+ 	if (wp == NULL || window_pane_exited(wp))
+@@ -2846,6 +2867,16 @@
+ 	if (~wp->screen->mode & MODE_THEME_UPDATES)
+ 		return;
+ 
++	/*
++	 * The terminal the pane follows has been asked for its colours again
++	 * (it just switched between light and dark): wait for the answer, or
++	 * an application asking for the background straight after the update
++	 * would be given the old one.
++	 */
++	c = window_latest_client(wp->window, WINDOW_LATEST_THEME);
++	if (c != NULL && (c->tty.flags & TTY_WAITBG))
++		return;
++
+ 	theme = window_pane_get_theme(wp);
+ 	if (theme == wp->last_theme)
+ 		return;
