@@ -1,0 +1,198 @@
+diff --git colour.c colour.c
+index 411d779..ef5e072 100644
+--- a/colour.c
++++ b/colour.c
+@@ -82,6 +82,11 @@ static const struct {
+ 	  "dark-theme-magenta",
+ 	  "light-theme-magenta",
+ 	  5
++	},
++	{ "themepanel",
++	  "dark-theme-panel",
++	  "light-theme-panel",
++	  8
+ 	}
+ };
+ 
+diff --git input.c input.c
+index a2faaa1..8c04c0c 100644
+--- a/input.c
++++ b/input.c
+@@ -137,6 +137,14 @@ struct input_ctx {
+ 
+ 	struct input_requests		 requests;
+ 	u_int				 request_count;
++
++	/*
++	 * Backgrounds most recently reported to the pane (OSC 11 replies),
++	 * used to recognise panel colours an application derived from them.
++	 */
++#define INPUT_REPORTED_BG 4
++	int				 reported_bg[INPUT_REPORTED_BG];
++	u_int				 reported_bg_next;
+ 	struct event			 request_timer;
+ 
+ 	/*
+@@ -877,8 +885,11 @@ input_init(struct window_pane *wp, struct bufferevent *bev,
+     struct colour_palette *palette, struct client *c)
+ {
+ 	struct input_ctx	*ictx;
++	u_int			 i;
+ 
+ 	ictx = xcalloc(1, sizeof *ictx);
++	for (i = 0; i < INPUT_REPORTED_BG; i++)
++		ictx->reported_bg[i] = -1;
+ 	ictx->wp = wp;
+ 	ictx->event = bev;
+ 	ictx->palette = palette;
+@@ -2252,6 +2263,78 @@ input_csi_dispatch_sgr_256(struct input_ctx *ictx, int fgbg, u_int *i)
+ 		(*i)++;
+ }
+ 
++/* Remember a background reported to the pane by OSC 11. */
++static void
++input_remember_reported_bg(struct input_ctx *ictx, int c)
++{
++	u_int	i;
++
++	if (c == -1 || (c = colour_force_rgb(c)) == -1)
++		return;
++	for (i = 0; i < INPUT_REPORTED_BG; i++) {
++		if (ictx->reported_bg[i] == c)
++			return;
++	}
++	ictx->reported_bg[ictx->reported_bg_next] = c;
++	ictx->reported_bg_next = (ictx->reported_bg_next + 1) % INPUT_REPORTED_BG;
++}
++
++/* Blend one channel the way Codex does (f32, truncated). */
++static int
++input_blend_channel(int top, int base, float alpha)
++{
++	return ((int)((float)top * alpha + (float)base * (1.0f - alpha)));
++}
++
++/* Does r,g,b match top blended over base at alpha (within one step)? */
++static int
++input_is_blend(int r, int g, int b, int top, int base, float alpha)
++{
++	u_char	br, bg, bb;
++
++	colour_split_rgb(base, &br, &bg, &bb);
++	return (abs(r - input_blend_channel(top, br, alpha)) <= 1 &&
++	    abs(g - input_blend_channel(top, bg, alpha)) <= 1 &&
++	    abs(b - input_blend_channel(top, bb, alpha)) <= 1);
++}
++
++/*
++ * Is this background a panel shade derived from a background reported to the
++ * pane? Codex reads the terminal background once at startup and fills the
++ * composer and the user's messages with it blended towards black (light page:
++ * 4% or 2%) or white (dark page: 12% or 16%), as fixed RGB. After the
++ * terminal switches between light and dark the fixed shade is wrong (a pale
++ * bar on a dark page, unreadable text), so draw it with the theme-aware panel
++ * colour instead, which each client resolves for its own light or dark.
++ */
++static int
++input_is_derived_panel(struct input_ctx *ictx, int r, int g, int b)
++{
++	u_char	br, bg, bb;
++	u_int	i;
++	int	base, top;
++	float	y;
++
++	for (i = 0; i < INPUT_REPORTED_BG; i++) {
++		if ((base = ictx->reported_bg[i]) == -1)
++			continue;
++		colour_split_rgb(base, &br, &bg, &bb);
++		y = 0.299f * br + 0.587f * bg + 0.114f * bb;
++		if (y > 128.0f) {
++			top = 0;
++			if (input_is_blend(r, g, b, top, base, 0.04f) ||
++			    input_is_blend(r, g, b, top, base, 0.02f))
++				return (1);
++		} else {
++			top = 255;
++			if (input_is_blend(r, g, b, top, base, 0.12f) ||
++			    input_is_blend(r, g, b, top, base, 0.16f))
++				return (1);
++		}
++	}
++	return (0);
++}
++
+ /* Helper for RGB colour SGR. */
+ static int
+ input_csi_dispatch_sgr_rgb_do(struct input_ctx *ictx, int fgbg, int r, int g,
+@@ -2278,7 +2361,9 @@ input_csi_dispatch_sgr_rgb_do(struct input_ctx *ictx, int fgbg, int r, int g,
+ 		 * define as a tint one step darker than the page.
+ 		 */
+ 		gc->bg = 7;
+-	} else if (fgbg == 48)
++	} else if (fgbg == 48 && input_is_derived_panel(ictx, r, g, b))
++		gc->bg = COLOUR_THEME_PANEL|COLOUR_FLAG_THEME;
++	else if (fgbg == 48)
+ 		gc->bg = colour_join_rgb(r, g, b);
+ 	else if (fgbg == 58)
+ 		gc->us = colour_join_rgb(r, g, b);
+@@ -3138,6 +3223,7 @@ input_osc_11(struct input_ctx *ictx, const char *p)
+ 			return;
+ 		c = window_pane_get_bg(wp);
+ 		input_osc_colour_reply(ictx, 1, 11, 0, c, ictx->input_end);
++		input_remember_reported_bg(ictx, c);
+ 		return;
+ 	}
+ 
+diff --git options-table.c options-table.c
+index c7b1671..f05484d 100644
+--- a/options-table.c
++++ b/options-table.c
+@@ -651,6 +651,15 @@ const struct options_table_entry options_table[] = {
+ 	  .text = "Dark theme colour for magenta."
+ 	},
+ 
++	{ .name = "dark-theme-panel",
++	  .type = OPTIONS_TABLE_STRING,
++	  .scope = OPTIONS_TABLE_SERVER,
++	  .flags = OPTIONS_TABLE_IS_COLOUR,
++	  .default_str = "colour0",
++	  .text = "Dark theme colour for application panels (a shade one "
++		  "step off the page)."
++	},
++
+ 	{ .name = "light-theme-black",
+ 	  .type = OPTIONS_TABLE_STRING,
+ 	  .scope = OPTIONS_TABLE_SERVER,
+@@ -731,6 +740,15 @@ const struct options_table_entry options_table[] = {
+ 	  .text = "Light theme colour for magenta."
+ 	},
+ 
++	{ .name = "light-theme-panel",
++	  .type = OPTIONS_TABLE_STRING,
++	  .scope = OPTIONS_TABLE_SERVER,
++	  .flags = OPTIONS_TABLE_IS_COLOUR,
++	  .default_str = "colour7",
++	  .text = "Light theme colour for application panels (a shade one "
++		  "step off the page)."
++	},
++
+ 	{ .name = "user-keys",
+ 	  .type = OPTIONS_TABLE_STRING,
+ 	  .scope = OPTIONS_TABLE_SERVER,
+diff --git tmux.h tmux.h
+index b53dae8..9720da4 100644
+--- a/tmux.h
++++ b/tmux.h
+@@ -760,9 +760,10 @@ enum colour_theme {
+ 	COLOUR_THEME_RED,
+ 	COLOUR_THEME_BLUE,
+ 	COLOUR_THEME_CYAN,
+-	COLOUR_THEME_MAGENTA
++	COLOUR_THEME_MAGENTA,
++	COLOUR_THEME_PANEL
+ };
+-#define COLOUR_THEME_COUNT 10
++#define COLOUR_THEME_COUNT 11
+ 
+ /* Replacement palette. */
+ struct colour_palette {
