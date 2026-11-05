@@ -422,13 +422,16 @@ function codexCard() {
     .frame({ maxWidth: "infinity" });
 }
 
-// "1天15小时", "3小时20分", "40分": how long until a reset card expires.
+// How long until a reset card expires: "40分", "3小时20分", "30小时" under
+// two days, then whole days ("5天", rounded down so it never sounds later
+// than it is). Short enough for a narrow sidebar.
 function untilExpiry(epoch) {
   const m = Math.ceil(Math.max(0, epoch - now()) / 60);
   if (m < 60) return m + "分";
   const h = Math.floor(m / 60);
-  if (h < 24) return h + "小时" + (m % 60 ? (m % 60) + "分" : "");
-  return Math.floor(h / 24) + "天" + (h % 24 ? (h % 24) + "小时" : "");
+  if (h < 10) return h + "小时" + (m % 60 ? (m % 60) + "分" : "");
+  if (h < 48) return h + "小时";
+  return Math.floor(h / 24) + "天";
 }
 
 // Usage limit resets ("reset cards") the Codex account holds: one line under
@@ -451,7 +454,7 @@ function resetCardLine() {
     if (count() === 0) return "";
     const e = next();
     if (!e) return "";
-    return (count() > 1 ? "最早一张 " : "") + untilExpiry(e) + "后过期";
+    return (count() > 1 ? "最早 " : "") + untilExpiry(e) + "后过期";
   };
   const tip = () => {
     const list = (codexUsage()?.resetExpiries ?? []).filter((e) => e > now());
@@ -464,10 +467,12 @@ function resetCardLine() {
       Text("重置卡").font(11).color("secondary").lineLimit(1),
       Text(() => note()).font(10).color(() => urgency()).lineLimit(1),
       Spacer({ minLength: 4 }),
-      Text(() => count() + " 张")
-        .font(14).weight("semibold").monospaced()
-        .color(() => (count() > 0 ? "primary" : "tertiary"))
-        .layoutPriority(2),
+      HStack({ spacing: 2 }, [
+        Text(() => String(count()))
+          .font(14).weight("semibold").monospaced()
+          .color(() => (count() > 0 ? "primary" : "tertiary")),
+        Text("张").font(11).color("secondary"),
+      ]).layoutPriority(2),
     ]).help(() => tip())
   );
 }
