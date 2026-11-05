@@ -1,0 +1,21 @@
+--- a/input.c
++++ b/input.c
+@@ -2268,7 +2268,17 @@
+ 
+ 	if (fgbg == 38)
+ 		gc->fg = colour_join_rgb(r, g, b);
+-	else if (fgbg == 48)
++	else if (fgbg == 48 && r == 240 && g == 240 && b == 240) {
++		/*
++		 * #f0f0f0 is the fixed panel grey of light application themes
++		 * (Claude Code shades the user's messages with it). On a
++		 * terminal whose page is an off-white paper colour it is as
++		 * bright as the page itself and the panel disappears; use the
++		 * terminal's own ANSI white instead, which DevBox light themes
++		 * define as a tint one step darker than the page.
++		 */
++		gc->bg = 7;
++	} else if (fgbg == 48)
+ 		gc->bg = colour_join_rgb(r, g, b);
+ 	else if (fgbg == 58)
+ 		gc->us = colour_join_rgb(r, g, b);
