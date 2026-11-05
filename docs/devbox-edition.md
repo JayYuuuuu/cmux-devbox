@@ -65,7 +65,7 @@
 6. 这些序列在非 DevBox 终端（官方 cmux、DevBox .14 及更早）会显示成通知，只在大家都用 DevBox .15+ 的环境里打开。
 7. 自定义侧边栏读法：`data.workspaces()` 每一项的 `devbox?.activity?.state`（`working` / `waiting` / `done` / `ended`）与 `devbox?.usage?.h5`、`devbox?.codexUsage`。
 8. Codex 额度：每次钩子触发（Claude 或 Codex 都算）顺带读 `~/.codex/sessions` 最新会话日志里最后一条 `rate_limits`，按窗口长度把 300 分钟映射成 `h5`、一周映射成 `d7`（Pro 只有周窗口），发 `cx1 plan=… h5=… h5r=… d7=… d7r=… ob=<Codex 记录时间>`；数值不变时最多 10 分钟重发一次。本版（.29+）存成状态项 `devbox.codex_usage`（重启保留），作为 `workspaces[i].devbox.codexUsage`（plan/h5/h5Reset/d7/d7Reset/at）交给面板，面板取 `at` 最新的一份；更早的版本收到 `cx1` 静默丢弃。
-9. Codex 重置卡（usage limit resets）：会话日志里没有，上报脚本在后台子进程里跑一次 `codex app-server`，发 `account/rateLimits/read`（与 Codex 用量菜单同一个只读查询，不消耗重置卡），结果缓存在 `/tmp/cmux-agent-activity-<uid>/codex-resets.json`；成功后最多 30 分钟问一次、失败 5 分钟后重试并保留上次结果，超过 12 小时没有成功就不再转发。`cx1` 报告追加 `rs=<张数> rx=<每张过期时间>,…`。.34+ 解析为 `codexUsage.resets`（已过期的自动扣掉）和 `resetExpiries`，面板在「本周」下面加一行「重置卡 · 最早一张 X 后过期 · N 张」，一天内过期变黄、三小时内变红；更早的版本忽略这两个字段。
+9. Codex 重置卡（usage limit resets）：会话日志里没有，上报脚本在后台子进程里跑一次 `codex app-server`，发 `account/rateLimits/read`（与 Codex 用量菜单同一个只读查询，不消耗重置卡），结果缓存在 `/tmp/cmux-agent-activity-<uid>/codex-resets.json`；成功后最多 30 分钟问一次、失败 5 分钟后重试并保留上次结果，超过 12 小时没有成功就不再转发。`cx1` 报告追加 `rs=<张数> rx=<每张过期时间>,…`。.34+ 解析为 `codexUsage.resets`（已过期的自动扣掉）和 `resetExpiries`，面板在「本周」下面加一行「重置卡 · 最早 7号 07:00 过期 · N 张」（本机时间，一周以外带月份），一天内过期变黄、三小时内变红；更早的版本忽略这两个字段。
 
 Computer Use 等需要系统权限的功能：ad-hoc 签名每次重建都会变，权限要重新授权。
 

@@ -422,16 +422,40 @@ function codexCard() {
     .frame({ maxWidth: "infinity" });
 }
 
-// How long until a reset card expires: "40分", "3小时20分", "30小时" under
-// two days, then whole days ("5天", rounded down so it never sounds later
-// than it is). Short enough for a narrow sidebar.
-function untilExpiry(epoch) {
-  const m = Math.ceil(Math.max(0, epoch - now()) / 60);
-  if (m < 60) return m + "分";
-  const h = Math.floor(m / 60);
-  if (h < 10) return h + "小时" + (m % 60 ? (m % 60) + "分" : "");
-  if (h < 48) return h + "小时";
-  return Math.floor(h / 24) + "天";
+// When a reset card expires, in the Mac's local time: "7号 07:00" within a
+// week, "12月1号 04:25" further out. The sidebar clock gives local
+// hour/minute/second next to the epoch, so the zone offset is their gap.
+function localOffset() {
+  const c = data.clock?.();
+  if (!c) return 0;
+  const local = c.hour * 3600 + c.minute * 60 + c.second;
+  let off = local - (((c.epoch % 86400) + 86400) % 86400);
+  if (off > 14 * 3600) off -= 86400;
+  if (off < -12 * 3600) off += 86400;
+  return Math.round(off / 60) * 60;
+}
+
+// [month, day] of a day count since 1970-01-01 (Hinnant's civil_from_days).
+function civil(days) {
+  const z = days + 719468;
+  const era = Math.floor(z / 146097);
+  const doe = z - era * 146097;
+  const yoe = Math.floor((doe - Math.floor(doe / 1460) + Math.floor(doe / 36524) - Math.floor(doe / 146096)) / 365);
+  const doy = doe - (365 * yoe + Math.floor(yoe / 4) - Math.floor(yoe / 100));
+  const mp = Math.floor((5 * doy + 2) / 153);
+  const d = doy - Math.floor((153 * mp + 2) / 5) + 1;
+  return [mp < 10 ? mp + 3 : mp - 9, d];
+}
+
+function expiryAt(epoch) {
+  const t = epoch + localOffset();
+  const days = Math.floor(t / 86400);
+  const secs = t - days * 86400;
+  const pad = (n) => (n < 10 ? "0" : "") + n;
+  const clock = pad(Math.floor(secs / 3600)) + ":" + pad(Math.floor((secs % 3600) / 60));
+  const [month, day] = civil(days);
+  const near = epoch - now() < 7 * 86400;
+  return (near ? "" : month + "月") + day + "号 " + clock;
 }
 
 // Usage limit resets ("reset cards") the Codex account holds: one line under
@@ -454,12 +478,12 @@ function resetCardLine() {
     if (count() === 0) return "";
     const e = next();
     if (!e) return "";
-    return (count() > 1 ? "最早 " : "") + untilExpiry(e) + "后过期";
+    return (count() > 1 ? "最早 " : "") + expiryAt(e) + " 过期";
   };
   const tip = () => {
     const list = (codexUsage()?.resetExpiries ?? []).filter((e) => e > now());
     if (count() === 0) return "没有可用的重置卡";
-    const each = list.length ? "，分别 " + list.map(untilExpiry).join(" / ") + " 后过期" : "";
+    const each = list.length ? "，分别 " + list.map(expiryAt).join(" / ") + " 过期" : "";
     return "Codex 重置卡 " + count() + " 张" + each + "。用一张会把额度重置满，过期不用就作废；在 Codex 的用量菜单里使用";
   };
   return ForEach({ items: known, key: () => "resets" }, () =>
