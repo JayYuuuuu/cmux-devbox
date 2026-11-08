@@ -343,13 +343,16 @@ function accountCard(group) {
   const closedItems = () => items().filter((e) => !workspaceFor(e));
   return VStack({ spacing: 9 }, [
     HStack({ spacing: 6 }, [
-      Text(group).font(15).weight("semibold"),
-      Text(() => (who() && who() !== group ? who() : "")).font(11).color("tertiary"),
+      // The reporter's display label and login email win; before the first
+      // report the card falls back to the shortcut group and account name.
+      Text(() => usage()?.label || group).font(15).weight("semibold").lineLimit(1).layoutPriority(1),
+      Text(() => usage()?.email || (who() && who() !== group ? who() : ""))
+        .font(11).color("tertiary").lineLimit(1).truncation("middle"),
       Spacer({ minLength: 0 }),
       Text(() => {
         const n = openItems().length;
         return n ? n + " 个开着" : "都没开";
-      }).font(11).color("tertiary"),
+      }).font(11).color("tertiary").lineLimit(1).layoutPriority(1),
     ]),
     quota("5小时", () => usage()?.h5 ?? null, () => usage()?.h5Reset),
     quota("本周", () => usage()?.d7 ?? null, () => usage()?.d7Reset),

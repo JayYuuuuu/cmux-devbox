@@ -22,6 +22,24 @@ struct SidebarClaudeUsageTests {
         #expect(SidebarClaudeUsage.parse(usage.encoded) == usage)
     }
 
+    @Test("carries a display label with spaces and an email")
+    func labelAndEmail() throws {
+        let usage = try #require(SidebarClaudeUsage.parse(
+            "v1 who=yujie lb=iPhone%2013mini em=someone@example.com h5=2"
+        ))
+        #expect(usage.label == "iPhone 13mini")
+        #expect(usage.email == "someone@example.com")
+        #expect(usage.encoded.contains("lb=iPhone%2013mini em=someone@example.com"))
+        let chinese = SidebarClaudeUsage(
+            who: "air13home", label: " 家里\t笔记本\u{1B} ", email: "a b@example.com",
+            fiveHour: nil, sevenDay: .init(usedPercent: 1, resetsAt: nil)
+        )
+        #expect(chinese.label == "家里 笔记本")
+        #expect(chinese.email == "ab@example.com")
+        #expect(SidebarClaudeUsage.parse(chinese.encoded) == chinese)
+        #expect(SidebarClaudeUsage.parse("v1 who=dev h5=1")?.label == "")
+    }
+
     @Test("accepts a single window, rejects reports without any")
     func windowPresence() {
         #expect(SidebarClaudeUsage.parse("v1 who=dev d7=5")?.fiveHour == nil)

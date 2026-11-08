@@ -12,7 +12,11 @@
 //
 // Inside tmux the sequence is wrapped for passthrough, which requires
 // `set -g allow-passthrough on`. The account label is $CLAUDE_USAGE_WHO,
-// falling back to $CLAUDE_AS_NAME, then $USER. Identical reports are sent at
+// falling back to $CLAUDE_AS_NAME, then $USER. $CLAUDE_USAGE_LABEL is an
+// optional display name (spaces allowed) shown as the sidebar card title; the
+// email is the one Claude Code logged in with (`.claude.json` in
+// $CLAUDE_CONFIG_DIR, else the home directory), falling back to
+// $CLAUDE_USAGE_EMAIL. Identical reports are sent at
 // most every RESEND_SECONDS per Claude session so the terminal stays quiet.
 import fs from 'node:fs';
 import os from 'node:os';
@@ -39,7 +43,26 @@ function cleanName(raw) {
   return String(raw ?? '').replace(/[\s=;\x00-\x1f\x7f]/g, '').slice(0, 24);
 }
 
-export function buildBody(input, who) {
+function cleanLabel(raw) {
+  const s = String(raw ?? '').replace(/[\x00-\x1f\x7f]/g, ' ').replace(/\s+/g, ' ').trim();
+  return [...s].slice(0, 24).join('').trim();
+}
+
+function cleanEmail(raw) {
+  return String(raw ?? '').replace(/[\s=;\x00-\x1f\x7f]/g, '').slice(0, 64);
+}
+
+// The email of the account this Claude Code session is logged in with.
+function loginEmail() {
+  const dir = process.env.CLAUDE_CONFIG_DIR;
+  const file = dir ? path.join(dir, '.claude.json') : path.join(os.homedir(), '.claude.json');
+  try {
+    const email = JSON.parse(fs.readFileSync(file, 'utf8'))?.oauthAccount?.emailAddress;
+    return typeof email === 'string' ? email : '';
+  } catch { return ''; }
+}
+
+export function buildBody(input, who, label = '', email = '') {
   const limits = input?.rate_limits;
   const h5 = pct(limits?.five_hour);
   const d7 = pct(limits?.seven_day);
@@ -47,6 +70,13 @@ export function buildBody(input, who) {
   const parts = ['v1'];
   const name = cleanName(who);
   if (name) parts.push(`who=${name}`);
+  // Ghostty caps a notification body at 255 bytes, so keep the encoded label short.
+  let lb = [...cleanLabel(label)];
+  while (lb.length && encodeURIComponent(lb.join('')).length > 72) lb.pop();
+  lb = lb.join('').trim();
+  if (lb) parts.push(`lb=${encodeURIComponent(lb)}`);
+  const em = cleanEmail(email);
+  if (em) parts.push(`em=${em}`);
   if (h5 !== null) {
     parts.push(`h5=${h5}`);
     const r = reset(limits.five_hour);
@@ -101,7 +131,8 @@ function main() {
   let input;
   try { input = JSON.parse(readStdin()); } catch { return; }
   const who = process.env.CLAUDE_USAGE_WHO || process.env.CLAUDE_AS_NAME || process.env.USER;
-  const body = buildBody(input, who);
+  const email = loginEmail() || process.env.CLAUDE_USAGE_EMAIL;
+  const body = buildBody(input, who, process.env.CLAUDE_USAGE_LABEL, email);
   if (!body) return;
   const tty = findTerminal();
   if (!tty) return;

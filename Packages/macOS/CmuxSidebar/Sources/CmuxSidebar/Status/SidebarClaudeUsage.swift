@@ -5,7 +5,8 @@ public import Foundation
 ///
 /// Transport: the remote statusline writes an OSC 777 desktop notification
 /// whose title is ``notificationTitle`` and whose body is the ``encoded``
-/// form (`v1 who=<name> h5=<pct> h5r=<epoch> d7=<pct> d7r=<epoch>`). The app
+/// form (`v1 who=<name> lb=<label> em=<email> h5=<pct> h5r=<epoch> d7=<pct>
+/// d7r=<epoch>`; `lb` is percent-encoded, `lb`/`em` optional). The app
 /// consumes it instead of showing a notification and stores it as a status
 /// entry under ``statusKey`` so it rides the existing sidebar plumbing.
 public struct SidebarClaudeUsage: Equatable, Sendable {
@@ -40,14 +41,26 @@ public struct SidebarClaudeUsage: Equatable, Sendable {
     /// OSC 777 notification title that marks a usage report.
     public static let notificationTitle = "cmux-devbox-claude-usage"
     private static let maxNameLength = 24
+    private static let maxLabelLength = 24
+    private static let maxEmailLength = 64
+    /// Characters a percent-encoded `lb` keeps literally.
+    private static let labelAllowed = CharacterSet(
+        charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
+    )
 
     /// Account label (the remote `claude-as` name), possibly empty.
     public let who: String
+    /// Display name for the account (may contain spaces), possibly empty.
+    public let label: String
+    /// Login email of the account, possibly empty.
+    public let email: String
     public let fiveHour: Window?
     public let sevenDay: Window?
 
-    public init(who: String, fiveHour: Window?, sevenDay: Window?) {
+    public init(who: String, label: String = "", email: String = "", fiveHour: Window?, sevenDay: Window?) {
         self.who = Self.sanitizedName(who)
+        self.label = Self.sanitizedLabel(label)
+        self.email = Self.sanitizedName(email, limit: Self.maxEmailLength)
         self.fiveHour = fiveHour
         self.sevenDay = sevenDay
     }
@@ -56,6 +69,10 @@ public struct SidebarClaudeUsage: Equatable, Sendable {
     public var encoded: String {
         var parts = ["v1"]
         if !who.isEmpty { parts.append("who=\(who)") }
+        if !label.isEmpty, let encoded = label.addingPercentEncoding(withAllowedCharacters: Self.labelAllowed) {
+            parts.append("lb=\(encoded)")
+        }
+        if !email.isEmpty { parts.append("em=\(email)") }
         if let fiveHour {
             parts.append("h5=\(fiveHour.usedPercent)")
             if let reset = fiveHour.resetsAt { parts.append("h5r=\(Int(reset.timeIntervalSince1970))") }
@@ -90,12 +107,32 @@ public struct SidebarClaudeUsage: Equatable, Sendable {
         let fiveHour = window("h5", "h5r")
         let sevenDay = window("d7", "d7r")
         guard fiveHour != nil || sevenDay != nil else { return nil }
-        return SidebarClaudeUsage(who: fields["who"] ?? "", fiveHour: fiveHour, sevenDay: sevenDay)
+        return SidebarClaudeUsage(
+            who: fields["who"] ?? "",
+            label: fields["lb"].flatMap { $0.removingPercentEncoding } ?? "",
+            email: fields["em"] ?? "",
+            fiveHour: fiveHour,
+            sevenDay: sevenDay
+        )
     }
 
-    private static func sanitizedName(_ raw: String) -> String {
+    /// Keeps inner single spaces; drops control characters and trims.
+    private static func sanitizedLabel(_ raw: String) -> String {
         var scalars = String.UnicodeScalarView()
-        for scalar in raw.unicodeScalars where scalars.count < maxNameLength {
+        for scalar in raw.unicodeScalars where scalars.count < maxLabelLength {
+            if CharacterSet.whitespacesAndNewlines.contains(scalar) {
+                if let last = scalars.last, last != " " { scalars.append(" ") }
+                continue
+            }
+            guard !CharacterSet.controlCharacters.contains(scalar) else { continue }
+            scalars.append(scalar)
+        }
+        return String(scalars).trimmingCharacters(in: .whitespaces)
+    }
+
+    private static func sanitizedName(_ raw: String, limit: Int = maxNameLength) -> String {
+        var scalars = String.UnicodeScalarView()
+        for scalar in raw.unicodeScalars where scalars.count < limit {
             guard !CharacterSet.controlCharacters.contains(scalar),
                   !CharacterSet.whitespacesAndNewlines.contains(scalar),
                   scalar != "=" else { continue }
