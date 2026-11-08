@@ -208,6 +208,27 @@ extension TerminalController {
         }
     }
 
+    /// `devbox.codex.reset.use`: redeems the DevBox account's Codex reset card
+    /// that expires first, over SSH to the devbox an open panel session is
+    /// connected to. Takes no parameters and runs no caller-supplied command;
+    /// progress and the outcome reach the panel as `devboxCodexReset` data.
+    nonisolated func v2DevBoxCodexResetUse(params: [String: Any]) -> V2CallResult {
+        v2MainSync {
+            guard CmuxDevBoxEdition.isActive,
+                  let tabManager = v2CustomSidebarTabManager(params: params),
+                  let store = AppDelegate.shared?.mainWindowContext(for: tabManager)?.cmuxConfigStore else {
+                return .err(
+                    code: "tab_manager_unavailable",
+                    message: String(localized: "socket.sidebar.custom.openNoWindow", defaultValue: "Unable to access the target workspace."),
+                    data: nil
+                )
+            }
+            let alreadyRunning = DevBoxCodexReset.isRunning
+            DevBoxCodexReset.start(tabManager: tabManager, actions: store.loadedActions)
+            return .ok(["started": !alreadyRunning])
+        }
+    }
+
     private nonisolated func v2CustomSidebarName(params: [String: Any]) -> String? {
         guard let raw = params["name"] as? String else { return nil }
         return raw.trimmingCharacters(in: .whitespacesAndNewlines)

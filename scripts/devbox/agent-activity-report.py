@@ -33,6 +33,14 @@ same read-only call as Codex's usage menu) at most every RESETS_REFRESH
 seconds and caches the answer; the hook itself never waits for it.
 DevBox 0.64.25-devbox.34+ shows them; older builds ignore the fields.
 
+`--use-reset-card` (run by DevBox over SSH when the panel's "使用" is
+confirmed) redeems the available card that expires first through Codex's
+own `account/rateLimitResetCredit/consume`, then prints one JSON line:
+`{"outcome", "expiresAt", "report"}`, where `outcome` is Codex's answer
+(`reset`, `nothingToReset`, `noCredit`, `alreadyRedeemed`) or `failed`, and
+`report` is a fresh `cx1` body the app applies directly. The card cache is
+rewritten so the next hook report carries the new count.
+
 cmux DevBox 0.64.25-devbox.20+ stores it for custom sidebars; older DevBox
 builds drop it silently. Other terminals would show it as a notification, so
 only enable this where everyone runs DevBox.
@@ -424,6 +432,116 @@ def ask_reset_credits():
             pass
 
 
+class AppServer:
+    """One `codex app-server` process spoken to line by line."""
+
+    def __init__(self, binary):
+        self.proc = subprocess.Popen([binary, "app-server"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                     stderr=subprocess.DEVNULL, cwd="/tmp")
+        self.next_id = 1
+        self.call("initialize", {"clientInfo": {"name": "cmux-devbox-panel", "version": "1"}})
+        self.send({"jsonrpc": "2.0", "method": "initialized"})
+
+    def send(self, message):
+        self.proc.stdin.write((json.dumps(message) + "\n").encode())
+        self.proc.stdin.flush()
+
+    def call(self, method, params=None, timeout=RESETS_TIMEOUT):
+        """The result of one request; raises on error, timeout or exit."""
+        self.next_id += 1
+        request_id = self.next_id
+        message = {"jsonrpc": "2.0", "id": request_id, "method": method}
+        if params is not None:
+            message["params"] = params
+        self.send(message)
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            line = self.proc.stdout.readline()
+            if not line:
+                raise RuntimeError("codex app-server exited")
+            try:
+                reply = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(reply, dict) and reply.get("id") == request_id:
+                if "error" in reply:
+                    raise RuntimeError(str((reply.get("error") or {}).get("message") or reply["error"]))
+                return reply.get("result")
+        raise RuntimeError("codex app-server timed out")
+
+    def close(self):
+        try:
+            self.proc.kill()
+            self.proc.wait(timeout=5)
+        except Exception:
+            pass
+
+
+def snapshot_usage_body(result, observed):
+    """`cx1` body from an app-server `account/rateLimits/read` result."""
+    snap = (result or {}).get("rateLimits") if isinstance(result, dict) else None
+    if not isinstance(snap, dict):
+        return None
+    limits = {"plan_type": snap.get("planType")}
+    for slot in ("primary", "secondary"):
+        win = snap.get(slot)
+        if isinstance(win, dict):
+            limits[slot] = {"used_percent": win.get("usedPercent"),
+                            "window_minutes": win.get("windowDurationMins"),
+                            "resets_at": win.get("resetsAt")}
+    body = codex_usage_body(limits, observed)
+    if body:
+        body += reset_credits_fields(parse_reset_credits(result))
+    return body
+
+
+def earliest_card(result):
+    """The available reset card that expires first (cards without expiry last)."""
+    credits = ((result or {}).get("rateLimitResetCredits") or {}).get("credits") or []
+    usable = [c for c in credits if isinstance(c, dict) and c.get("id")
+              and c.get("status") in (None, "available")]
+    usable.sort(key=lambda c: c["expiresAt"] if isinstance(c.get("expiresAt"), (int, float)) else float("inf"))
+    return usable[0] if usable else None
+
+
+def write_reset_cache(base, credits):
+    now = int(time.time())
+    os.makedirs(base, mode=0o700, exist_ok=True)
+    path = os.path.join(base, "codex-resets.json")
+    with open(path + ".tmp", "w", encoding="utf-8") as handle:
+        json.dump({"asked": now, "ok": now, "count": credits[0], "expiries": credits[1]}, handle)
+    os.replace(path + ".tmp", path)
+
+
+def use_reset_card(base):
+    """Redeems the card expiring first; returns the JSON-able outcome."""
+    import uuid
+    binary = codex_binary()
+    if not binary:
+        return {"outcome": "failed", "error": "no codex"}
+    server = AppServer(binary)
+    try:
+        before = server.call("account/rateLimits/read")
+        card = earliest_card(before)
+        params = {"idempotencyKey": str(uuid.uuid4())}
+        if card:
+            params["creditId"] = card["id"]
+        elif not (parse_reset_credits(before) or (0,))[0]:
+            return {"outcome": "noCredit", "report": snapshot_usage_body(before, int(time.time()))}
+        answer = server.call("account/rateLimitResetCredit/consume", params, timeout=30)
+        outcome = (answer or {}).get("outcome") or "failed"
+        after = server.call("account/rateLimits/read")
+        found = parse_reset_credits(after)
+        if found:
+            write_reset_cache(base, found)
+        out = {"outcome": outcome, "report": snapshot_usage_body(after, int(time.time()))}
+        if card and isinstance(card.get("expiresAt"), (int, float)):
+            out["expiresAt"] = int(card["expiresAt"])
+        return out
+    finally:
+        server.close()
+
+
 def refresh_reset_credits(base):
     """Child entry point: asks once and caches the answer; keeps the last good one on failure."""
     path = os.path.join(base, "codex-resets.json")
@@ -627,6 +745,13 @@ def main():
 
 
 if __name__ == "__main__":
+    if sys.argv[1:] == ["--use-reset-card"]:
+        try:
+            result = use_reset_card(os.path.join("/tmp", f"cmux-agent-activity-{os.getuid()}"))
+        except Exception as error:  # report, never hang the caller
+            result = {"outcome": "failed", "error": str(error)[:200]}
+        print(json.dumps({k: v for k, v in result.items() if v is not None}), flush=True)
+        sys.exit(0)
     if sys.argv[1:] == ["--refresh-resets"]:
         base = os.path.join("/tmp", f"cmux-agent-activity-{os.getuid()}")
         try:

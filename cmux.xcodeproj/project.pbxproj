@@ -1567,6 +1567,7 @@
 		B05553C10000000000000001 /* DetachedFolderPathLookupCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B05553C10000000000000002 /* DetachedFolderPathLookupCache.swift */; };
 		B0555303B0555303B0555303 /* DetachedFolderPathLookupCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0555304B0555304B0555304 /* DetachedFolderPathLookupCacheTests.swift */; };
 		D3B0C1A60000000000000001 /* DevBoxAppearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3B0C1A60000000000000002 /* DevBoxAppearance.swift */; };
+		D3B0C1A70000000000000001 /* DevBoxCodexReset.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3B0C1A70000000000000002 /* DevBoxCodexReset.swift */; };
 		DE71CE000000000000000004 /* DeviceRegistryClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE71CE000000000000000003 /* DeviceRegistryClient.swift */; };
 		DE71CE000000000000000002 /* DeviceRegistryClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE71CE000000000000000001 /* DeviceRegistryClientTests.swift */; };
 		DE000A020000000000000001 /* DevWindowDisplayDebugWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE000A020000000000000002 /* DevWindowDisplayDebugWindow.swift */; };
@@ -5411,6 +5412,7 @@
 		B05553C10000000000000002 /* DetachedFolderPathLookupCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetachedFolderPathLookupCache.swift; sourceTree = "<group>"; };
 		B0555304B0555304B0555304 /* DetachedFolderPathLookupCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetachedFolderPathLookupCacheTests.swift; sourceTree = "<group>"; };
 		D3B0C1A60000000000000002 /* DevBoxAppearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevBoxAppearance.swift; sourceTree = "<group>"; };
+		D3B0C1A70000000000000002 /* DevBoxCodexReset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevBoxCodexReset.swift; sourceTree = "<group>"; };
 		DE71CE000000000000000003 /* DeviceRegistryClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DeviceRegistryClient.swift; sourceTree = "<group>"; };
 		DE71CE000000000000000001 /* DeviceRegistryClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceRegistryClientTests.swift; sourceTree = "<group>"; };
 		DE000A020000000000000002 /* DevWindowDisplayDebugWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevWindowDisplayDebugWindow.swift; sourceTree = "<group>"; };
@@ -9063,6 +9065,7 @@
 				C3744E100000000000000002 /* Workspace+SidebarStatusVisibility.swift */,
 				D3B0C1A50000000000000002 /* Workspace+ClaudeUsage.swift */,
 				D3B0C1A60000000000000002 /* DevBoxAppearance.swift */,
+				D3B0C1A70000000000000002 /* DevBoxCodexReset.swift */,
 				A6AC73020000000000000002 /* Workspace+AgentLifecycle.swift */,
 				A6AC73020000000000000004 /* Workspace+RestoredStartupInputOwnership.swift */,
 				D4A9923A0000000000000002 /* TerminalStartupRestoreCoordinator.swift */,
@@ -13164,6 +13167,7 @@
 				A5001F000000000000000001 /* DetachedFolderDragIcon.swift in Sources */,
 				B05553C10000000000000001 /* DetachedFolderPathLookupCache.swift in Sources */,
 				D3B0C1A60000000000000001 /* DevBoxAppearance.swift in Sources */,
+				D3B0C1A70000000000000001 /* DevBoxCodexReset.swift in Sources */,
 				DE71CE000000000000000004 /* DeviceRegistryClient.swift in Sources */,
 				DE000A020000000000000001 /* DevWindowDisplayDebugWindow.swift in Sources */,
 				DE000A010000000000000001 /* DevWindowDisplayDefault.swift in Sources */,

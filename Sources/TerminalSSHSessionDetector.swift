@@ -292,6 +292,18 @@ struct DetectedSSHSession: Equatable, Sendable {
         )
     }
 
+    /// Runs one command on the remote host over its own non-interactive SSH
+    /// connection (same route, identity and options as the session). Returns
+    /// the exit status and stdout; throws when ssh could not run or timed out.
+    func runRemoteCommandSync(_ command: String, timeout: TimeInterval) throws -> (status: Int32, stdout: String) {
+        let result = try Self.runProcess(
+            executable: "/usr/bin/ssh",
+            arguments: sshArguments(command: command),
+            timeout: timeout
+        )
+        return (result.status, result.stdout)
+    }
+
     private func cleanupUploadedRemotePathsAsync(_ remotePaths: [String]) {
         guard !remotePaths.isEmpty else { return }
         let session = self

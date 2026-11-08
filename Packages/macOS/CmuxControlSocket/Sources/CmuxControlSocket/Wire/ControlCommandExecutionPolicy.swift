@@ -197,6 +197,9 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
         // DevBox team panel: runs a cmux.json quick entry behind one
         // v2MainSync hop, like the custom-sidebar commands above.
         "devbox.session.open",
+        // DevBox team panel: starts one Codex reset-card redemption (the SSH
+        // run itself is detached) behind one v2MainSync hop.
+        "devbox.codex.reset.use",
         // Window screenshot capture waits for ScreenCaptureKit's async
         // compositor before falling back to AppKit. Keep that wait on the
         // socket worker so WebKit-backed panels can render on the main actor.

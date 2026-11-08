@@ -365,6 +365,7 @@ enum DevBoxTeamPanel {
         context[schemeDataKey] = .string(
             GhosttyApp.shared.effectiveTerminalColorSchemePreference == .light ? "light" : "dark"
         )
+        DevBoxCodexReset.add(to: &context)
         context[sessionsDataKey] = .array(sessions(from: actions).map { session in
             .object([
                 "action": .string(session.actionID),

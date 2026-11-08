@@ -542,14 +542,46 @@ function expiryAt(epoch) {
   return (near ? "" : month + "月") + day + "号 " + clock;
 }
 
+// Outcome of the last "使用" press, from the app (`data.devboxCodexReset`):
+// { state, at, expiresAt? }; see DevBoxCodexReset.swift.
+const resetRun = () => data.devboxCodexReset?.() ?? null;
+const RESET_RESULT_SECONDS = 120;
+const RESET_RUN_LIMIT = 90;
+
+function resetRunText(run, nowEpoch) {
+  const card = run.expiresAt ? " " + expiryAt(run.expiresAt) + " 过期那张" : "一张";
+  switch (run.state) {
+    case "running":
+      return nowEpoch - run.at > RESET_RUN_LIMIT ? "没等到结果，稍后看张数有没有变" : "正在用重置卡…";
+    case "reset": return "已用掉" + card + "，额度已重置";
+    case "nothingToReset": return "现在没有能重置的额度，卡没用掉";
+    case "noCredit": return "没有可用的重置卡";
+    case "alreadyRedeemed": return "这次已经用过了，没再扣卡";
+    case "noSession": return "先打开一个 devbox 会话再用";
+    case "unavailable": return "devbox 上没装上报脚本，用不了";
+    default: return "没用成，稍后再试";
+  }
+}
+
 // Usage limit resets ("reset cards") the Codex account holds: one line under
 // the weekly meter, shown once the reporter has asked. The count drops a card
 // as soon as it expires; the note turns amber within a day of the earliest
 // expiry and red within three hours, since an unused card is simply lost.
+// "使用" redeems the card that expires first after an inline confirmation
+// (it lapses after 15 seconds); the app runs it on the devbox over SSH.
 function resetCardLine() {
   const known = computed(() => (codexUsage()?.resets !== undefined ? [1] : []));
   const count = () => codexUsage()?.resets ?? 0;
   const next = () => (codexUsage()?.resetExpiries ?? []).find((e) => e > now());
+  const [confirmAt, setConfirmAt] = signal(0);
+  const running = () => resetRun()?.state === "running" && now() - resetRun().at <= RESET_RUN_LIMIT;
+  const confirming = computed(() =>
+    count() > 0 && !running() && confirmAt() && now() - confirmAt() <= 15 ? [1] : []);
+  const result = computed(() => {
+    const run = resetRun();
+    return run && now() - run.at <= RESET_RESULT_SECONDS ? [resetRunText(run, now())] : [];
+  });
+  const canUse = computed(() => (count() > 0 && !running() && !confirming().length ? [1] : []));
   const urgency = () => {
     const e = next();
     if (!e || count() === 0) return "tertiary";
@@ -568,20 +600,58 @@ function resetCardLine() {
     const list = (codexUsage()?.resetExpiries ?? []).filter((e) => e > now());
     if (count() === 0) return "没有可用的重置卡";
     const each = list.length ? "，分别 " + list.map(expiryAt).join(" / ") + " 过期" : "";
-    return "Codex 重置卡 " + count() + " 张" + each + "。用一张会把额度重置满，过期不用就作废；在 Codex 的用量菜单里使用";
+    return "Codex 重置卡 " + count() + " 张" + each + "。用一张会把额度重置满，过期不用就作废；点「使用」用掉最早过期的那张";
   };
+  const pill = (label, fg, bg) =>
+    Text(label)
+      .font(10).weight("semibold").color(fg)
+      .paddingHorizontal(6).paddingVertical(2)
+      .background(bg)
+      .cornerRadius(4)
+      .lineLimit(1);
   return ForEach({ items: known, key: () => "resets" }, () =>
-    HStack({ spacing: 6 }, [
-      Text("重置卡").font(11).color("secondary").lineLimit(1),
-      Text(() => note()).font(10).color(() => urgency()).lineLimit(1),
-      Spacer({ minLength: 4 }),
-      HStack({ spacing: 2 }, [
-        Text(() => String(count()))
-          .font(14).weight("semibold").monospaced()
-          .color(() => (count() > 0 ? "primary" : "tertiary")),
-        Text("张").font(11).color("secondary"),
-      ]).layoutPriority(2),
-    ]).help(() => tip())
+    VStack({ spacing: 6 }, [
+      HStack({ spacing: 6 }, [
+        Text("重置卡").font(11).color("secondary").lineLimit(1),
+        Text(() => note()).font(10).color(() => urgency()).lineLimit(1),
+        Spacer({ minLength: 4 }),
+        HStack({ spacing: 2 }, [
+          Text(() => String(count()))
+            .font(14).weight("semibold").monospaced()
+            .color(() => (count() > 0 ? "primary" : "tertiary")),
+          Text("张").font(11).color("secondary"),
+        ]).layoutPriority(2),
+        ForEach({ items: canUse, key: () => "use" }, () =>
+          pill("使用", () => AGENTS.codex.fg, () => AGENTS.codex.bg)
+            .help("用掉最早过期的那张，点了还要再确认一次")
+            .onTap(() => setConfirmAt(now()))
+        ),
+      ]).help(() => tip()),
+      ForEach({ items: confirming, key: () => "confirm" }, () =>
+        HStack({ spacing: 6 }, [
+          Text(() => {
+            const e = next();
+            const used = codexUsage()?.d7;
+            return "用掉" + (e ? " " + expiryAt(e) + " 过期那张" : "一张") +
+              (used !== undefined ? "？本周已用 " + used + "%" : "？");
+          }).font(11).color("secondary").lineLimit(2),
+          Spacer({ minLength: 4 }),
+          pill("确认", () => COLORS.waiting, () => COLORS.waiting + "2e")
+            .onTap(() => {
+              setConfirmAt(0);
+              cmux("devbox.codex.reset.use", {});
+            }),
+          pill("取消", "secondary", "#7f7f7f24").onTap(() => setConfirmAt(0)),
+        ])
+      ),
+      ForEach({ items: result, key: () => "result" }, (line) =>
+        Text(() => line())
+          .font(11)
+          .color(() => (resetRun()?.state === "reset" ? COLORS.ok
+            : resetRun()?.state === "running" ? "secondary" : COLORS.unseen))
+          .lineLimit(2)
+      ),
+    ])
   );
 }
 
