@@ -321,6 +321,86 @@ function closedChip(entry) {
     .onTap(() => open(entry()));
 }
 
+// Who pays for the account and when it renews: a "付款" pill, the paying
+// account, and the next renewal date. The reporter forwards what the user
+// wrote in the devbox subscription list; the renewal date is computed here
+// from the start date and cycle against the Mac's local today.
+const PAYER_BADGE = {
+  get fg() { return tone("#E6C07B", "#8A6408"); },
+  get bg() { return tone("#E6C07B2e", "#C9A0402a"); },
+};
+
+// Days since 1970-01-01 of a calendar date (Hinnant's days_from_civil).
+function civilDays(y, m, d) {
+  y -= m <= 2 ? 1 : 0;
+  const era = Math.floor(y / 400);
+  const yoe = y - era * 400;
+  const doy = Math.floor((153 * (m + (m > 2 ? -3 : 9)) + 2) / 5) + d - 1;
+  const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
+  return era * 146097 + doe - 719468;
+}
+
+// The first renewal on or after today, as [daysSinceEpoch, month, day]; a
+// start on the 31st renews on the last day of shorter months.
+function nextRenewal(start, cycle) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(start ?? "");
+  if (!m) return null;
+  const [y0, m0, d0] = [+m[1], +m[2], +m[3]];
+  if (m0 < 1 || m0 > 12 || d0 < 1 || d0 > 31) return null;
+  const today = Math.floor((now() + localOffset()) / 86400);
+  const step = cycle === "y" ? 12 : 1;
+  for (let k = 0; k < 1200; k += step) {
+    const mi = m0 - 1 + k;
+    const y = y0 + Math.floor(mi / 12);
+    const mo = (mi % 12) + 1;
+    const last = civilDays(mo === 12 ? y + 1 : y, mo === 12 ? 1 : mo + 1, 1) - civilDays(y, mo, 1);
+    const days = civilDays(y, mo, Math.min(d0, last));
+    if (days >= today) return [days, mo, Math.min(d0, last), days - today];
+  }
+  return null;
+}
+
+function payerLine(usage) {
+  const line = computed(() => {
+    const u = usage();
+    return u && (u.payer || u.subscribed) ? [1] : [];
+  });
+  const renewal = () => {
+    const r = nextRenewal(usage()?.subscribed, usage()?.cycle);
+    if (!r) return "";
+    const [, mo, d, left] = r;
+    if (left === 0) return "今天续费";
+    if (left <= 7) return left + "天后续费";
+    return mo + "月" + d + "号续费";
+  };
+  const help = () => {
+    const u = usage();
+    if (!u) return "";
+    const cycle = u.cycle === "y" ? "每年" : "每月";
+    return "付款账号：" + (u.payer || "没写") +
+      (u.subscribed ? "\n" + u.subscribed + " 订阅，" + cycle + "续费" : "") +
+      "\n在 devbox 的 ~/.config/claude-as/subscriptions.csv 里改";
+  };
+  return ForEach({ items: line, key: () => "payer" }, () =>
+    HStack({ spacing: 6 }, [
+      Text("付款")
+        .font(10).weight("semibold").color(() => PAYER_BADGE.fg)
+        .paddingHorizontal(5).paddingVertical(2)
+        .background(() => PAYER_BADGE.bg)
+        .cornerRadius(4)
+        .lineLimit(1)
+        .layoutPriority(2),
+      Text(() => usage()?.payer || "—")
+        .font(11).color("secondary").lineLimit(1).truncation("middle"),
+      Spacer({ minLength: 4 }),
+      Text(() => renewal())
+        .font(11).color(() => (nextRenewal(usage()?.subscribed, usage()?.cycle)?.[3] <= 3 ? COLORS.unseen : "tertiary"))
+        .lineLimit(1)
+        .layoutPriority(1),
+    ]).help(() => help())
+  );
+}
+
 function accountCard(group) {
   const items = () => ENTRIES().filter((e) => (e.group || "会话") === group);
   // The account label the group's sessions report (the newest one wins).
@@ -354,6 +434,7 @@ function accountCard(group) {
         return n ? n + " 个开着" : "都没开";
       }).font(11).color("tertiary").lineLimit(1).layoutPriority(1),
     ]),
+    payerLine(usage),
     quota("5小时", () => usage()?.h5 ?? null, () => usage()?.h5Reset),
     quota("本周", () => usage()?.d7 ?? null, () => usage()?.d7Reset),
     noUsageLine(usage, "还没收到用量：在这个账号的会话里用一次 Claude 就有"),

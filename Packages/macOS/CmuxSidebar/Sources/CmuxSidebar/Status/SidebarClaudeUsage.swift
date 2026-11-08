@@ -5,8 +5,9 @@ public import Foundation
 ///
 /// Transport: the remote statusline writes an OSC 777 desktop notification
 /// whose title is ``notificationTitle`` and whose body is the ``encoded``
-/// form (`v1 who=<name> lb=<label> em=<email> h5=<pct> h5r=<epoch> d7=<pct>
-/// d7r=<epoch>`; `lb` is percent-encoded, `lb`/`em` optional). The app
+/// form (`v1 who=<name> lb=<label> em=<email> pe=<payer> ps=<yyyy-mm-dd>
+/// pc=<m|y> h5=<pct> h5r=<epoch> d7=<pct> d7r=<epoch>`; `lb`/`pe` are
+/// percent-encoded, everything but the windows is optional). The app
 /// consumes it instead of showing a notification and stores it as a status
 /// entry under ``statusKey`` so it rides the existing sidebar plumbing.
 public struct SidebarClaudeUsage: Equatable, Sendable {
@@ -43,6 +44,7 @@ public struct SidebarClaudeUsage: Equatable, Sendable {
     private static let maxNameLength = 24
     private static let maxLabelLength = 24
     private static let maxEmailLength = 64
+    private static let maxPayerLength = 40
     /// Characters a percent-encoded `lb` keeps literally.
     private static let labelAllowed = CharacterSet(
         charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
@@ -54,13 +56,31 @@ public struct SidebarClaudeUsage: Equatable, Sendable {
     public let label: String
     /// Login email of the account, possibly empty.
     public let email: String
+    /// The account (email or name) that pays for the subscription, possibly empty.
+    public let payer: String
+    /// Day the subscription started, `yyyy-mm-dd`, possibly empty.
+    public let subscribedOn: String
+    /// Billing cycle: `m` (monthly) or `y` (yearly); empty when unknown.
+    public let cycle: String
     public let fiveHour: Window?
     public let sevenDay: Window?
 
-    public init(who: String, label: String = "", email: String = "", fiveHour: Window?, sevenDay: Window?) {
+    public init(
+        who: String,
+        label: String = "",
+        email: String = "",
+        payer: String = "",
+        subscribedOn: String = "",
+        cycle: String = "",
+        fiveHour: Window?,
+        sevenDay: Window?
+    ) {
         self.who = Self.sanitizedName(who)
         self.label = Self.sanitizedLabel(label)
         self.email = Self.sanitizedName(email, limit: Self.maxEmailLength)
+        self.payer = Self.sanitizedLabel(payer, limit: Self.maxPayerLength)
+        self.subscribedOn = Self.isISODate(subscribedOn) ? subscribedOn : ""
+        self.cycle = cycle == "m" || cycle == "y" ? cycle : ""
         self.fiveHour = fiveHour
         self.sevenDay = sevenDay
     }
@@ -73,6 +93,11 @@ public struct SidebarClaudeUsage: Equatable, Sendable {
             parts.append("lb=\(encoded)")
         }
         if !email.isEmpty { parts.append("em=\(email)") }
+        if !payer.isEmpty, let encoded = payer.addingPercentEncoding(withAllowedCharacters: Self.labelAllowed) {
+            parts.append("pe=\(encoded)")
+        }
+        if !subscribedOn.isEmpty { parts.append("ps=\(subscribedOn)") }
+        if !cycle.isEmpty { parts.append("pc=\(cycle)") }
         if let fiveHour {
             parts.append("h5=\(fiveHour.usedPercent)")
             if let reset = fiveHour.resetsAt { parts.append("h5r=\(Int(reset.timeIntervalSince1970))") }
@@ -111,15 +136,29 @@ public struct SidebarClaudeUsage: Equatable, Sendable {
             who: fields["who"] ?? "",
             label: fields["lb"].flatMap { $0.removingPercentEncoding } ?? "",
             email: fields["em"] ?? "",
+            payer: fields["pe"].flatMap { $0.removingPercentEncoding } ?? "",
+            subscribedOn: fields["ps"] ?? "",
+            cycle: fields["pc"] ?? "",
             fiveHour: fiveHour,
             sevenDay: sevenDay
         )
     }
 
+    /// `yyyy-mm-dd` with digits in place; the calendar check is the panel's job.
+    private static func isISODate(_ raw: String) -> Bool {
+        let chars = Array(raw.utf8)
+        guard chars.count == 10 else { return false }
+        for (i, c) in chars.enumerated() {
+            if i == 4 || i == 7 { guard c == UInt8(ascii: "-") else { return false } }
+            else { guard c >= UInt8(ascii: "0"), c <= UInt8(ascii: "9") else { return false } }
+        }
+        return true
+    }
+
     /// Keeps inner single spaces; drops control characters and trims.
-    private static func sanitizedLabel(_ raw: String) -> String {
+    private static func sanitizedLabel(_ raw: String, limit: Int = maxLabelLength) -> String {
         var scalars = String.UnicodeScalarView()
-        for scalar in raw.unicodeScalars where scalars.count < maxLabelLength {
+        for scalar in raw.unicodeScalars where scalars.count < limit {
             if CharacterSet.whitespacesAndNewlines.contains(scalar) {
                 if let last = scalars.last, last != " " { scalars.append(" ") }
                 continue

@@ -40,6 +40,20 @@ struct SidebarClaudeUsageTests {
         #expect(SidebarClaudeUsage.parse("v1 who=dev h5=1")?.label == "")
     }
 
+    @Test("carries the paying account and subscription date")
+    func subscription() throws {
+        let usage = try #require(SidebarClaudeUsage.parse(
+            "v1 who=dev pe=pay%20er@example.com ps=2026-10-12 pc=m d7=3"
+        ))
+        #expect(usage.payer == "pay er@example.com")
+        #expect(usage.subscribedOn == "2026-10-12")
+        #expect(usage.cycle == "m")
+        #expect(SidebarClaudeUsage.parse(usage.encoded) == usage)
+        let bad = try #require(SidebarClaudeUsage.parse("v1 who=dev ps=12/10 pc=week d7=3"))
+        #expect(bad.subscribedOn == "")
+        #expect(bad.cycle == "")
+    }
+
     @Test("accepts a single window, rejects reports without any")
     func windowPresence() {
         #expect(SidebarClaudeUsage.parse("v1 who=dev d7=5")?.fiveHour == nil)

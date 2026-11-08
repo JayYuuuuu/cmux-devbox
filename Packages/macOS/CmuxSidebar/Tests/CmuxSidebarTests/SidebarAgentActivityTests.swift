@@ -112,6 +112,7 @@ struct SidebarAgentActivityTests {
         let now = Date(timeIntervalSince1970: 1_793_770_000)
         let usage = SidebarClaudeUsage(
             who: "dev", label: "iPad 17mini", email: "dev@example.com",
+            payer: "payer@example.com", subscribedOn: "2026-10-12", cycle: "m",
             fiveHour: .init(usedPercent: 42, resetsAt: now.addingTimeInterval(3600)),
             sevenDay: .init(usedPercent: 16, resetsAt: now.addingTimeInterval(-1))
         )
@@ -130,6 +131,9 @@ struct SidebarAgentActivityTests {
         #expect(usageFields["who"] == .string("dev"))
         #expect(usageFields["label"] == .string("iPad 17mini"))
         #expect(usageFields["email"] == .string("dev@example.com"))
+        #expect(usageFields["payer"] == .string("payer@example.com"))
+        #expect(usageFields["subscribed"] == .string("2026-10-12"))
+        #expect(usageFields["cycle"] == .string("m"))
         #expect(usageFields["h5"] == .int(42))
         #expect(usageFields["h5Reset"] == .int(1_793_773_600))
         #expect(usageFields["d7"] == .int(0))

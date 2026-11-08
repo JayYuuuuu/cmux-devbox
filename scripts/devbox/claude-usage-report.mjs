@@ -16,7 +16,10 @@
 // optional display name (spaces allowed) shown as the sidebar card title; the
 // email is the one Claude Code logged in with (`.claude.json` in
 // $CLAUDE_CONFIG_DIR, else the home directory), falling back to
-// $CLAUDE_USAGE_EMAIL. Identical reports are sent at
+// $CLAUDE_USAGE_EMAIL. $CLAUDE_USAGE_PAYER (the account paying for the
+// subscription, spaces allowed), $CLAUDE_USAGE_SUBSCRIBED (yyyy-mm-dd) and
+// $CLAUDE_USAGE_CYCLE (m / y, also 月 / 年) feed the card's payment line.
+// Identical reports are sent at
 // most every RESEND_SECONDS per Claude session so the terminal stays quiet.
 import fs from 'node:fs';
 import os from 'node:os';
@@ -62,7 +65,23 @@ function loginEmail() {
   } catch { return ''; }
 }
 
-export function buildBody(input, who, label = '', email = '') {
+const MAX_BODY = 250; // Ghostty caps a notification body at 255 bytes
+
+function encodedText(raw, maxEncoded) {
+  let chars = [...cleanLabel(raw)];
+  while (chars.length && encodeURIComponent(chars.join('')).length > maxEncoded) chars.pop();
+  const text = chars.join('').trim();
+  return text ? encodeURIComponent(text) : '';
+}
+
+function cleanCycle(raw) {
+  const v = String(raw ?? '').trim().toLowerCase();
+  if (['y', 'year', 'yearly', 'annual', '年', '每年', '年付'].includes(v)) return 'y';
+  if (['m', 'month', 'monthly', '月', '每月', '月付'].includes(v)) return 'm';
+  return '';
+}
+
+export function buildBody(input, who, label = '', email = '', sub = {}) {
   const limits = input?.rate_limits;
   const h5 = pct(limits?.five_hour);
   const d7 = pct(limits?.seven_day);
@@ -70,24 +89,37 @@ export function buildBody(input, who, label = '', email = '') {
   const parts = ['v1'];
   const name = cleanName(who);
   if (name) parts.push(`who=${name}`);
-  // Ghostty caps a notification body at 255 bytes, so keep the encoded label short.
-  let lb = [...cleanLabel(label)];
-  while (lb.length && encodeURIComponent(lb.join('')).length > 72) lb.pop();
-  lb = lb.join('').trim();
-  if (lb) parts.push(`lb=${encodeURIComponent(lb)}`);
+  // Optional fields, dropped from the end of this list if the body runs long.
+  const optional = [];
+  const lb = encodedText(label, 72);
+  if (lb) optional.push(`lb=${lb}`);
   const em = cleanEmail(email);
-  if (em) parts.push(`em=${em}`);
+  if (em) optional.push(`em=${em}`);
+  const pe = encodedText(sub.payer, 72);
+  if (pe) optional.push(`pe=${pe}`);
+  const ps = String(sub.subscribed ?? '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(ps)) optional.push(`ps=${ps}`);
+  const pc = cleanCycle(sub.cycle);
+  if (pc) optional.push(`pc=${pc}`);
+  const windows = [];
   if (h5 !== null) {
-    parts.push(`h5=${h5}`);
+    windows.push(`h5=${h5}`);
     const r = reset(limits.five_hour);
-    if (r) parts.push(`h5r=${r}`);
+    if (r) windows.push(`h5r=${r}`);
   }
   if (d7 !== null) {
-    parts.push(`d7=${d7}`);
+    windows.push(`d7=${d7}`);
     const r = reset(limits.seven_day);
-    if (r) parts.push(`d7r=${r}`);
+    if (r) windows.push(`d7r=${r}`);
   }
-  return parts.join(' ');
+  const join = () => [...parts, ...optional, ...windows].join(' ');
+  // Drop the payment note first, then the email, then the label.
+  for (const key of ['pc=', 'ps=', 'pe=', 'em=', 'lb=']) {
+    if (join().length <= MAX_BODY) break;
+    const i = optional.findIndex((f) => f.startsWith(key));
+    if (i >= 0) optional.splice(i, 1);
+  }
+  return join();
 }
 
 export function buildSequence(body, inTmux) {
@@ -132,7 +164,11 @@ function main() {
   try { input = JSON.parse(readStdin()); } catch { return; }
   const who = process.env.CLAUDE_USAGE_WHO || process.env.CLAUDE_AS_NAME || process.env.USER;
   const email = loginEmail() || process.env.CLAUDE_USAGE_EMAIL;
-  const body = buildBody(input, who, process.env.CLAUDE_USAGE_LABEL, email);
+  const body = buildBody(input, who, process.env.CLAUDE_USAGE_LABEL, email, {
+    payer: process.env.CLAUDE_USAGE_PAYER,
+    subscribed: process.env.CLAUDE_USAGE_SUBSCRIBED,
+    cycle: process.env.CLAUDE_USAGE_CYCLE,
+  });
   if (!body) return;
   const tty = findTerminal();
   if (!tty) return;

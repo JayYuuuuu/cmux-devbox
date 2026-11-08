@@ -8,7 +8,7 @@ public import Foundation
 /// Shape (every key optional, omitted when unknown):
 ///
 ///     devbox: {
-///       usage:      { who, label, email, h5, h5Reset, d7, d7Reset, at },
+///       usage:      { who, label, email, payer, subscribed, cycle, h5, h5Reset, d7, d7Reset, at },
 ///       codexUsage: { plan, h5, h5Reset, d7, d7Reset, at, resets, resetExpiries },
 ///       activity:   { state, since, agent, who, dir, title, bg, codex, codexSince }
 ///     }
@@ -38,6 +38,9 @@ public enum SidebarDevBoxCustomSidebarValue {
             if !usage.who.isEmpty { usageFields["who"] = .string(usage.who) }
             if !usage.label.isEmpty { usageFields["label"] = .string(usage.label) }
             if !usage.email.isEmpty { usageFields["email"] = .string(usage.email) }
+            if !usage.payer.isEmpty { usageFields["payer"] = .string(usage.payer) }
+            if !usage.subscribedOn.isEmpty { usageFields["subscribed"] = .string(usage.subscribedOn) }
+            if !usage.cycle.isEmpty { usageFields["cycle"] = .string(usage.cycle) }
             if let usageReportedAt {
                 usageFields["at"] = .int(Int(usageReportedAt.timeIntervalSince1970))
             }
