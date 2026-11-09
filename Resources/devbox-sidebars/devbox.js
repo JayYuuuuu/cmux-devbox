@@ -1,4 +1,4 @@
-// cmux-devbox-panel rev=2026110901 min-build=112.41
+// cmux-devbox-panel rev=2026110902 min-build=112.41
 // cmux DevBox team panel: the edition's built-in left sidebar (provider
 // `cmux.sidebar.custom.devbox`). Edit it here, not in ~/.config/cmux/sidebars
 // (a user file with this name is ignored). The app ships a copy, and also
@@ -182,10 +182,51 @@ const usageByWho = computed(() => {
 const CELLS = 20;
 const CELL_INDEX = [...Array(CELLS).keys()];
 
-function quota(label, pct, reset) {
+const WINDOW_5H = 5 * 3600;
+const WINDOW_7D = 7 * 86400;
+
+// Pacing: the share of the window already gone is the share of quota it
+// can afford to have used. `mark` is that share (0–1); when the usage so far
+// projects past 100% by the reset, `out` is when it runs out at this rate
+// and, for the weekly window, `perDay` is what each remaining day can use.
+// No verdict in the first tenth of a window: too little to extrapolate.
+function pace(pct, reset, window) {
+  if (pct === null || pct === undefined || !reset) return null;
+  const left = reset - now();
+  if (left <= 0 || left > window) return null;
+  const used = window - left;
+  const mark = used / window;
+  if (mark < 0.1 || pct <= 0) return { mark };
+  const rate = pct / used;
+  if (pct < 100 && pct + rate * left <= 100) return { mark };
+  return {
+    mark,
+    out: pct >= 100 ? 0 : now() + (100 - pct) / rate,
+    perDay: window > 86400 ? Math.max(0, (100 - pct) / (left / 86400)) : null,
+  };
+}
+
+function paceWarning(p) {
+  if (!p?.out && p?.out !== 0) return "";
+  if (p.out === 0) return "已用完";
+  return "偏快 · 照这速度 " + resetAt(p.out) + " 用完" +
+    (p.perDay !== null ? "，每天别超 " + Math.floor(p.perDay) + "%" : "");
+}
+
+function quota(label, pct, reset, window) {
   // pct() is null when the account has not reported yet.
   const has = () => pct() !== null && pct() !== undefined;
   const lit = () => (has() && pct() > 0 ? Math.max(1, Math.round(pct() / (100 / CELLS))) : 0);
+  const p = computed(() => (has() ? pace(pct(), reset(), window) : null));
+  const behind = () => p()?.out !== undefined;
+  // Color by the worse of absolute level and pace.
+  const color = () => (behind() && pct() < 60 ? COLORS.unseen : levelColor(pct()));
+  // Cell where usage would sit if spread evenly over the window.
+  const paceCell = () => (p() ? Math.min(CELLS - 1, Math.floor(p().mark * CELLS)) : -1);
+  const warning = computed(() => {
+    const w = paceWarning(p());
+    return w ? [w] : [];
+  });
   return VStack({ spacing: 5 }, [
     HStack({ spacing: 6 }, [
       Text(label).font(11).color("secondary").lineLimit(1),
@@ -193,14 +234,17 @@ function quota(label, pct, reset) {
       Spacer({ minLength: 4 }),
       Text(() => (has() ? pct() + "%" : "—"))
         .font(14).weight("semibold").monospaced()
-        .color(() => (has() && pct() >= 60 ? levelColor(pct()) : "primary"))
+        .color(() => (has() && (pct() >= 60 || behind()) ? color() : "primary"))
         .layoutPriority(2),
     ]),
     HStack({ spacing: 2 }, CELL_INDEX.map((i) =>
       RoundedRectangle({ cornerRadius: 1.5 })
-        .fill(() => (i < lit() ? levelColor(pct()) : "#7f7f7f2e"))
+        .fill(() => (i < lit() ? color() : i === paceCell() ? "#7f7f7f66" : "#7f7f7f2e"))
         .frame({ maxWidth: "infinity", height: 6 })
     )),
+    ForEach({ items: warning, key: () => "pace" }, (t) =>
+      Text(() => t()).font(10).color(() => color()).lineLimit(2)
+    ),
   ]);
 }
 
@@ -459,8 +503,8 @@ function accountCard(group) {
       }).font(11).color("tertiary").lineLimit(1).layoutPriority(1),
     ]),
     payerLine(usage),
-    quota("5小时", () => usage()?.h5 ?? null, () => usage()?.h5Reset),
-    quota("本周", () => usage()?.d7 ?? null, () => usage()?.d7Reset),
+    quota("5小时", () => usage()?.h5 ?? null, () => usage()?.h5Reset, WINDOW_5H),
+    quota("本周", () => usage()?.d7 ?? null, () => usage()?.d7Reset, WINDOW_7D),
     noUsageLine(usage, "还没收到用量：在这个账号的会话里用一次 Claude 就有"),
     ForEach({ items: openItems, key: (e) => e.title }, (entry) => openRow(entry)),
     HStack({ spacing: 5 }, [
@@ -516,9 +560,9 @@ function codexCard() {
       Spacer({ minLength: 0 }),
     ]).help("一个 Codex 账号，所有会话共用这份额度"),
     ForEach({ items: fiveHour, key: () => "h5" }, () =>
-      quota("5小时", () => codexUsage()?.h5 ?? null, () => codexUsage()?.h5Reset)
+      quota("5小时", () => codexUsage()?.h5 ?? null, () => codexUsage()?.h5Reset, WINDOW_5H)
     ),
-    quota("本周", () => codexUsage()?.d7 ?? null, () => codexUsage()?.d7Reset),
+    quota("本周", () => codexUsage()?.d7 ?? null, () => codexUsage()?.d7Reset, WINDOW_7D),
     resetCardLine(),
     noUsageLine(codexUsage, "还没收到用量：在任一会话里用一次 Codex 就有"),
   ])
