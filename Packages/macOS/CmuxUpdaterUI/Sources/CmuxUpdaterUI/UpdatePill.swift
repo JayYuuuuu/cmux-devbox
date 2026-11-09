@@ -58,19 +58,57 @@ public struct UpdatePill: View {
                     .truncationMode(.tail)
                     .frame(maxWidth: textWidth, alignment: .leading)
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(
-                Capsule()
-                    .fill(appearance.backgroundColor(for: model))
-            )
-            .foregroundColor(appearance.foregroundColor(for: model))
+            .padding(.horizontal, Self.usesGlassStyle ? 10 : 8)
+            .padding(.vertical, Self.usesGlassStyle ? 5 : 4)
+            .background(pillBackground)
+            .foregroundColor(pillForeground)
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .safeHelp(model.text)
         .accessibilityLabel(model.text)
         .accessibilityIdentifier("UpdatePill")
+    }
+
+    /// DevBox edition: a glass capsule like a floating toast (material, a light
+    /// wash of the state color, a top-lit rim and a soft shadow) with the
+    /// state color carried by the text instead of a solid fill.
+    private static var usesGlassStyle: Bool {
+        DevBoxEditionUpdates.isEdition(Bundle.main.bundleIdentifier)
+    }
+
+    @ViewBuilder
+    private var pillBackground: some View {
+        let stateColor = appearance.backgroundColor(for: model)
+        if Self.usesGlassStyle {
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .overlay(Capsule().fill(stateColor.opacity(0.20)))
+                .overlay(
+                    Capsule().strokeBorder(
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.28), Color.white.opacity(0.06)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        lineWidth: 1
+                    )
+                )
+                .shadow(color: Color.black.opacity(0.22), radius: 6, x: 0, y: 2)
+        } else {
+            Capsule().fill(stateColor)
+        }
+    }
+
+    private var pillForeground: Color {
+        let foreground = appearance.foregroundColor(for: model)
+        guard Self.usesGlassStyle, foreground == .white else { return foreground }
+        // White text sat on a solid state color. On glass, "update available"
+        // carries the accent in its text; the darkened blues of the other
+        // states would be too dim as text, so they use the primary color.
+        if model.showsDetectedBackgroundUpdate { return appearance.backgroundColor(for: model) }
+        if case .updateAvailable = model.effectiveState { return appearance.backgroundColor(for: model) }
+        return .primary
     }
 
     private func handleTap() {
