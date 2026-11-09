@@ -46,12 +46,14 @@ public struct WindowAppearanceSnapshot {
     public static let chromeGlassDefaultsKey = "chromeGlassOverOpaqueTerminal"
 
     /// Glass tint for a terminal background: a step darker than the terminal
-    /// on dark themes, a touch darker on light ones, mostly opaque so the
-    /// theme color dominates and the desktop only shows faintly.
+    /// on dark themes, a touch darker on light ones. Its alpha is the opacity
+    /// of the theme-colored wash the window root paints over the glass.
+    /// Native glass mutes its tint toward a cool system gray, so the wash
+    /// (not the tint) carries the theme hue; the glass only shows faintly.
     public static func chromeGlassTint(forTerminalBackground color: NSColor) -> NSColor {
         let isDark = WindowChromeColorResolver().readableColorScheme(for: color) == .dark
         let base = color.blended(withFraction: isDark ? 0.22 : 0.06, of: .black) ?? color
-        return base.withAlphaComponent(isDark ? 0.80 : 0.72)
+        return base.withAlphaComponent(isDark ? 0.88 : 0.84)
     }
 
     /// Creates a resolved window appearance snapshot.
@@ -235,7 +237,12 @@ public struct WindowAppearanceSnapshot {
     public func policy(for role: WindowBackdropRole) -> WindowBackdropPolicy {
         switch role {
         case .windowRoot:
-            return chromeGlassTint == nil ? terminalBackdropPolicy() : .clear
+            guard let chromeGlassTint else { return terminalBackdropPolicy() }
+            return .ghosttyTerminalBackdrop(
+                color: chromeGlassTint.withAlphaComponent(1),
+                opacity: chromeGlassTint.alphaComponent,
+                renderingMode: terminalRenderingMode
+            )
         case .terminalCanvas, .bonsplitChrome, .titlebar, .browserSurface:
             return .clear
         case .leftSidebar, .rightSidebar:
