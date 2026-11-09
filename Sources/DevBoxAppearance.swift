@@ -299,9 +299,10 @@ enum DevBoxTeamPanel {
     static let schemeDataKey = "devboxScheme"
     static let keyword = "devbox"
 
-    /// The bundled panel script, used for ``sidebarName`` in the edition. It
-    /// takes precedence over a same-named user file: older installs wrote a
-    /// per-machine copy there, which would otherwise shadow app updates.
+    /// The bundled panel script. ``DevBoxTeamPanelSource`` renders it, or a
+    /// newer copy published on the devbox, for ``sidebarName`` in the edition;
+    /// either takes precedence over a same-named user file: older installs
+    /// wrote a per-machine copy there, which would otherwise shadow updates.
     static var bundledScriptURL: URL? {
         guard CmuxDevBoxEdition.isActive else { return nil }
         return Bundle.main.url(forResource: sidebarName, withExtension: "js", subdirectory: "devbox-sidebars")
@@ -351,6 +352,44 @@ enum DevBoxTeamPanel {
     /// `devbox.session.open` socket method runs nothing else.
     static func isSessionAction(_ actionID: String, in actions: [CmuxResolvedConfigAction]) -> Bool {
         sessions(from: actions).contains { $0.actionID == actionID }
+    }
+
+    /// Live terminals of open panel sessions with their foreground process,
+    /// the candidates for reaching the devbox over a separate SSH connection.
+    @MainActor
+    static func sessionForegroundProcesses(
+        tabManager: TabManager,
+        actions: [CmuxResolvedConfigAction]
+    ) -> [(workspace: Workspace, pid: Int32)] {
+        let titles = Set(sessions(from: actions).map(\.title))
+        var candidates: [(workspace: Workspace, pid: Int32)] = []
+        for workspace in tabManager.tabs where titles.contains(workspace.title) {
+            for case let terminal as TerminalPanel in workspace.panels.values {
+                guard terminal.surface.hasLiveSurface,
+                      let pid = terminal.surface.foregroundProcessID().flatMap(Int32.init(exactly:)) else { continue }
+                candidates.append((workspace, pid))
+            }
+        }
+        return candidates
+    }
+
+    /// The first candidate whose foreground process is a plain `ssh`, with
+    /// its detected route; detection runs off the main actor.
+    @MainActor
+    static func firstSSHSession(
+        in candidates: [(workspace: Workspace, pid: Int32)]
+    ) async -> (workspace: Workspace, session: DetectedSSHSession)? {
+        let pids = candidates.map(\.pid)
+        let found = await Task.detached(priority: .utility) { () -> (Int, DetectedSSHSession)? in
+            for (index, pid) in pids.enumerated() {
+                if let session = TerminalSSHSessionDetector.detect(foregroundPID: pid) {
+                    return (index, session)
+                }
+            }
+            return nil
+        }.value
+        guard let (index, session) = found else { return nil }
+        return (candidates[index].workspace, session)
     }
 
     /// Adds ``sessionsDataKey`` and ``schemeDataKey`` to a custom-sidebar data context.

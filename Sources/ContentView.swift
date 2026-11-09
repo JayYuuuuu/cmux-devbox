@@ -10877,8 +10877,8 @@ enum CmuxExtensionSidebarSelection {
         guard providerId.hasPrefix(customSidebarProviderPrefix) else { return nil }
         let name = String(providerId.dropFirst(customSidebarProviderPrefix.count))
         guard isValidCustomSidebarFileBaseName(name) else { return nil }
-        if name == DevBoxTeamPanel.sidebarName, let bundled = DevBoxTeamPanel.bundledScriptURL {
-            return bundled
+        if name == DevBoxTeamPanel.sidebarName, let active = DevBoxTeamPanelSource.activeScriptURL {
+            return active
         }
         for ext in ["js", "swift", "json"] {
             let url = sidebarsDirectory.appendingPathComponent("\(name).\(ext)", isDirectory: false)
@@ -11351,6 +11351,7 @@ struct VerticalTabsSidebar: View, Equatable {
         )
         var context = CustomSidebarDataContextBuilder().dataContext(for: snapshot)
         DevBoxTeamPanel.addSessions(to: &context, actions: cmuxConfigStore.loadedActions)
+        DevBoxTeamPanelSource.refreshIfDue(tabManager: tabManager, actions: cmuxConfigStore.loadedActions)
         return context
     }
 

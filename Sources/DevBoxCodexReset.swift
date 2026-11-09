@@ -43,33 +43,15 @@ enum DevBoxCodexReset {
     /// Starts one redemption; ignored while another is in flight.
     static func start(tabManager: TabManager, actions: [CmuxResolvedConfigAction]) {
         guard CmuxDevBoxEdition.isActive, !isRunning else { return }
-        let titles = Set(DevBoxTeamPanel.sessions(from: actions).map(\.title))
-        var candidates: [(workspace: Workspace, pid: Int32)] = []
-        for workspace in tabManager.tabs where titles.contains(workspace.title) {
-            for case let terminal as TerminalPanel in workspace.panels.values {
-                guard terminal.surface.hasLiveSurface,
-                      let pid = terminal.surface.foregroundProcessID().flatMap(Int32.init(exactly:)) else { continue }
-                candidates.append((workspace, pid))
-            }
-        }
+        let candidates = DevBoxTeamPanel.sessionForegroundProcesses(tabManager: tabManager, actions: actions)
         last = Outcome(state: "running", at: Date(), expiresAt: nil)
-        let pids = candidates.map(\.pid)
         let command = remoteCommand
         let limit = timeout
         Task {
-            let found = await Task.detached(priority: .userInitiated) { () -> (Int, DetectedSSHSession)? in
-                for (index, pid) in pids.enumerated() {
-                    if let session = TerminalSSHSessionDetector.detect(foregroundPID: pid) {
-                        return (index, session)
-                    }
-                }
-                return nil
-            }.value
-            guard let (index, session) = found else {
+            guard let (workspace, session) = await DevBoxTeamPanel.firstSSHSession(in: candidates) else {
                 finish(state: "noSession")
                 return
             }
-            let workspace = candidates[index].workspace
             let run = await Task.detached(priority: .userInitiated) {
                 try? session.runRemoteCommandSync(command, timeout: limit)
             }.value

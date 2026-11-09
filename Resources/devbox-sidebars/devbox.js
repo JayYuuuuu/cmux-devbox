@@ -1,6 +1,11 @@
+// cmux-devbox-panel rev=2026110901 min-build=112.41
 // cmux DevBox team panel: the edition's built-in left sidebar (provider
-// `cmux.sidebar.custom.devbox`). Shipped inside the app; edit it here, not in
-// ~/.config/cmux/sidebars (a user file with this name is ignored).
+// `cmux.sidebar.custom.devbox`). Edit it here, not in ~/.config/cmux/sidebars
+// (a user file with this name is ignored). The app ships a copy, and also
+// fetches the copy published on the devbox (scripts/devbox/
+// publish-team-panel.sh), so panel-only changes need no app release.
+// Line 1 is required: bump `rev` on every change; raise `min-build` to the
+// app's CFBundleVersion when the script needs data only newer apps provide.
 //
 // What it answers at a glance:
 //   - which remote sessions need me (permission prompt, or a finished turn I
