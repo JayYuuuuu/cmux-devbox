@@ -55,16 +55,35 @@ function elapsed(secs) {
   return h < 24 ? h + "小时" + (m % 60 ? (m % 60) + "分" : "") : Math.floor(h / 24) + "天";
 }
 
-// "35分后重置", "1小时10分后重置", "5天10小时后重置".
+// "35分后重置 · 10:40", "1天3小时后重置 · 明天13:20",
+// "5天10小时后重置 · 14号09:00": the countdown plus the Mac-local clock time.
 function untilReset(epoch) {
   if (!epoch) return "";
   const s = epoch - now();
   if (s <= 0) return "";
   const m = Math.ceil(s / 60);
-  if (m < 60) return m + "分后重置";
   const h = Math.floor(m / 60);
-  if (h < 24) return h + "小时" + (m % 60 ? (m % 60) + "分" : "") + "后重置";
-  return Math.floor(h / 24) + "天" + (h % 24 ? (h % 24) + "小时" : "") + "后重置";
+  const left = m < 60 ? m + "分"
+    : h < 24 ? h + "小时" + (m % 60 ? (m % 60) + "分" : "")
+    : Math.floor(h / 24) + "天" + (h % 24 ? (h % 24) + "小时" : "");
+  return left + "后重置 · " + resetAt(epoch);
+}
+
+// Local clock time of a reset, prefixed with 明天/后天/day of month when it is
+// not today ("10:40", "明天13:20", "14号09:00", "12月1号09:00").
+function resetAt(epoch) {
+  const off = localOffset();
+  const t = epoch + off;
+  const days = Math.floor(t / 86400);
+  const secs = t - days * 86400;
+  const pad = (n) => (n < 10 ? "0" : "") + n;
+  const clock = pad(Math.floor(secs / 3600)) + ":" + pad(Math.floor((secs % 3600) / 60));
+  const gap = days - Math.floor((now() + off) / 86400);
+  if (gap <= 0) return clock;
+  if (gap === 1) return "明天" + clock;
+  if (gap === 2) return "后天" + clock;
+  const [month, day] = civil(days);
+  return (gap < 7 ? "" : month + "月") + day + "号" + clock;
 }
 
 function levelColor(pct) {
@@ -511,7 +530,7 @@ function codexCard() {
 // hour/minute/second next to the epoch, so the zone offset is their gap.
 function localOffset() {
   const c = data.clock?.();
-  if (!c) return 0;
+  if (!c || c.hour == null) return 0;
   const local = c.hour * 3600 + c.minute * 60 + c.second;
   let off = local - (((c.epoch % 86400) + 86400) % 86400);
   if (off > 14 * 3600) off -= 86400;
