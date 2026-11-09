@@ -1,4 +1,4 @@
-// cmux-devbox-panel rev=2026110902 min-build=112.41
+// cmux-devbox-panel rev=2026110903 min-build=112.41
 // cmux DevBox team panel: the edition's built-in left sidebar (provider
 // `cmux.sidebar.custom.devbox`). Edit it here, not in ~/.config/cmux/sidebars
 // (a user file with this name is ignored). The app ships a copy, and also
@@ -209,7 +209,7 @@ function pace(pct, reset, window) {
 function paceWarning(p) {
   if (!p?.out && p?.out !== 0) return "";
   if (p.out === 0) return "已用完";
-  return "偏快 · 照这速度 " + resetAt(p.out) + " 用完" +
+  return "照这速度 " + resetAt(p.out) + " 用完" +
     (p.perDay !== null ? "，每天别超 " + Math.floor(p.perDay) + "%" : "");
 }
 
@@ -221,8 +221,12 @@ function quota(label, pct, reset, window) {
   const behind = () => p()?.out !== undefined;
   // Color by the worse of absolute level and pace.
   const color = () => (behind() && pct() < 60 ? COLORS.unseen : levelColor(pct()));
-  // Cell where usage would sit if spread evenly over the window.
-  const paceCell = () => (p() ? Math.min(CELLS - 1, Math.floor(p().mark * CELLS)) : -1);
+  // Cells up to where usage would sit if spread evenly over the window are
+  // drawn lighter: the share usable by now. Before a verdict (first tenth of
+  // the window) there is no band.
+  const judged = () => !!p() && p().mark >= 0.1;
+  const paceCell = () => (judged() ? Math.min(CELLS - 1, Math.floor(p().mark * CELLS)) : -1);
+  const verdict = () => (!judged() || pct() <= 0 ? "" : behind() ? "偏快" : "充足");
   const warning = computed(() => {
     const w = paceWarning(p());
     return w ? [w] : [];
@@ -232,6 +236,11 @@ function quota(label, pct, reset, window) {
       Text(label).font(11).color("secondary").lineLimit(1),
       Text(() => (has() ? untilReset(reset()) : "")).font(10).color("tertiary").lineLimit(1),
       Spacer({ minLength: 4 }),
+      Text(() => verdict())
+        .font(10).weight("medium")
+        .color(() => (behind() ? color() : COLORS.ok))
+        .lineLimit(1)
+        .layoutPriority(1),
       Text(() => (has() ? pct() + "%" : "—"))
         .font(14).weight("semibold").monospaced()
         .color(() => (has() && (pct() >= 60 || behind()) ? color() : "primary"))
@@ -239,7 +248,7 @@ function quota(label, pct, reset, window) {
     ]),
     HStack({ spacing: 2 }, CELL_INDEX.map((i) =>
       RoundedRectangle({ cornerRadius: 1.5 })
-        .fill(() => (i < lit() ? color() : i === paceCell() ? "#7f7f7f66" : "#7f7f7f2e"))
+        .fill(() => (i < lit() ? color() : i <= paceCell() ? "#7f7f7f80" : "#7f7f7f24"))
         .frame({ maxWidth: "infinity", height: 6 })
     )),
     ForEach({ items: warning, key: () => "pace" }, (t) =>
