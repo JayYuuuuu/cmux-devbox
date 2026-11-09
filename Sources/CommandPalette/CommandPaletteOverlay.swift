@@ -84,9 +84,12 @@ struct CommandPaletteCommandListRowsView: View {
     private static let emptyStateHeight: CGFloat = 44
 
     var body: some View {
+        let rowHeight = DevBoxPaletteChrome.isActive ? DevBoxPaletteChrome.rowHeight : Self.rowHeight
+        // DevBox pills float with a small gap below the last row.
+        let bottomInset: CGFloat = DevBoxPaletteChrome.isActive && !state.rows.isEmpty ? 6 : 0
         let contentHeight = state.rows.isEmpty
             ? Self.emptyStateHeight
-            : CGFloat(state.rows.count) * Self.rowHeight
+            : CGFloat(state.rows.count) * rowHeight + bottomInset
         let listHeight = min(Self.listMaxHeight, contentHeight)
 
         ScrollView {
@@ -108,9 +111,10 @@ struct CommandPaletteCommandListRowsView: View {
                     ForEach(Array(state.rows.enumerated()), id: \.element.id) { index, row in
                         let isSelected = index == state.selectedIndex
                         let isHovered = hoveredIndex == index
+                        let pills = DevBoxPaletteChrome.isActive
                         let rowBackground: Color = isSelected
-                            ? cmuxAccentColor().opacity(0.12)
-                            : (isHovered ? Color.primary.opacity(0.08) : .clear)
+                            ? (pills ? cmuxAccentColor() : cmuxAccentColor().opacity(0.12))
+                            : (isHovered ? (pills ? DevBoxPaletteChrome.hoverFill : Color.primary.opacity(0.08)) : .clear)
 
                         Button {
                             onRunResult(row.id)
@@ -118,12 +122,21 @@ struct CommandPaletteCommandListRowsView: View {
                             ContentView.commandPaletteRenderResultLabelContent(
                                 title: row.title,
                                 matchedIndices: row.matchedIndices,
-                                trailingLabel: row.trailingLabel
+                                trailingLabel: row.trailingLabel,
+                                onAccent: pills && isSelected
                             )
-                            .padding(.horizontal, 9)
-                            .padding(.vertical, 2)
+                            .padding(.horizontal, pills ? 10 : 9)
+                            .padding(.vertical, pills ? 0 : 2)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(rowBackground)
+                            .frame(height: pills ? DevBoxPaletteChrome.rowHeight : nil)
+                            .background(
+                                RoundedRectangle(
+                                    cornerRadius: pills ? DevBoxPaletteChrome.rowCornerRadius : 0,
+                                    style: .continuous
+                                )
+                                .fill(rowBackground)
+                            )
+                            .padding(.horizontal, pills ? DevBoxPaletteChrome.rowOuterInset : 0)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -139,6 +152,7 @@ struct CommandPaletteCommandListRowsView: View {
                     }
                 }
             }
+            .padding(.bottom, bottomInset)
             .scrollTargetLayout()
         }
         .id(state.listIdentity)
@@ -155,6 +169,67 @@ struct CommandPaletteCommandListRowsView: View {
             if let hoveredIndex, hoveredIndex >= count {
                 self.hoveredIndex = nil
             }
+        }
+    }
+}
+
+/// Command palette panel: upstream's flat window-colored card, or in the
+/// DevBox edition a rounder card in the terminal theme's colors with a lit
+/// rim and a soft, deeper shadow.
+struct CommandPalettePanelChrome: ViewModifier {
+    func body(content: Content) -> some View {
+        if DevBoxPaletteChrome.isActive {
+            let shape = RoundedRectangle(cornerRadius: DevBoxPaletteChrome.cornerRadius, style: .continuous)
+            content
+                .clipShape(shape)
+                .background(shape.fill(DevBoxPaletteChrome.panelFill))
+                .overlay(
+                    shape
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: DevBoxPaletteChrome.rimColors,
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ),
+                            lineWidth: 1
+                        )
+                        .allowsHitTesting(false)
+                )
+                .shadow(color: DevBoxPaletteChrome.shadowColor, radius: 24, x: 0, y: 12)
+        } else {
+            content
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color(nsColor: .windowBackgroundColor).opacity(0.98))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color(nsColor: .separatorColor).opacity(0.7), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.24), radius: 10, x: 0, y: 5)
+        }
+    }
+}
+
+/// Search row: upstream's plain padded field, or in the DevBox edition a
+/// recessed rounded well (with the magnifier glyph placed by the caller).
+struct CommandPaletteSearchFieldChrome: ViewModifier {
+    func body(content: Content) -> some View {
+        if DevBoxPaletteChrome.isActive {
+            content
+                .padding(.horizontal, 10)
+                .frame(height: 34)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(DevBoxPaletteChrome.searchFieldFill)
+                )
+                .padding(.horizontal, 8)
+                .padding(.top, 8)
+                .padding(.bottom, 6)
+        } else {
+            content
+                .padding(.horizontal, 9)
+                .padding(.vertical, 7)
         }
     }
 }

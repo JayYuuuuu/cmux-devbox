@@ -3980,15 +3980,7 @@ struct ContentView: View {
                 }
                 .frame(width: targetWidth)
                 .background(CommandPalettePanelHitRegion())
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color(nsColor: .windowBackgroundColor).opacity(0.98))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(Color(nsColor: .separatorColor).opacity(0.7), lineWidth: 1)
-                )
-                .shadow(color: Color.black.opacity(0.24), radius: 10, x: 0, y: 5)
+                .modifier(CommandPalettePanelChrome())
                 .padding(.top, 40)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -4002,6 +3994,11 @@ struct ContentView: View {
     private var commandPaletteCommandListView: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
+                if DevBoxPaletteChrome.isActive {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
                 CommandPaletteSearchFieldRepresentable(
                     placeholder: commandPaletteSearchPlaceholder,
                     text: $commandPaletteQuery,
@@ -4013,10 +4010,11 @@ struct ContentView: View {
                 )
                 .frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 7)
+            .modifier(CommandPaletteSearchFieldChrome())
 
-            Divider()
+            if !DevBoxPaletteChrome.isActive {
+                Divider()
+            }
 
             CommandPaletteCommandListRenderView(
                 renderModel: commandPaletteOverlayRenderModel,
@@ -5724,9 +5722,15 @@ struct ContentView: View {
         return CommandPaletteSwitcherFingerprintContext.fingerprint(windowContexts: fingerprintContexts)
     }
 
-    private static func commandPaletteHighlightedTitleText(_ title: String, matchedIndices: Set<Int>) -> Text {
+    private static func commandPaletteHighlightedTitleText(
+        _ title: String,
+        matchedIndices: Set<Int>,
+        onAccent: Bool = false
+    ) -> Text {
+        // On a solid accent pill everything is white; matches are bolded instead.
+        let plainColor: Color = onAccent ? .white : .primary
         guard !matchedIndices.isEmpty else {
-            return Text(title).foregroundColor(.primary)
+            return Text(title).foregroundColor(plainColor)
         }
 
         let chars = Array(title)
@@ -5742,9 +5746,11 @@ struct ContentView: View {
 
             let segment = String(chars[index..<end])
             if isMatched {
-                result = result + Text(segment).foregroundColor(.blue)
+                result = result + (onAccent
+                    ? Text(segment).foregroundColor(.white).bold()
+                    : Text(segment).foregroundColor(.blue))
             } else {
-                result = result + Text(segment).foregroundColor(.primary)
+                result = result + Text(segment).foregroundColor(plainColor)
             }
             index = end
         }
@@ -5753,23 +5759,26 @@ struct ContentView: View {
     }
 
     @ViewBuilder
-    private static func commandPaletteRenderTrailingLabelView(_ trailingLabel: CommandPaletteRenderTrailingLabel?) -> some View {
+    private static func commandPaletteRenderTrailingLabelView(
+        _ trailingLabel: CommandPaletteRenderTrailingLabel?,
+        onAccent: Bool = false
+    ) -> some View {
         if let trailingLabel {
             switch trailingLabel.style {
             case .shortcut:
                 Text(trailingLabel.text)
                     .cmuxFont(size: 11, weight: .medium)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(onAccent ? AnyShapeStyle(Color.white.opacity(0.85)) : AnyShapeStyle(.secondary))
                     .padding(.horizontal, 4)
                     .padding(.vertical, 1)
                     .background(
-                        Color.primary.opacity(0.08),
+                        onAccent ? Color.white.opacity(0.18) : Color.primary.opacity(0.08),
                         in: RoundedRectangle(cornerRadius: 4, style: .continuous)
                     )
             case .kind:
                 Text(trailingLabel.text)
                     .cmuxFont(size: 11, weight: .regular)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(onAccent ? AnyShapeStyle(Color.white.opacity(0.75)) : AnyShapeStyle(.secondary))
                     .lineLimit(1)
             }
         }
@@ -5778,17 +5787,19 @@ struct ContentView: View {
     static func commandPaletteRenderResultLabelContent(
         title: String,
         matchedIndices: Set<Int>,
-        trailingLabel: CommandPaletteRenderTrailingLabel?
+        trailingLabel: CommandPaletteRenderTrailingLabel?,
+        onAccent: Bool = false
     ) -> some View {
         HStack(spacing: 8) {
             commandPaletteHighlightedTitleText(
                 title,
-                matchedIndices: matchedIndices
+                matchedIndices: matchedIndices,
+                onAccent: onAccent
             )
                 .cmuxFont(size: 13, weight: .regular)
                 .lineLimit(1)
             Spacer()
-            commandPaletteRenderTrailingLabelView(trailingLabel)
+            commandPaletteRenderTrailingLabelView(trailingLabel, onAccent: onAccent)
         }
     }
 

@@ -160,6 +160,55 @@ struct DevBoxCardChromeModifier: ViewModifier {
     }
 }
 
+/// DevBox command palette chrome: a rounded floating card in the terminal
+/// theme's colors with a lit rim and a soft shadow, a recessed search field
+/// and solid accent pills for the selected row. Upstream drawing elsewhere.
+enum DevBoxPaletteChrome {
+    static var isActive: Bool { CmuxDevBoxEdition.isActive }
+
+    static let cornerRadius: CGFloat = 14
+    static let rowHeight: CGFloat = 28
+    static let rowCornerRadius: CGFloat = 8
+    static let rowOuterInset: CGFloat = 6
+
+    @MainActor
+    private static var terminalBackground: NSColor { GhosttyApp.shared.defaultBackgroundColor }
+
+    @MainActor
+    static var isDark: Bool { DevBoxCardChrome.isDark(terminalBackground) }
+
+    /// Panel fill: a lifted step of the terminal on dark themes, near paper
+    /// white (keeping the theme's warmth) on light ones.
+    @MainActor
+    static var panelFill: Color {
+        let bg = terminalBackground
+        let fill = isDark
+            ? bg.blended(withFraction: 0.07, of: .white) ?? bg
+            : bg.blended(withFraction: 0.60, of: .white) ?? bg
+        return Color(nsColor: fill)
+    }
+
+    @MainActor
+    static var rimColors: [Color] {
+        isDark
+            ? [Color.white.opacity(0.16), Color.white.opacity(0.05)]
+            : [Color.black.opacity(0.06), Color.black.opacity(0.12)]
+    }
+
+    @MainActor
+    static var shadowColor: Color { Color.black.opacity(isDark ? 0.45 : 0.16) }
+
+    @MainActor
+    static var searchFieldFill: Color {
+        isDark ? Color.white.opacity(0.07) : Color.black.opacity(0.05)
+    }
+
+    @MainActor
+    static var hoverFill: Color {
+        isDark ? Color.white.opacity(0.06) : Color.black.opacity(0.045)
+    }
+}
+
 /// The edition's quick-switch color themes. The non-Ghostty ones ship in the
 /// app bundle (`Resources/devbox-themes`, copied by `scripts/build-devbox.sh`).
 enum DevBoxThemeSwitcher {
