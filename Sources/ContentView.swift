@@ -1901,16 +1901,18 @@ struct ContentView: View {
         }
         .modifier(DevBoxCardChromeModifier(
             isEnabled: devBoxCardChromeEnabled,
-            cardColor: appearance.resolvedChromeBackgroundColor
+            cardColor: DevBoxCardChrome.cardColor(for: appearance)
         ))
         .modifier(WorkspacePresentationModeContentTopPaddingModifier(
             isFullScreen: isFullScreen,
             titlebarPadding: titlebarPadding,
             hostingSafeAreaTop: hostingSafeAreaTop
         ))
-        // The canvas also fills the titlebar strip above the card.
+        // The canvas also fills the titlebar strip above the card. Under
+        // chrome glass the window glass (tinted with the same step) is the
+        // canvas instead.
         .background(
-            devBoxCardChromeEnabled
+            devBoxCardChromeEnabled && appearance.chromeGlassTint == nil
                 ? Color(nsColor: DevBoxCardChrome.canvasColor(forCard: appearance.resolvedChromeBackgroundColor))
                 : .clear
         )
@@ -2070,28 +2072,29 @@ struct ContentView: View {
     @AppStorage("bgGlassTintHex") private var bgGlassTintHex = "#000000"
     @AppStorage("bgGlassTintOpacity") private var bgGlassTintOpacity = 0.03
     @AppStorage("bgGlassEnabled") private var bgGlassEnabled = false
+    @AppStorage(WindowAppearanceSnapshot.chromeGlassDefaultsKey) private var chromeGlassSetting = false
     @State private var titlebarLeadingInset: CGFloat = 12
     private var windowIdentifier: String { "cmux.main.\(windowId.uuidString)" }
     private var windowAppearanceSnapshot: WindowAppearanceSnapshot {
         _ = titlebarThemeGeneration
-        return windowChrome.appearanceSnapshot(
-            settings: WindowAppearanceUserSettingsSnapshot(
-                unifySurfaceBackdrops: sidebarMatchTerminalBackground,
-                colorScheme: AppearanceSettings.effectiveColorScheme(for: appearanceMode, fallback: colorScheme),
-                sidebarMaterial: sidebarMaterial,
-                sidebarBlendMode: sidebarBlendMode,
-                sidebarState: sidebarStateSetting,
-                sidebarTintHex: sidebarTintHex,
-                sidebarTintHexLight: sidebarTintHexLight,
-                sidebarTintHexDark: sidebarTintHexDark,
-                sidebarTintOpacity: sidebarTintOpacity,
-                sidebarCornerRadius: sidebarCornerRadius,
-                sidebarBlurOpacity: sidebarBlurOpacity,
-                bgGlassEnabled: bgGlassEnabled,
-                bgGlassTintHex: bgGlassTintHex,
-                bgGlassTintOpacity: bgGlassTintOpacity
-            )
+        var settings = WindowAppearanceUserSettingsSnapshot(
+            unifySurfaceBackdrops: sidebarMatchTerminalBackground,
+            colorScheme: AppearanceSettings.effectiveColorScheme(for: appearanceMode, fallback: colorScheme),
+            sidebarMaterial: sidebarMaterial,
+            sidebarBlendMode: sidebarBlendMode,
+            sidebarState: sidebarStateSetting,
+            sidebarTintHex: sidebarTintHex,
+            sidebarTintHexLight: sidebarTintHexLight,
+            sidebarTintHexDark: sidebarTintHexDark,
+            sidebarTintOpacity: sidebarTintOpacity,
+            sidebarCornerRadius: sidebarCornerRadius,
+            sidebarBlurOpacity: sidebarBlurOpacity,
+            bgGlassEnabled: bgGlassEnabled,
+            bgGlassTintHex: bgGlassTintHex,
+            bgGlassTintOpacity: bgGlassTintOpacity
         )
+        settings.usesChromeGlass = chromeGlassSetting
+        return windowChrome.appearanceSnapshot(settings: settings)
     }
 
     private func fakeTitlebarTextColor(appearance: WindowAppearanceSnapshot) -> Color {

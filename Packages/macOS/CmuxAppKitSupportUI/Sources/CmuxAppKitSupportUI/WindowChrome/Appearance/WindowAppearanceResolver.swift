@@ -13,7 +13,7 @@ public struct WindowAppearanceResolver {
 
     /// Resolves window appearance from explicit user settings.
     public func current(settings: WindowAppearanceUserSettingsSnapshot) -> WindowAppearanceSnapshot {
-        return WindowAppearanceSnapshot(
+        var snapshot = WindowAppearanceSnapshot(
             terminalBackgroundColor: terminalAppearance.backgroundColor,
             terminalBackgroundOpacity: WindowAppearanceSnapshot.clampedOpacity(terminalAppearance.backgroundOpacity),
             terminalBackgroundBlur: terminalAppearance.backgroundBlur,
@@ -52,6 +52,12 @@ public struct WindowAppearanceResolver {
                 ambientScheme: settings.colorScheme
             )
         )
+        if settings.usesChromeGlass {
+            snapshot.chromeGlassTint = WindowAppearanceSnapshot.chromeGlassTint(
+                forTerminalBackground: terminalAppearance.backgroundColor
+            )
+        }
+        return snapshot
     }
 
     /// Resolves window appearance from a `UserDefaults` store.
@@ -70,7 +76,7 @@ public struct WindowAppearanceResolver {
                 forTerminalBackgroundColor: terminalAppearance.backgroundColor,
                 opacity: terminalAppearance.backgroundOpacity
             )
-        return current(settings: WindowAppearanceUserSettingsSnapshot(
+        var settings = WindowAppearanceUserSettingsSnapshot(
             unifySurfaceBackdrops: defaults.object(forKey: "sidebarMatchTerminalBackground") as? Bool ?? false,
             colorScheme: ambientScheme,
             sidebarMaterial: defaults.string(forKey: "sidebarMaterial") ?? WindowChromeSidebarMaterialOption.sidebar.rawValue,
@@ -85,6 +91,8 @@ public struct WindowAppearanceResolver {
             bgGlassEnabled: defaults.object(forKey: "bgGlassEnabled") as? Bool ?? false,
             bgGlassTintHex: defaults.string(forKey: "bgGlassTintHex") ?? "#000000",
             bgGlassTintOpacity: defaults.object(forKey: "bgGlassTintOpacity") as? Double ?? 0.03
-        ))
+        )
+        settings.usesChromeGlass = defaults.bool(forKey: WindowAppearanceSnapshot.chromeGlassDefaultsKey)
+        return current(settings: settings)
     }
 }

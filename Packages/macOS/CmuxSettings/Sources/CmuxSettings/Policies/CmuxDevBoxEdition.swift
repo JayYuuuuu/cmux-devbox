@@ -49,7 +49,14 @@ public enum CmuxDevBoxEdition {
         presentationModeKey: minimalPresentationMode,
         // The bundled team panel (app target `DevBoxTeamPanel`) in the left sidebar.
         sidebarProviderKey: teamPanelProviderId,
+        // Native window glass behind the sidebar, titlebar and canvas while
+        // the terminal card stays opaque (app target's `DevBoxCardChrome`).
+        chromeGlassKey: true,
     ] }
+
+    /// `UserDefaults` key of window glass behind opaque terminals
+    /// (`WindowAppearanceSnapshot.chromeGlassDefaultsKey`).
+    public static let chromeGlassKey = "chromeGlassOverOpaqueTerminal"
 
     /// `UserDefaults` key of the left sidebar view (app target's
     /// `CmuxExtensionSidebarSelection.defaultsKey`).

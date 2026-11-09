@@ -33,6 +33,27 @@ public struct WindowAppearanceSnapshot {
     /// dependent surface consume the same answer for a render pass.
     public let resolvedColorScheme: ColorScheme
 
+    /// Window glass behind chrome while terminals stay opaque: when set, the
+    /// window gets native glass tinted with this color, the root and sidebar
+    /// backdrops turn clear so the glass shows through, and the host is
+    /// responsible for painting an opaque surface behind each terminal (the
+    /// DevBox edition's terminal card). `nil` keeps the upstream behavior.
+    public var chromeGlassTint: NSColor?
+
+    /// UserDefaults key that turns ``chromeGlassTint`` on. Only the DevBox
+    /// edition registers it (together with its terminal card), so other
+    /// builds never read it as true.
+    public static let chromeGlassDefaultsKey = "chromeGlassOverOpaqueTerminal"
+
+    /// Glass tint for a terminal background: a step darker than the terminal
+    /// on dark themes, a touch darker on light ones, mostly opaque so the
+    /// theme color dominates and the desktop only shows faintly.
+    public static func chromeGlassTint(forTerminalBackground color: NSColor) -> NSColor {
+        let isDark = WindowChromeColorResolver().readableColorScheme(for: color) == .dark
+        let base = color.blended(withFraction: isDark ? 0.22 : 0.06, of: .black) ?? color
+        return base.withAlphaComponent(isDark ? 0.80 : 0.72)
+    }
+
     /// Creates a resolved window appearance snapshot.
     public init(
         terminalBackgroundColor: NSColor,
@@ -214,11 +235,11 @@ public struct WindowAppearanceSnapshot {
     public func policy(for role: WindowBackdropRole) -> WindowBackdropPolicy {
         switch role {
         case .windowRoot:
-            return terminalBackdropPolicy()
+            return chromeGlassTint == nil ? terminalBackdropPolicy() : .clear
         case .terminalCanvas, .bonsplitChrome, .titlebar, .browserSurface:
             return .clear
         case .leftSidebar, .rightSidebar:
-            if unifySurfaceBackdrops {
+            if unifySurfaceBackdrops || chromeGlassTint != nil {
                 return .clear
             }
             return .sidebarMaterial(sidebarSettings.materialPolicy)
@@ -254,6 +275,16 @@ public struct WindowAppearanceSnapshot {
         windowBackgroundPolicy: WindowBackgroundPolicy
     ) -> WindowBackdropPlan {
         let rootPolicy = terminalBackdropPolicy()
+        if let chromeGlassTint {
+            return WindowBackdropPlan(
+                hostingPhase: .windowGlass,
+                windowBackgroundColor: windowBackgroundPolicy.transparentWindowBaseColor,
+                windowIsOpaque: false,
+                rootPolicy: .clear,
+                glass: WindowBackdropGlassPlan(tintColor: chromeGlassTint, style: .regular),
+                shouldApplyGhosttyCompositorBlur: false
+            )
+        }
         if windowGlassSettings.shouldApply(
             glassEffectAvailable: glassEffectAvailable,
             windowBackgroundPolicy: windowBackgroundPolicy

@@ -1,4 +1,6 @@
 import AppKit
+import Bonsplit
+import CmuxAppKitSupportUI
 import CmuxFoundation
 import CmuxSettings
 import CmuxSwiftRender
@@ -49,7 +51,34 @@ enum DevBoxCardChrome {
     /// `cornerRadius * (1 - 1/sqrt(2))` so square, portal-hosted terminal
     /// corners never poke past the rounded card corners.
     static let contentInset: CGFloat = 4
-    static let cornerRadius: CGFloat = 10
+    static let cornerRadius: CGFloat = 12
+
+    /// Surface tabs: capsules in the edition, upstream's classic tabs elsewhere.
+    static var tabStyle: BonsplitConfiguration.Appearance.TabStyle {
+        CmuxDevBoxEdition.isActive ? .capsule : .classic
+    }
+
+    /// Rim colors from top to bottom: lit from above on dark cards (a faint
+    /// white edge fading out), a slightly firmer hairline at the bottom on
+    /// light cards so the card stays separated from a pale canvas.
+    static func rimColors(forCard card: NSColor) -> [Color] {
+        isDark(card)
+            ? [Color.white.opacity(0.16), Color.white.opacity(0.05)]
+            : [Color.black.opacity(0.08), Color.black.opacity(0.13)]
+    }
+
+    /// Card fill: the opaque composited terminal color, or the translucent
+    /// terminal color when terminals are see-through over chrome glass.
+    static func cardColor(for appearance: WindowAppearanceSnapshot) -> NSColor {
+        guard appearance.chromeGlassTint != nil, appearance.terminalBackgroundOpacity < 0.999 else {
+            return appearance.resolvedChromeBackgroundColor
+        }
+        return appearance.terminalBackgroundColor.withAlphaComponent(appearance.terminalBackgroundOpacity)
+    }
+
+    static func shadowColor(forCard card: NSColor) -> Color {
+        Color.black.opacity(isDark(card) ? 0.35 : 0.10)
+    }
 
     static func isEnabled(storedValue: Bool) -> Bool {
         CmuxDevBoxEdition.isActive && storedValue
@@ -102,11 +131,27 @@ struct DevBoxCardChromeModifier: ViewModifier {
         )
         content
             .padding(isEnabled ? DevBoxCardChrome.contentInset : 0)
-            .background(shape.fill(isEnabled ? Color(nsColor: cardColor) : .clear))
+            .background(
+                shape
+                    .fill(isEnabled ? Color(nsColor: cardColor) : .clear)
+                    // Soft drop shadow lifts the card off the canvas.
+                    .shadow(
+                        color: isEnabled ? DevBoxCardChrome.shadowColor(forCard: cardColor) : .clear,
+                        radius: isEnabled ? 10 : 0,
+                        x: 0,
+                        y: isEnabled ? 3 : 0
+                    )
+            )
             .overlay(
                 shape
                     .strokeBorder(
-                        isEnabled ? Color(nsColor: DevBoxCardChrome.borderColor(forCard: cardColor)) : .clear,
+                        LinearGradient(
+                            colors: isEnabled
+                                ? DevBoxCardChrome.rimColors(forCard: cardColor)
+                                : [.clear, .clear],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
                         lineWidth: isEnabled ? 1 : 0
                     )
                     .allowsHitTesting(false)
@@ -151,7 +196,7 @@ enum DevBoxThemeSwitcher {
         "DevBox Cobalt": "DevBox Dracula",
     ]
 
-    private static func editableConfigURL() -> URL? {
+    static func editableConfigURL() -> URL? {
         guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             return nil
         }
@@ -191,8 +236,12 @@ enum DevBoxThemeSwitcher {
             NSSound.beep()
             return
         }
-        // Same reload request `cmux themes set` sends; the app's observer
-        // filters on the bundle id and runs the final-phase reload.
+        requestConfigReload()
+    }
+
+    /// Same reload request `cmux themes set` sends; the app's observer
+    /// filters on the bundle id and runs the final-phase reload.
+    static func requestConfigReload() {
         DistributedNotificationCenter.default().post(
             name: Notification.Name("com.cmuxterm.themes.reload-config"),
             object: nil,
@@ -204,32 +253,105 @@ enum DevBoxThemeSwitcher {
     }
 }
 
+/// See-through terminals: a managed block at the end of the edition's
+/// `config.ghostty` lowers `background-opacity`, so terminals show the window
+/// glass behind them. Off by default: every redraw then recomposites the
+/// glass (more GPU while output scrolls) and text contrast drops.
+enum DevBoxTerminalGlass {
+    static let opacity = 0.80
+    private static let startMarker = "# cmux devbox glass start"
+    private static let endMarker = "# cmux devbox glass end"
+
+    static func isOn() -> Bool {
+        guard let url = DevBoxThemeSwitcher.editableConfigURL(),
+              let contents = try? String(contentsOf: url, encoding: .utf8) else { return false }
+        return contents.contains(startMarker)
+    }
+
+    /// Config text with the block removed, then appended when `on`; later
+    /// lines win in Ghostty, so the block overrides the file's own opacity.
+    static func contents(_ contents: String, settingOn on: Bool) -> String {
+        var lines = contents.components(separatedBy: "\n")
+        if let start = lines.firstIndex(of: startMarker),
+           let end = lines[start...].firstIndex(of: endMarker) {
+            lines.removeSubrange(start...end)
+        }
+        var text = lines.joined(separator: "\n")
+        if on {
+            if !text.isEmpty && !text.hasSuffix("\n") { text += "\n" }
+            text += "\(startMarker)\nbackground-opacity = \(opacity)\n\(endMarker)\n"
+        }
+        return text
+    }
+
+    static func set(_ on: Bool) {
+        guard let url = DevBoxThemeSwitcher.editableConfigURL() else { return }
+        let current = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+        do {
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try contents(current, settingOn: on).write(to: url, atomically: true, encoding: .utf8)
+        } catch {
+            NSSound.beep()
+            return
+        }
+        DevBoxThemeSwitcher.requestConfigReload()
+    }
+}
+
 /// Theme swatches shown above the sidebar footer buttons: dark themes, a
 /// wider gap, then light themes on one row; two rows when the sidebar is too
 /// narrow for one.
 struct DevBoxThemeSwitcherRow: View {
     @State private var activeThemeName: String?
+    @State private var terminalGlassOn = false
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 14) {
                 swatchRow(DevBoxThemeSwitcher.themes).fixedSize()
                 swatchRow(DevBoxThemeSwitcher.lightThemes).fixedSize()
+                glassToggle
                 Spacer(minLength: 0)
             }
             VStack(alignment: .leading, spacing: 4) {
                 swatchRow(DevBoxThemeSwitcher.themes)
-                swatchRow(DevBoxThemeSwitcher.lightThemes)
+                HStack(spacing: 8) {
+                    swatchRow(DevBoxThemeSwitcher.lightThemes)
+                    glassToggle
+                }
             }
         }
         .padding(.leading, 12)
         .padding(.trailing, 10)
-        .onAppear { activeThemeName = DevBoxThemeSwitcher.currentThemeName() }
+        .onAppear {
+            activeThemeName = DevBoxThemeSwitcher.currentThemeName()
+            terminalGlassOn = DevBoxTerminalGlass.isOn()
+        }
         // A theme picked elsewhere (Settings, `cmux themes set`) changes the
         // terminal background; re-read the selection then.
         .onReceive(NotificationCenter.default.publisher(for: .ghosttyDefaultBackgroundDidChange)) { _ in
             activeThemeName = DevBoxThemeSwitcher.currentThemeName()
+            terminalGlassOn = DevBoxTerminalGlass.isOn()
         }
+    }
+
+    private var glassToggle: some View {
+        let help = terminalGlassOn
+            ? String(localized: "devbox.glassTerminal.turnOff", defaultValue: "Make the terminal opaque again")
+            : String(localized: "devbox.glassTerminal.turnOn", defaultValue: "Make the terminal see-through glass (uses more GPU while output scrolls)")
+        return Button {
+            DevBoxTerminalGlass.set(!terminalGlassOn)
+            terminalGlassOn = DevBoxTerminalGlass.isOn()
+        } label: {
+            DevBoxGlassToggleLabel(isOn: terminalGlassOn)
+        }
+        .buttonStyle(.plain)
+        .help(help)
+        .accessibilityLabel(Text(help))
+        .accessibilityAddTraits(terminalGlassOn ? .isSelected : [])
     }
 
     private func swatchRow(_ themes: [DevBoxThemeSwitcher.Theme]) -> some View {
@@ -248,6 +370,32 @@ struct DevBoxThemeSwitcherRow: View {
                 .accessibilityAddTraits(isActive ? .isSelected : [])
             }
         }
+    }
+}
+
+/// Same footprint as a theme swatch: a glassy disc with a half-filled drop;
+/// an accent ring while terminal glass is on.
+private struct DevBoxGlassToggleLabel: View {
+    let isOn: Bool
+    @State private var isHovered = false
+
+    var body: some View {
+        ZStack {
+            Circle().fill(.ultraThinMaterial)
+            Circle().strokeBorder(Color.primary.opacity(isHovered ? 0.40 : 0.20), lineWidth: 1)
+            Image(systemName: isOn ? "drop.fill" : "drop.halffull")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(Color.primary.opacity(isOn ? 0.9 : 0.6))
+        }
+        .frame(width: 18, height: 18)
+        .padding(3)
+        .overlay(
+            Circle()
+                .strokeBorder(Color.accentColor, lineWidth: 2)
+                .opacity(isOn ? 1 : 0)
+        )
+        .contentShape(Circle())
+        .onHover { isHovered = $0 }
     }
 }
 

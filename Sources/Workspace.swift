@@ -3832,7 +3832,7 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
                 backgroundOpacity: backgroundOpacity
             )
         )
-        return BonsplitConfiguration.Appearance(
+        var appearance = BonsplitConfiguration.Appearance(
             tabBarHeight: WindowChromeMetrics.bonsplitTabBarHeight,
             tabTitleFontSize: tabTitleFontSize,
             dividerHitExpansion: PortalSplitDividerRegion.dividerHitExpansion,
@@ -3842,6 +3842,8 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
             chromeColors: chromeColors,
             usesSharedBackdrop: sharesWindowBackdrop
         )
+        appearance.tabStyle = DevBoxCardChrome.tabStyle
+        return appearance
     }
 
     func applyGhosttyChrome(from config: GhosttyConfig, reason: String = "unspecified") {

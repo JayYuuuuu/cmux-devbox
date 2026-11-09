@@ -10,6 +10,10 @@ public struct WindowAppearanceUserSettingsSnapshot {
     /// instead, so this value never overrides the shared authority.
     public let colorScheme: ColorScheme
 
+    /// Window glass behind opaque terminal chrome; see
+    /// ``WindowAppearanceSnapshot/chromeGlassTint``.
+    public var usesChromeGlass = false
+
     /// Raw `sidebarMaterial` value.
     public let sidebarMaterial: String
 
