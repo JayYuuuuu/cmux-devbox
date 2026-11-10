@@ -231,9 +231,9 @@ enum DevBoxThemeSwitcher {
     /// at 5:1 (normal) / 4:1 (bright) so syntax colors stay distinct and legible.
     static let lightThemes: [Theme] = [
         Theme(name: "DevBox Paper", backgroundHex: "#f3ede1", accentHex: "#c15627"),
-        Theme(name: "DevBox Sepia", backgroundHex: "#f1e6cf", accentHex: "#b5562b"),
         Theme(name: "DevBox Mist", backgroundHex: "#e9edf0", accentHex: "#2f6fd6"),
         Theme(name: "DevBox Ivory", backgroundHex: "#f2f0ed", accentHex: "#e0a030"),
+        Theme(name: "DevBox Porcelain", backgroundHex: "#f9f8f5", accentHex: "#a39c90"),
     ]
 
     // Old theme resources contain the replacement palettes too, so existing

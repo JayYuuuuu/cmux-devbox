@@ -1,0 +1,25 @@
+# DevBox Porcelain: near-white porcelain page (Ivory ink, ANSI set and amber cursor, one step lighter); every text color keeps >=4.6:1 even on the panel (ANSI 7) step
+background = #f9f8f5
+foreground = #262421
+cursor-color = #af5b00
+cursor-text = #fbfaf7
+selection-background = #e8d2b2
+selection-foreground = #1c1a18
+palette = 0=#3f3d3a
+palette = 1=#963f34
+palette = 2=#2c6626
+palette = 3=#854d00
+palette = 4=#255b9c
+palette = 5=#8f3e68
+palette = 6=#00646e
+palette = 7=#dedcd9
+palette = 8=#635f5b
+palette = 9=#aa3836
+palette = 10=#1c6e15
+palette = 11=#994a00
+palette = 12=#125fb3
+palette = 13=#a03871
+palette = 14=#006a78
+palette = 15=#1c1a18
+# Safety net for programs that pick their own colors (Claude Code, Codex): DevBox Ghostty darkens any fainter text just enough, keeping its hue
+minimum-contrast = 4.8
