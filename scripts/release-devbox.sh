@@ -13,6 +13,13 @@
 # ~/.config/cmux-devbox (see docs/devbox-edition.md), gh logged in, and HEAD
 # already pushed to the fork. Installed copies poll
 # releases/latest/download/appcast.xml, so the newest release must carry it.
+#
+# Upload relay: if the build Mac's own route to GitHub drops large uploads
+# (a system-wide proxy cutting the ZIP off mid-stream), put an SSH host alias
+# in ~/.config/cmux-devbox/upload-relay-host (or CMUX_DEVBOX_UPLOAD_RELAY_HOST).
+# Assets then go up with curl over an SSH SOCKS tunnel through that host; the
+# tunnel exists only for the upload and closes on exit. The alias stays on the
+# build Mac; nothing here names it.
 set -euo pipefail
 
 REPO="JayYuuuuu/cmux-devbox"
@@ -123,6 +130,51 @@ if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
 fi
 RELEASE_API="$(gh release view "$TAG" --repo "$REPO" --json apiUrl --jq .apiUrl)"
 
+RELAY_HOST="${CMUX_DEVBOX_UPLOAD_RELAY_HOST:-}"
+RELAY_FILE="$HOME/.config/cmux-devbox/upload-relay-host"
+if [[ -z "$RELAY_HOST" && -f "$RELAY_FILE" ]]; then
+  RELAY_HOST="$(tr -d '[:space:]' < "$RELAY_FILE")"
+fi
+RELAY_PORT=""
+RELAY_CONTROL=""
+close_relay() {
+  if [[ -n "$RELAY_CONTROL" ]]; then
+    ssh -o ControlPath="$RELAY_CONTROL" -O exit "$RELAY_HOST" >/dev/null 2>&1 || true
+    rm -f "$RELAY_CONTROL"
+    RELAY_CONTROL=""
+  fi
+}
+open_relay() {
+  [[ -n "$RELAY_HOST" && -z "$RELAY_CONTROL" ]] || return 0
+  RELAY_PORT="$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')"
+  RELAY_CONTROL="$(mktemp -u /tmp/cmux-devbox-relay.XXXXXX)"
+  trap close_relay EXIT
+  ssh -f -N -M -S "$RELAY_CONTROL" -o ExitOnForwardFailure=yes -o BatchMode=yes \
+    -D "127.0.0.1:${RELAY_PORT}" "$RELAY_HOST"
+  echo "Upload relay: SOCKS tunnel on 127.0.0.1:${RELAY_PORT}"
+}
+
+# Upload one asset with curl through the relay. A previous failed attempt can
+# leave a same-name asset in "starter" state (or with wrong bytes), which makes
+# GitHub reject the new upload, so drop it first.
+relay_upload_asset() {
+  local asset_path="$1" asset_name stale_id upload_url
+  asset_name="$(basename "$asset_path")"
+  stale_id="$(gh api "${RELEASE_API}/assets" --jq ".[] | select(.name == \"${asset_name}\") | .id")"
+  if [[ -n "$stale_id" ]]; then
+    gh api -X DELETE "repos/${REPO}/releases/assets/${stale_id}"
+  fi
+  upload_url="$(gh api "$RELEASE_API" --jq .upload_url)"
+  upload_url="${upload_url%%\{*}"
+  curl --http1.1 -fsS \
+    -x "socks5h://127.0.0.1:${RELAY_PORT}" \
+    -H @<(printf 'Authorization: Bearer %s\n' "$(gh auth token)") \
+    -H "Content-Type: application/octet-stream" \
+    --data-binary @"$asset_path" \
+    -o /dev/null \
+    "${upload_url}?name=${asset_name}"
+}
+
 verify_release_asset() {
   local asset_name="$1" expected_sha="$2" remote_state
   remote_state="$(gh api "${RELEASE_API}/assets" --jq ".[] | select(.name == \"${asset_name}\") | \"\(.state) \(.digest)\"")" || return 1
@@ -134,7 +186,12 @@ for asset_path in "$ZIP_PATH" "${OUT_DIR}/appcast.xml" "${OUT_DIR}/SHA256SUMS.tx
   asset_sha="$(shasum -a 256 "$asset_path" | cut -d' ' -f1)"
   if ! verify_release_asset "$asset_name" "$asset_sha"; then
     # A lost upload response is harmless only if readback proves the exact bytes.
-    gh release upload "$TAG" "$asset_path" --repo "$REPO" || true
+    if [[ -n "$RELAY_HOST" ]]; then
+      open_relay
+      relay_upload_asset "$asset_path" || true
+    else
+      gh release upload "$TAG" "$asset_path" --repo "$REPO" || true
+    fi
   fi
   if ! verify_release_asset "$asset_name" "$asset_sha"; then
     echo "error: draft $TAG retained; $asset_name is missing or its digest differs" >&2
