@@ -1,0 +1,23 @@
+# DevBox Ivory: warm jade-white with layered soft grays and amber accent; ink foreground; syntax colors share one perceived lightness (OKLCH-balanced)
+background = #f2f0ed
+foreground = #302d2b
+cursor-color = #d27908
+cursor-text = #f2f0ed
+selection-background = #e9d7b8
+selection-foreground = #24211f
+palette = 0=#3f3d3a
+palette = 1=#99473d
+palette = 2=#3d7231
+palette = 3=#8a5700
+palette = 4=#2d65a1
+palette = 5=#92456a
+palette = 6=#127175
+palette = 7=#d9d7d4
+palette = 8=#807d79
+palette = 9=#b3564a
+palette = 10=#4b873d
+palette = 11=#a26800
+palette = 12=#3979bc
+palette = 13=#ab547d
+palette = 14=#12868b
+palette = 15=#1f1c1a
