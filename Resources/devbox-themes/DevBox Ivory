@@ -1,24 +1,24 @@
 # DevBox Ivory: warm jade-white page with a soft-gray panel step and amber cursor; every text color keeps >=4.6:1 even on the panel (ANSI 7) step
 background = #f2f0ed
-foreground = #2c2a27
+foreground = #262421
 cursor-color = #af5b00
 cursor-text = #fbfaf7
 selection-background = #e8d2b2
 selection-foreground = #1c1a18
 palette = 0=#3f3d3a
-palette = 1=#923b31
+palette = 1=#913a30
 palette = 2=#276222
-palette = 3=#814900
-palette = 4=#215798
-palette = 5=#8a3a64
-palette = 6=#00606a
-palette = 7=#d8d6d3
-palette = 8=#5f5b57
-palette = 9=#a53332
+palette = 3=#814800
+palette = 4=#205697
+palette = 5=#8a3964
+palette = 6=#005f69
+palette = 7=#d7d5d2
+palette = 8=#5e5b57
+palette = 9=#a43231
 palette = 10=#176a10
-palette = 11=#944600
-palette = 12=#0c5baf
-palette = 13=#9c346d
+palette = 11=#934500
+palette = 12=#0a5aad
+palette = 13=#9b346d
 palette = 14=#006573
 palette = 15=#1c1a18
 # Safety net for programs that pick their own colors (Claude Code, Codex): DevBox Ghostty darkens any fainter text just enough, keeping its hue
